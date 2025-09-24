@@ -1,0 +1,560 @@
+
+openapi: 3.0.3
+info:
+  title: Billiard POS Platform API
+  version: 0.1.0
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      summary: Login and receive JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /owners/signup:
+    post:
+      summary: Owner self sign-up and create FREE shop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OwnerSignup"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shop"
+  /admin/shops:
+    post:
+      summary: Create shop (Admin)
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shop"
+  /admin/shops/{shopId}:
+    patch:
+      summary: Update plan/status/quota for a shop (Admin)
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminShopPatch"
+      responses:
+        "200": { description: Updated }
+  /shops/{shopId}/staff:
+    post:
+      summary: Invite/create staff under a shop (Owner)
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaff"
+      responses:
+        "201": { description: Created }
+  /shops/{shopId}/usage:
+    get:
+      summary: View usage & token consumption (Owner/Admin)
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageSnapshot"
+  /shops/{shopId}/upgrade:
+    post:
+      summary: Start upgrade to Premium (Owner)
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Payment session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSession"
+  /billing/webhook:
+    post:
+      summary: Payment provider webhook (Admin scope)
+      responses:
+        "200": { description: OK }
+  /tables:
+    get:
+      summary: List tables by shop
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Table" }
+    post:
+      summary: Create table (Owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Table" }
+      responses:
+        "201": { description: Created }
+  /tables/{tableId}:
+    patch:
+      summary: Update table (Owner)
+      parameters:
+        - in: path
+          name: tableId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Updated }
+  /sessions:
+    post:
+      summary: Open session (POS)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OpenSession" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /sessions/{sessionId}:
+    patch:
+      summary: Pause/Resume/Transfer/Close session (POS)
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                op: { type: string, enum: [pause, resume, transfer, close] }
+                to_table_id: { type: string, format: uuid }
+      responses:
+        "200": { description: Updated }
+  /pricing/quote:
+    get:
+      summary: Get price quote for a time instant
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: tableType
+          schema: { type: string }
+        - in: query
+          name: at
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unit_price: { type: number }
+                  rounding_block: { type: integer }
+  /bills:
+    post:
+      summary: Create bill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Bill" }
+      responses:
+        "201": { description: Created }
+  /bills/{billId}/pay:
+    post:
+      summary: Pay a bill
+      parameters:
+        - in: path
+          name: billId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                method: { type: string, enum: [cash, qr] }
+                amount: { type: number }
+      responses:
+        "200": { description: Paid }
+  /bills/{billId}/split:
+    post:
+      summary: Split a bill
+      parameters:
+        - in: path
+          name: billId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Split OK }
+  /bills/{billId}/print:
+    post:
+      summary: Print bill via ESC/POS
+      parameters:
+        - in: path
+          name: billId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Printed }
+  /payments/qr:
+    post:
+      summary: Create QR payment intent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentIntent"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentIntent"
+  /payments/webhook:
+    post:
+      summary: Payment provider callback
+      responses:
+        "200": { description: OK }
+  /products:
+    get:
+      summary: List products by shop
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+    post:
+      summary: Create product (Owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        "201": { description: Created }
+  /inventory/txns:
+    post:
+      summary: Create inventory transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryTxn" }
+      responses:
+        "201": { description: Created }
+  /reports/revenue:
+    get:
+      summary: Revenue report
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueReport"
+  /reports/occupancy:
+    get:
+      summary: Occupancy report
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancyReport"
+  /reports/stockvalue:
+    get:
+      summary: Stock value report
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockValueReport"
+  /admin/audit:
+    get:
+      summary: Audit logs (Admin)
+      parameters:
+        - in: query
+          name: shop_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: actor
+          schema: { type: string, format: uuid }
+        - in: query
+          name: action
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AuditLog" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        role: { type: string, enum: [ADMIN, OWNER, STAFF] }
+        shop_id: { type: string, nullable: true }
+    OwnerSignup:
+      type: object
+      required: [email, password, shop_name]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+        shop_name: { type: string }
+    AdminShopPatch:
+      type: object
+      properties:
+        status: { type: string, enum: [active, locked, archived] }
+        plan: { type: string, enum: [FREE, PREMIUM, SUSPENDED] }
+        quota_json: { type: object, additionalProperties: true }
+    CreateStaff:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+        display_name: { type: string }
+    Shop:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string }
+        plan: { type: string }
+        quota_json: { type: object }
+    Table:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        shop_id: { type: string, format: uuid }
+        code: { type: string }
+        type: { type: string, enum: [POOL, SNOOKER, CAROM] }
+        area: { type: string }
+        status: { type: string, enum: [IDLE, BUSY, PAUSED, CLEANING] }
+    OpenSession:
+      type: object
+      required: [shop_id, table_id]
+      properties:
+        shop_id: { type: string, format: uuid }
+        table_id: { type: string, format: uuid }
+    Session:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        shop_id: { type: string, format: uuid }
+        table_id: { type: string, format: uuid }
+        start_at: { type: string, format: date-time }
+        pause_total_s: { type: integer }
+        end_at: { type: string, format: date-time, nullable: true }
+        computed_fee: { type: number }
+        state: { type: string, enum: [OPEN, PAUSED, CLOSED] }
+    Bill:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        shop_id: { type: string, format: uuid }
+        code: { type: string }
+        session_total: { type: number }
+        item_total: { type: number }
+        discount: { type: number }
+        payments_json: { type: object }
+        status: { type: string, enum: [OPEN, PAID, VOID] }
+    Product:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        shop_id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        category: { type: string }
+        uom: { type: string }
+        price: { type: number }
+        cost: { type: number }
+        stock_qty: { type: number }
+        min_stock: { type: number }
+        tax_rate: { type: number }
+        active: { type: boolean }
+    InventoryTxn:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        shop_id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        type: { type: string, enum: [IN, OUT, ADJ] }
+        qty: { type: number }
+        cost: { type: number }
+        reason: { type: string }
+        ts: { type: string, format: date-time }
+    CreatePaymentIntent:
+      type: object
+      required: [shop_id, bill_id, amount, provider]
+      properties:
+        shop_id: { type: string, format: uuid }
+        bill_id: { type: string, format: uuid }
+        amount: { type: number }
+        provider: { type: string, enum: [momo, zalopay, bankqr] }
+    PaymentIntent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        qr_payload: { type: string }
+        amount: { type: number }
+        status: { type: string, enum: [created, paid, failed] }
+    PaymentSession:
+      type: object
+      properties:
+        session_id: { type: string }
+        checkout_url: { type: string }
+    RevenueReport:
+      type: object
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        totals_by_day:
+          type: array
+          items:
+            type: object
+            properties:
+              day: { type: string, format: date }
+              revenue: { type: number }
+    OccupancyReport:
+      type: object
+      properties:
+        slots:
+          type: array
+          items:
+            type: object
+            properties:
+              slot: { type: string }
+              occupancy_pct: { type: number }
+    StockValueReport:
+      type: object
+      properties:
+        total_value: { type: number }
+        by_category:
+          type: array
+          items:
+            type: object
+            properties:
+              category: { type: string }
+              value: { type: number }
+    AuditLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        actor_user_id: { type: string, format: uuid }
+        shop_id: { type: string, format: uuid, nullable: true }
+        action: { type: string }
+        entity: { type: string }
+        entity_id: { type: string, format: uuid, nullable: true }
+        meta_json: { type: object }
+        ts: { type: string, format: date-time }

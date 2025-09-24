@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.4.6
+    container_name: billiard-mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --explicit_defaults_for_timestamp=ON
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-BillardManagement}
+      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set in .env}
+      TZ: UTC
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - app-net
+
+  api:
+    # Backend Spring Boot 3 (JDK 21 LTS khuyến nghị)
+    container_name: billiard-api
+    build:
+      context: ./backend
+      dockerfile: src/Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-BillardManagement}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&connectionTimeZone=UTC&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-appuser}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      # Nếu dùng Flyway:
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      # JVM/container tuning nhẹ
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC
+      TZ: UTC
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"   # API ngoài máy host
+    networks:
+      - app-net
+
+  adminer:
+    image: adminer:4
+    container_name: billiard-adminer
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      TZ: UTC
+    depends_on:
+      - db
+    ports:
+      - "8081:8080"  # mở http://localhost:8081
+    networks:
+      - app-net
+
+volumes:
+  db_data:
+
+networks:
+  app-net:
+    driver: bridge

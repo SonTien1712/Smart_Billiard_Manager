@@ -1,0 +1,153 @@
+
+erDiagram
+    SHOP ||--o{ USER : "has"
+    SHOP ||--o{ TABLE : "has"
+    SHOP ||--o{ PRICING_RULE : "has"
+    SHOP ||--o{ PRODUCT : "has"
+    SHOP ||--o{ PROMOTION : "has"
+    SHOP ||--o{ SESSION : "has"
+    SHOP ||--o{ BILL : "has"
+    SHOP ||--o{ INVENTORY_TXN : "has"
+    SHOP ||--o{ USAGE_METER : "has"
+    SHOP ||--o{ BILLING : "has"
+    USER }o--|| SHOP : "belongs_to (Owner/Staff), Admin has no shop"
+    SESSION }o--|| TABLE : "runs_on"
+    SESSION ||--o{ BILL : "closes_into (1..1 bill per session in v1)"
+    BILL ||--o{ BILL_ITEM : "contains"
+    BILL_ITEM }o--|| PRODUCT : "references"
+    PRICING_RULE }o--|| SHOP : "scoped_to"
+    INVENTORY_TXN }o--|| PRODUCT : "affects"
+    BILLING }o--|| SHOP : "for_plan_period"
+    USAGE_METER }o--|| SHOP : "records"
+    AUDIT_LOG }o--|| USER : "acted_by"
+    AUDIT_LOG }o--|| SHOP : "scoped_to"
+
+    SHOP {
+      uuid id PK
+      string name
+      enum status "active|locked|archived"
+      enum plan "FREE|PREMIUM|SUSPENDED"
+      jsonb quota_json
+      uuid owner_user_id FK -> USER.id
+      timestamptz created_at
+    }
+    USER {
+      uuid id PK
+      string email UNIQUE
+      string password_hash
+      enum role "ADMIN|OWNER|STAFF"
+      uuid shop_id FK nullable
+      enum status "active|disabled"
+      timestamptz created_at
+    }
+    TABLE {
+      uuid id PK
+      uuid shop_id FK
+      string code UNIQUE (shop scope)
+      enum type "POOL|SNOOKER|CAROM"
+      string area
+      enum status "IDLE|BUSY|PAUSED|CLEANING"
+    }
+    PRICING_RULE {
+      uuid id PK
+      uuid shop_id FK
+      string table_type
+      string day_of_week "MON..SUN or ALL"
+      string time_range "e.g. 10:00-17:00"
+      int unit_min "per-minute price granularity"
+      int rounding_block "e.g. 5,10,15 (minutes)"
+      numeric price_per_unit
+      string member_tier nullable
+      bool active
+    }
+    SESSION {
+      uuid id PK
+      uuid shop_id FK
+      uuid table_id FK
+      timestamptz start_at
+      int pause_total_s
+      timestamptz end_at nullable
+      numeric computed_fee
+      uuid bill_id nullable
+      enum state "OPEN|PAUSED|CLOSED"
+    }
+    PRODUCT {
+      uuid id PK
+      uuid shop_id FK
+      string sku
+      string name
+      string category
+      string uom
+      numeric price
+      numeric cost
+      numeric stock_qty
+      numeric min_stock
+      numeric tax_rate
+      bool active
+    }
+    PROMOTION {
+      uuid id PK
+      uuid shop_id FK
+      string type "%|FIXED|BUY_X_GET_Y"
+      jsonb conditions_json
+      bool active
+    }
+    BILL {
+      uuid id PK
+      uuid shop_id FK
+      string code UNIQUE (shop scope)
+      uuid customer_id nullable
+      numeric session_total
+      numeric item_total
+      numeric discount
+      jsonb payments_json
+      enum status "OPEN|PAID|VOID"
+      timestamptz created_at
+    }
+    BILL_ITEM {
+      uuid id PK
+      uuid bill_id FK
+      uuid product_id nullable
+      uuid session_id nullable
+      numeric qty
+      numeric unit_price
+      uuid promo_id nullable
+    }
+    INVENTORY_TXN {
+      uuid id PK
+      uuid shop_id FK
+      uuid product_id FK
+      enum type "IN|OUT|ADJ"
+      numeric qty
+      numeric cost
+      string reason
+      timestamptz ts
+    }
+    USAGE_METER {
+      uuid id PK
+      uuid shop_id FK
+      string feature_code
+      numeric qty
+      timestamptz ts
+      uuid bill_cycle_id nullable
+      string idempotency_key UNIQUE
+    }
+    BILLING {
+      uuid id PK
+      uuid shop_id FK
+      uuid plan_id nullable
+      timestamptz period_from
+      timestamptz period_to
+      numeric amount
+      enum status "DUE|PAID|FAILED"
+    }
+    AUDIT_LOG {
+      uuid id PK
+      uuid actor_user_id FK
+      uuid shop_id FK nullable
+      string action
+      string entity
+      uuid entity_id nullable
+      jsonb meta_json
+      timestamptz ts
+    }

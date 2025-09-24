@@ -1,0 +1,33 @@
+Epic,User Story,Priority,Description,Actor,Story Points,Endpoints,Acceptance Criteria
+AUTH & RBAC,"As Admin, I can log in to the platform",Must,JWT-based login; returns access/refresh tokens,Admin,3,/auth/login,"Given valid credentials, when I POST /auth/login, I receive tokens and role info"
+AUTH & RBAC,"As Owner, I can sign up and auto-create a Free shop",Must,Owner self-sign-up creates Shop(plan=FREE),Owner,5,/owners/signup,"After signup, Shop exists with default quotas; email verification optional"
+AUTH & RBAC,"As Owner, I can invite Staff",Must,Create staff user for my shop,Owner,3,/shops/{id}/staff,POST creates STAFF with shop_id scoped; invite email sent
+AUTH & RBAC,"As Staff, I can log in with shop scope",Must,Staff login bound to shop_id,Staff,2,/auth/login,"JWT contains role=STAFF, shop_id; POS endpoints accessible"
+AUTH & RBAC,"As Admin, I enforce row-level multi-tenant access",Must,Every query filtered by shop_id,Admin,8,*,Requests with mismatched shop_id are rejected (403) and audited
+Platform Admin,"As Admin, I can create a Shop",Must,CRUD shop and owner binding,Admin,5,/admin/shops,POST creates shop; status=active; owner assigned
+Platform Admin,"As Admin, I can lock/unlock/delete a Shop",Must,"Soft delete, archival window",Admin,5,/admin/shops/{id},PATCH status to locked/archived; new POS actions blocked
+Platform Admin,"As Admin, I can set plan/quota for a Shop",Must,Plan=FREE/PREMIUM; limits,Admin,5,/admin/shops/{id},PATCH updates plan and quota_json; effective immediately
+Platform Admin,"As Admin, I can view usage across shops",Should,Usage dashboard,Admin,5,"/admin/audit,/shops/{id}/usage",Usage aggregated by feature_code; export CSV
+Billing/Plan/Usage,"As Owner, I can view token usage",Must,Token/quota dashboard,Owner,3,/shops/{id}/usage,Shows % used; warns at 80%/100%
+Billing/Plan/Usage,"As Owner, I can upgrade to Premium",Must,Create payment session & upgrade,Owner,8,"/shops/{id}/upgrade,/billing/webhook","Upon success, plan=PREMIUM; audit recorded"
+Billing/Plan/Usage,"As System, I meter usage per feature",Must,UsageMeter writes per action,System,8,*,Actions that consume token create usage rows idempotently
+Shop Ops,"As Owner, I configure tables layout/types",Must,"CRUD tables, areas",Owner,5,/tables,Tables visible on POS board with status colors
+Shop Ops,"As Owner, I configure pricing rules",Must,"Time-based blocks, day-of-week",Owner,8,/pricing/*,Quotes reflect active rules; rounding blocks apply
+Shop Ops,"As Owner, I manage menu/SKU",Must,"CRUD products, cost/price, min stock",Owner,5,/products,POS can add items to bill; stock decremented
+Shop Ops,"As Owner, I manage staff roles",Must,Add/remove/reset PIN,Owner,3,/shops/{id}/staff,Staff only sees POS endpoints
+Shop Ops,"As Owner, I configure payment QR provider",Should,Momo/Zalo/Bank QR config,Owner,5,/shops/{id}/payments,QR generated with correct payload
+POS,"As Staff, I can open a table session",Must,Start timer for a table,Staff,5,/sessions,Bill shows runtime fee accumulating
+POS,"As Staff, I can pause/resume/transfer session",Must,"State transitions, transfer table",Staff,5,/sessions/{id},Fee accrues only when running; transfer switches pricing by time
+POS,"As Staff, I can add products to a bill",Must,Add/adjust quantities,Staff,3,/bills,Bill totals update in realtime
+POS,"As Staff, I can split/merge bills",Should,Split by items/time-block; merge sessions,Staff,8,/bills/{id}/split,Traceability preserved; totals consistent
+POS,"As Staff, I can apply basic promotions",Should,% or fixed discount; conflicts resolved,Staff,5,/bills,Best eligible promo auto-suggested
+POS,"As Staff, I can create a QR for payment",Must,Generate payment intent + QR,Staff,5,/payments/qr,Callback marks bill paid and prints receipt
+POS,"As Staff, I can print receipts",Must,ESC/POS printing,Staff,3,/bills/{id}/print,Receipt printed with shop info and items
+Inventory,"As Owner, I can record stock IN/OUT/ADJ",Must,Transactions with reason,Owner,5,/inventory/txns,FIFO/AVG cost recalculated; alerts on low stock
+Inventory,"As Owner, I can see stock and value",Must,On-hand qty & stock value,Owner,3,/reports/stockvalue,Value = qty * cost; export CSV
+Reporting,"As Owner, I can view revenue reports",Must,By day/shift/employee,Owner,5,/reports/revenue,Filters by date range; export CSV/PDF
+Reporting,"As Owner, I can view occupancy report",Must,Table utilization heatmap,Owner,5,/reports/occupancy,% utilization per slot; top busy hours
+Reporting,"As Owner, I can view staff performance",Should,"Sales per staff, avg session",Owner,5,/reports/revenue,Leaderboard by staff
+Audit/Obs,"As Admin/OA, I can review audit logs",Must,Security & finance actions,Admin/Owner,5,/admin/audit,Critical actions recorded with actor and metadata
+Audit/Obs,"As System, I expose metrics",Should,"p95 latency, token burn rate",System,3,/metrics,Grafana/Prometheus scrapeable
+Offline,"As POS, I can keep working offline",Could,"PWA, IndexedDB, sync",Staff,13,(client),Idempotent replay; conflict resolution policy

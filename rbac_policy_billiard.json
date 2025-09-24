@@ -1,0 +1,194 @@
+{
+  "version": "2025-09-12",
+  "roles": {
+    "ADMIN": {
+      "scopes": [
+        "*"
+      ],
+      "allow": [
+        {
+          "method": "*",
+          "path": "^/admin/.*"
+        },
+        {
+          "method": "POST",
+          "path": "^/auth/login$"
+        },
+        {
+          "method": "*",
+          "path": "^/billing/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/reports/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/payments/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/tables.*"
+        },
+        {
+          "method": "*",
+          "path": "^/products.*"
+        },
+        {
+          "method": "*",
+          "path": "^/inventory/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/sessions.*"
+        },
+        {
+          "method": "*",
+          "path": "^/bills.*"
+        },
+        {
+          "method": "*",
+          "path": "^/owners/.*"
+        },
+        {
+          "method": "GET",
+          "path": "^/admin/audit$"
+        }
+      ],
+      "deny": []
+    },
+    "OWNER": {
+      "scopes": [
+        "shop:{shop_id}"
+      ],
+      "allow": [
+        {
+          "method": "POST",
+          "path": "^/auth/login$"
+        },
+        {
+          "method": "GET",
+          "path": "^/shops/(?P<shop_id>[a-f0-9-]+)/usage$"
+        },
+        {
+          "method": "POST",
+          "path": "^/shops/(?P<shop_id>[a-f0-9-]+)/upgrade$"
+        },
+        {
+          "method": "POST",
+          "path": "^/shops/(?P<shop_id>[a-f0-9-]+)/staff$"
+        },
+        {
+          "method": "*",
+          "path": "^/tables(\\?.*)?$"
+        },
+        {
+          "method": "*",
+          "path": "^/products$"
+        },
+        {
+          "method": "POST",
+          "path": "^/inventory/txns$"
+        },
+        {
+          "method": "*",
+          "path": "^/sessions$"
+        },
+        {
+          "method": "*",
+          "path": "^/sessions/[a-f0-9-]+$"
+        },
+        {
+          "method": "*",
+          "path": "^/bills$"
+        },
+        {
+          "method": "*",
+          "path": "^/bills/[a-f0-9-]+/(pay|print|split)$"
+        },
+        {
+          "method": "GET",
+          "path": "^/reports/(revenue|occupancy|stockvalue)$"
+        },
+        {
+          "method": "POST",
+          "path": "^/payments/qr$"
+        }
+      ],
+      "deny": [
+        {
+          "method": "*",
+          "path": "^/admin/.*"
+        }
+      ],
+      "attribute_rules": [
+        {
+          "match": "path.shop_id == token.shop_id"
+        }
+      ]
+    },
+    "STAFF": {
+      "scopes": [
+        "shop:{shop_id}"
+      ],
+      "allow": [
+        {
+          "method": "POST",
+          "path": "^/auth/login$"
+        },
+        {
+          "method": "GET",
+          "path": "^/tables(\\?.*)?$"
+        },
+        {
+          "method": "POST",
+          "path": "^/sessions$"
+        },
+        {
+          "method": "PATCH",
+          "path": "^/sessions/[a-f0-9-]+$"
+        },
+        {
+          "method": "POST",
+          "path": "^/bills$"
+        },
+        {
+          "method": "POST",
+          "path": "^/bills/[a-f0-9-]+/(pay|print|split)$"
+        },
+        {
+          "method": "POST",
+          "path": "^/payments/qr$"
+        }
+      ],
+      "deny": [
+        {
+          "method": "*",
+          "path": "^/admin/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/reports/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/inventory/.*"
+        },
+        {
+          "method": "*",
+          "path": "^/shops/.*/(staff|usage|upgrade)$"
+        }
+      ],
+      "attribute_rules": [
+        {
+          "match": "query.shop_id == token.shop_id or path.shop_id == token.shop_id"
+        }
+      ]
+    }
+  },
+  "defaults": {
+    "on_deny": "403_FORBIDDEN",
+    "audit_on_allow": true,
+    "audit_on_deny": true
+  }
+}
