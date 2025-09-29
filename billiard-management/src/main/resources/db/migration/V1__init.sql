@@ -1,9 +1,9 @@
 -- ======================
 -- Database & defaults
 -- ======================
-CREATE DATABASE IF NOT EXISTS BillardManagement
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+# CREATE DATABASE IF NOT EXISTS BillardManagement
+#   CHARACTER SET utf8mb4
+#   COLLATE utf8mb4_unicode_ci;
 USE BillardManagement;
 
 -- Đảm bảo InnoDB & timezone/strict mode do app cấu hình.

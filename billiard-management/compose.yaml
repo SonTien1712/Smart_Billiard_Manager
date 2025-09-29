@@ -11,7 +11,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-BillardManagement}
-      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_USER: ${MYSQL_USER:?set in .env}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set in .env}
       TZ: UTC
     ports:
@@ -30,13 +30,13 @@ services:
     # Backend Spring Boot 3 (JDK 21 LTS khuyến nghị)
     container_name: billiard-api
     build:
-      context: ./backend
-      dockerfile: src/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-BillardManagement}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&connectionTimeZone=UTC&createDatabaseIfNotExist=true
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-appuser}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:?set in .env}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?set in .env}
       # Nếu dùng Flyway:
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
