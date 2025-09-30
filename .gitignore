@@ -1,0 +1,24 @@
+# =================
+# Java / Spring Boot
+# =================
+/backend/target/
+*.class
+*.log
+*.jar
+*.war
+*.iml
+/.idea/
+/.vscode/
+
+# =================
+# Node / React
+# =================
+/frontend/node_modules/
+/frontend/build/
+/frontend/.env
+
+# =================
+# General
+# =================
+.DS_Store
+Thumbs.db
