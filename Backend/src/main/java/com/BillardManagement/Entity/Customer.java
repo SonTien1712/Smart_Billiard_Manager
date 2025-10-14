@@ -1,10 +1,10 @@
 package com.BillardManagement.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @Setter
 @Entity
 @Table(name = "customers")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // ⚠️ thêm dòng này
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,5 +48,4 @@ public class Customer {
     @ColumnDefault("1")
     @Column(name = "IsActive")
     private Boolean isActive;
-
 }

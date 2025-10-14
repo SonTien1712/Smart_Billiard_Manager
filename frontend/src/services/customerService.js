@@ -2,7 +2,7 @@ import { apiClient } from './api';
 import { API_CONFIG } from '../config/api';
 import { MockService } from './mockService';
 
-const USE_MOCK_DATA = true; // Set to false when you have a real backend
+const USE_MOCK_DATA = false; // Set to false when you have a real backend
 
 export class CustomerService {
   // Club Management
