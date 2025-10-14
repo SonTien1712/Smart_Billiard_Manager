@@ -1,0 +1,1854 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: support@billardmanagement.com
+    name: Support Team
+  description: "Comprehensive API for managing billiard clubs, tables, employees,\
+    \ and billing"
+  license:
+    name: MIT
+  title: Billiard Club Management System API
+  version: 1.0.0
+servers:
+- description: Production Server
+  url: https://api.billardmanagement.com/v1
+- description: Development Server
+  url: http://localhost:3000/v1
+security:
+- bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_auth_login_post_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          description: Login successful
+        "401":
+          description: Invalid credentials
+        "400":
+          description: Bad request
+      summary: Login and receive JWT tokens
+      tags:
+      - Authentication
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Authentication
+  /auth/refresh:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_auth_refresh_post_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          description: New tokens issued
+        "401":
+          description: Invalid refresh token
+      summary: Refresh access token
+      tags:
+      - Authentication
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Authentication
+  /customers:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: Customer details
+        "401":
+          description: Unauthorized
+      summary: Get current customer details
+      tags:
+      - Customers
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Customers
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerSignup'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: Customer registered successfully
+        "400":
+          description: Invalid input
+        "409":
+          description: Email already exists
+      security: []
+      summary: Register new customer (shop owner)
+      tags:
+      - Customers
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Customers
+  /customers/{customerId}:
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: customerId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: Customer updated
+        "404":
+          description: Customer not found
+      summary: Update customer information
+      tags:
+      - Customers
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Customers
+  /clubs:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Club'
+                type: array
+          description: List of clubs
+      summary: List all clubs for current customer
+      tags:
+      - Clubs
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Clubs
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClubCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+          description: Club created successfully
+        "400":
+          description: Invalid input
+      summary: Create a new billiard club
+      tags:
+      - Clubs
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Clubs
+  /clubs/{clubId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+          description: Club details
+        "404":
+          description: Club not found
+      summary: Get club details
+      tags:
+      - Clubs
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Clubs
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClubUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+          description: Club updated
+      summary: Update club information
+      tags:
+      - Clubs
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Clubs
+  /clubs/{clubId}/tables:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Table'
+                type: array
+          description: List of tables
+      summary: List all tables in a club
+      tags:
+      - Tables
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Tables
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+          description: Table created
+      summary: Create a billiard table
+      tags:
+      - Tables
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Tables
+  /tables/{tableId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: tableId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+          description: Table details
+      summary: Get table details
+      tags:
+      - Tables
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Tables
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: tableId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+          description: Table updated
+      summary: Update table information
+      tags:
+      - Tables
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Tables
+  /clubs/{clubId}/employees:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Employee'
+                type: array
+          description: List of employees
+      summary: List all employees in a club
+      tags:
+      - Employees
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Employees
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: Employee created
+      summary: Create employee
+      tags:
+      - Employees
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Employees
+  /employees/{employeeId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: employeeId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: Employee details
+      summary: Get employee details
+      tags:
+      - Employees
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Employees
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: employeeId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: Employee updated
+      summary: Update employee information
+      tags:
+      - Employees
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Employees
+  /clubs/{clubId}/products:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Product'
+                type: array
+          description: List of products
+      summary: List all products in a club
+      tags:
+      - Products
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Products
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: Product created
+      summary: Create product
+      tags:
+      - Products
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Products
+  /products/{productId}:
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: productId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: Product updated
+      summary: Update product
+      tags:
+      - Products
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Products
+  /clubs/{clubId}/promotions:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Promotion'
+                type: array
+          description: List of promotions
+      summary: List all promotions in a club
+      tags:
+      - Promotions
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Promotions
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+          description: Promotion created
+      summary: Create promotion
+      tags:
+      - Promotions
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Promotions
+  /promotions/{promotionId}:
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: promotionId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+          description: Promotion updated
+      summary: Update promotion
+      tags:
+      - Promotions
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Promotions
+  /clubs/{clubId}/bills:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+          - Paid
+          - Unpaid
+          - Cancelled
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Bill'
+                type: array
+          description: List of bills
+      summary: List bills for a club
+      tags:
+      - Bills
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Bills
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: Bill created
+      summary: Create bill
+      tags:
+      - Bills
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Bills
+  /bills/{billId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: billId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: Bill details
+      summary: Get bill details
+      tags:
+      - Bills
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Bills
+  /bills/{billId}/pay:
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: billId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentProcess'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: Bill paid
+      summary: Mark bill as paid
+      tags:
+      - Bills
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Bills
+  /bills/{billId}/details:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: billId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BillDetail'
+                type: array
+          description: List of bill details
+      summary: Get bill details
+      tags:
+      - BillDetails
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: BillDetails
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: billId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillDetailCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillDetail'
+          description: Item added to bill
+      summary: Add product to bill
+      tags:
+      - BillDetails
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: BillDetails
+  /bill-details/{detailId}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: detailId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "204":
+          description: Item removed
+      summary: Remove item from bill
+      tags:
+      - BillDetails
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: BillDetails
+  /employees/{employeeId}/shifts:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: employeeId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Shift'
+                type: array
+          description: List of shifts
+      summary: List shifts for an employee
+      tags:
+      - Shifts
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Shifts
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: employeeId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftCreate'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: Shift created
+      summary: Create employee shift
+      tags:
+      - Shifts
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Shifts
+  /shifts/{shiftId}:
+    patch:
+      parameters:
+      - explode: false
+        in: path
+        name: shiftId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftUpdate'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: Shift updated
+      summary: Update shift
+      tags:
+      - Shifts
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Shifts
+  /clubs/{clubId}/reports/revenue:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+          description: Revenue report
+      summary: Get revenue report for a club
+      tags:
+      - Reports
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Reports
+  /clubs/{clubId}/reports/table-occupancy:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OccupancyReport'
+          description: Occupancy report
+      summary: Get table occupancy report
+      tags:
+      - Reports
+      x-accepts:
+      - application/json
+      x-tags:
+      - tag: Reports
+components:
+  schemas:
+    AuthResponse:
+      example:
+        access_token: access_token
+        refresh_token: refresh_token
+        user_role: ADMIN
+        customer_id: 0
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        user_role:
+          enum:
+          - ADMIN
+          - CUSTOMER
+          - EMPLOYEE
+          type: string
+        customer_id:
+          type: integer
+      type: object
+    CustomerSignup:
+      example:
+        password: password
+        address: address
+        phone_number: phone_number
+        customer_name: customer_name
+        email: email
+      properties:
+        customer_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          format: email
+          type: string
+        password:
+          format: password
+          type: string
+        address:
+          type: string
+      required:
+      - address
+      - customer_name
+      - email
+      - password
+      - phone_number
+      type: object
+    Customer:
+      example:
+        address: address
+        is_active: true
+        expiry_date: 2000-01-23
+        phone_number: phone_number
+        customer_name: customer_name
+        date_joined: 2000-01-23T04:56:07.000+00:00
+        customer_id: 0
+        email: email
+      properties:
+        customer_id:
+          type: integer
+        customer_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        date_joined:
+          format: date-time
+          type: string
+        expiry_date:
+          format: date
+          type: string
+        is_active:
+          type: boolean
+      type: object
+    CustomerUpdate:
+      example:
+        address: address
+        phone_number: phone_number
+        customer_name: customer_name
+      properties:
+        customer_name:
+          type: string
+        phone_number:
+          type: string
+        address:
+          type: string
+      type: object
+    ClubCreate:
+      example:
+        address: address
+        phone_number: phone_number
+        club_name: club_name
+      properties:
+        club_name:
+          type: string
+        address:
+          type: string
+        phone_number:
+          type: string
+      required:
+      - address
+      - club_name
+      - phone_number
+      type: object
+    ClubUpdate:
+      example:
+        address: address
+        phone_number: phone_number
+        club_name: club_name
+      properties:
+        club_name:
+          type: string
+        address:
+          type: string
+        phone_number:
+          type: string
+      type: object
+    Club:
+      example:
+        address: address
+        club_id: 0
+        phone_number: phone_number
+        customer_id: 6
+        club_name: club_name
+      properties:
+        club_id:
+          type: integer
+        customer_id:
+          type: integer
+        club_name:
+          type: string
+        address:
+          type: string
+        phone_number:
+          type: string
+      type: object
+    TableCreate:
+      example:
+        hourly_rate: 0.8008281904610115
+        location: location
+        table_name: table_name
+        table_type: Carom
+      properties:
+        table_name:
+          type: string
+        table_type:
+          enum:
+          - Carom
+          - Phăng
+          - Lỗ
+          type: string
+        hourly_rate:
+          format: decimal
+          type: number
+        location:
+          type: string
+      required:
+      - hourly_rate
+      - table_name
+      - table_type
+      type: object
+    TableUpdate:
+      example:
+        table_status: Available
+        hourly_rate: 0.8008281904610115
+        location: location
+        table_name: table_name
+        table_type: Carom
+      properties:
+        table_name:
+          type: string
+        table_type:
+          enum:
+          - Carom
+          - Phăng
+          - Lỗ
+          type: string
+        hourly_rate:
+          format: decimal
+          type: number
+        table_status:
+          enum:
+          - Available
+          - InUse
+          - Maintenance
+          type: string
+        location:
+          type: string
+      type: object
+    Table:
+      example:
+        table_status: table_status
+        hourly_rate: 1.4658129805029452
+        club_id: 6
+        location: location
+        table_id: 0
+        table_name: table_name
+        table_type: table_type
+      properties:
+        table_id:
+          type: integer
+        club_id:
+          type: integer
+        table_name:
+          type: string
+        table_type:
+          type: string
+        hourly_rate:
+          format: decimal
+          type: number
+        table_status:
+          type: string
+        location:
+          type: string
+      type: object
+    EmployeeCreate:
+      example:
+        employee_type: FullTime
+        bank_number: bank_number
+        address: address
+        hourly_rate: 6.027456183070403
+        bank_name: bank_name
+        employee_name: employee_name
+        phone_number: phone_number
+        salary: 0.8008281904610115
+        email: email
+      properties:
+        employee_name:
+          type: string
+        employee_type:
+          enum:
+          - FullTime
+          - PartTime
+          type: string
+        phone_number:
+          type: string
+        email:
+          format: email
+          type: string
+        address:
+          type: string
+        salary:
+          format: decimal
+          type: number
+        hourly_rate:
+          format: decimal
+          type: number
+        bank_number:
+          type: string
+        bank_name:
+          type: string
+      required:
+      - email
+      - employee_name
+      - employee_type
+      - phone_number
+      type: object
+    EmployeeUpdate:
+      example:
+        is_active: true
+        hourly_rate: 6.027456183070403
+        employee_name: employee_name
+        phone_number: phone_number
+        salary: 0.8008281904610115
+        email: email
+      properties:
+        employee_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        salary:
+          format: decimal
+          type: number
+        hourly_rate:
+          format: decimal
+          type: number
+        is_active:
+          type: boolean
+      type: object
+    Employee:
+      example:
+        employee_type: employee_type
+        address: address
+        is_active: true
+        hourly_rate: 5.962133916683182
+        employee_id: 0
+        club_id: 6
+        employee_name: employee_name
+        phone_number: phone_number
+        salary: 1.4658129805029452
+        date_hired: 2000-01-23T04:56:07.000+00:00
+        email: email
+      properties:
+        employee_id:
+          type: integer
+        club_id:
+          type: integer
+        employee_name:
+          type: string
+        employee_type:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        salary:
+          format: decimal
+          type: number
+        hourly_rate:
+          format: decimal
+          type: number
+        date_hired:
+          format: date-time
+          type: string
+        is_active:
+          type: boolean
+      type: object
+    ProductCreate:
+      example:
+        price: 0.8008281904610115
+        category: category
+        product_description: product_description
+        product_name: product_name
+        cost_price: 6.027456183070403
+      properties:
+        product_name:
+          type: string
+        price:
+          format: decimal
+          type: number
+        cost_price:
+          format: decimal
+          type: number
+        category:
+          type: string
+        product_description:
+          type: string
+      required:
+      - category
+      - price
+      - product_name
+      type: object
+    ProductUpdate:
+      example:
+        is_active: true
+        price: 0.8008281904610115
+        category: category
+        product_name: product_name
+        cost_price: 6.027456183070403
+      properties:
+        product_name:
+          type: string
+        price:
+          format: decimal
+          type: number
+        cost_price:
+          format: decimal
+          type: number
+        category:
+          type: string
+        is_active:
+          type: boolean
+      type: object
+    Product:
+      example:
+        is_active: true
+        price: 1.4658129805029452
+        product_id: 0
+        club_id: 6
+        created_date: 2000-01-23T04:56:07.000+00:00
+        category: category
+        product_name: product_name
+        cost_price: 5.962133916683182
+      properties:
+        product_id:
+          type: integer
+        club_id:
+          type: integer
+        product_name:
+          type: string
+        price:
+          format: decimal
+          type: number
+        cost_price:
+          format: decimal
+          type: number
+        category:
+          type: string
+        is_active:
+          type: boolean
+        created_date:
+          format: date-time
+          type: string
+      type: object
+    PromotionCreate:
+      example:
+        end_date: 2000-01-23T04:56:07.000+00:00
+        usage_limit: 5
+        promotion_name: promotion_name
+        promotion_code: promotion_code
+        min_amount: 1.4658129805029452
+        min_play_time: 6.027456183070403
+        discount_value: 0.8008281904610115
+        max_discount: 5.962133916683182
+        description: description
+        discount_type: Percentage
+        start_date: 2000-01-23T04:56:07.000+00:00
+      properties:
+        promotion_name:
+          type: string
+        promotion_code:
+          type: string
+        discount_type:
+          enum:
+          - Percentage
+          - FixedAmount
+          type: string
+        discount_value:
+          format: decimal
+          type: number
+        start_date:
+          format: date-time
+          type: string
+        end_date:
+          format: date-time
+          type: string
+        min_play_time:
+          format: decimal
+          type: number
+        min_amount:
+          format: decimal
+          type: number
+        max_discount:
+          format: decimal
+          type: number
+        usage_limit:
+          type: integer
+        description:
+          type: string
+      required:
+      - discount_type
+      - discount_value
+      - promotion_code
+      - promotion_name
+      type: object
+    PromotionUpdate:
+      example:
+        promotion_name: promotion_name
+        is_active: true
+        discount_value: 0.8008281904610115
+        discount_type: Percentage
+      properties:
+        promotion_name:
+          type: string
+        discount_type:
+          enum:
+          - Percentage
+          - FixedAmount
+          type: string
+        discount_value:
+          format: decimal
+          type: number
+        is_active:
+          type: boolean
+      type: object
+    Promotion:
+      example:
+        end_date: 2000-01-23T04:56:07.000+00:00
+        promotion_name: promotion_name
+        is_active: true
+        promotion_code: promotion_code
+        club_id: 6
+        discount_value: 1.4658129805029452
+        promotion_id: 0
+        discount_type: discount_type
+        start_date: 2000-01-23T04:56:07.000+00:00
+      properties:
+        promotion_id:
+          type: integer
+        club_id:
+          type: integer
+        promotion_name:
+          type: string
+        promotion_code:
+          type: string
+        discount_type:
+          type: string
+        discount_value:
+          format: decimal
+          type: number
+        start_date:
+          format: date-time
+          type: string
+        end_date:
+          format: date-time
+          type: string
+        is_active:
+          type: boolean
+      type: object
+    BillCreate:
+      example:
+        start_time: 2000-01-23T04:56:07.000+00:00
+        employee_id: 6
+        promotion_id: 1
+        table_id: 0
+      properties:
+        table_id:
+          type: integer
+        employee_id:
+          type: integer
+        start_time:
+          format: date-time
+          type: string
+        promotion_id:
+          type: integer
+      required:
+      - employee_id
+      - table_id
+      type: object
+    Bill:
+      example:
+        bill_id: 0
+        total_table_cost: 2.3021358869347655
+        discount_amount: 9.301444243932576
+        total_product_cost: 7.061401241503109
+        end_time: 2000-01-23T04:56:07.000+00:00
+        table_id: 1
+        total_hours: 5.637376656633329
+        bill_status: Paid
+        start_time: 2000-01-23T04:56:07.000+00:00
+        club_id: 6
+        employee_id: 5
+        final_amount: 3.616076749251911
+        created_date: 2000-01-23T04:56:07.000+00:00
+        payment_method: payment_method
+      properties:
+        bill_id:
+          type: integer
+        club_id:
+          type: integer
+        table_id:
+          type: integer
+        employee_id:
+          type: integer
+        start_time:
+          format: date-time
+          type: string
+        end_time:
+          format: date-time
+          type: string
+        total_hours:
+          format: decimal
+          type: number
+        total_table_cost:
+          format: decimal
+          type: number
+        total_product_cost:
+          format: decimal
+          type: number
+        discount_amount:
+          format: decimal
+          type: number
+        final_amount:
+          format: decimal
+          type: number
+        payment_method:
+          type: string
+        bill_status:
+          enum:
+          - Paid
+          - Unpaid
+          - Cancelled
+          type: string
+        created_date:
+          format: date-time
+          type: string
+      type: object
+    PaymentProcess:
+      example:
+        amount: 0.8008281904610115
+        payment_method: Cash
+      properties:
+        payment_method:
+          enum:
+          - Cash
+          - Card
+          - Transfer
+          type: string
+        amount:
+          format: decimal
+          type: number
+      required:
+      - amount
+      - payment_method
+      type: object
+    BillDetailCreate:
+      example:
+        quantity: 6
+        product_id: 0
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+      required:
+      - product_id
+      - quantity
+      type: object
+    BillDetail:
+      example:
+        bill_id: 6
+        quantity: 5
+        product_id: 1
+        sub_total: 2.3021358869347655
+        bill_detail_id: 0
+        unit_price: 5.637376656633329
+      properties:
+        bill_detail_id:
+          type: integer
+        bill_id:
+          type: integer
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+        unit_price:
+          format: decimal
+          type: number
+        sub_total:
+          format: decimal
+          type: number
+      type: object
+    ShiftCreate:
+      example:
+        start_time: start_time
+        shift_type: Sáng
+        shift_date: 2000-01-23
+        end_time: end_time
+      properties:
+        shift_date:
+          format: date
+          type: string
+        start_time:
+          format: time
+          type: string
+        end_time:
+          format: time
+          type: string
+        shift_type:
+          enum:
+          - Sáng
+          - Chiều
+          - Tối
+          - Đêm
+          type: string
+      required:
+      - shift_date
+      - shift_type
+      type: object
+    ShiftUpdate:
+      example:
+        start_time: start_time
+        end_time: end_time
+        actual_end_time: 2000-01-23T04:56:07.000+00:00
+        actual_start_time: 2000-01-23T04:56:07.000+00:00
+        status: Scheduled
+      properties:
+        start_time:
+          format: time
+          type: string
+        end_time:
+          format: time
+          type: string
+        actual_start_time:
+          format: date-time
+          type: string
+        actual_end_time:
+          format: date-time
+          type: string
+        status:
+          enum:
+          - Scheduled
+          - InProgress
+          - Completed
+          - Cancelled
+          type: string
+      type: object
+    Shift:
+      example:
+        start_time: start_time
+        shift_type: shift_type
+        shift_date: 2000-01-23
+        shift_id: 0
+        employee_id: 6
+        end_time: end_time
+        hours_worked: 1.4658129805029452
+        status: status
+      properties:
+        shift_id:
+          type: integer
+        employee_id:
+          type: integer
+        shift_date:
+          format: date
+          type: string
+        start_time:
+          format: time
+          type: string
+        end_time:
+          format: time
+          type: string
+        hours_worked:
+          format: decimal
+          type: number
+        shift_type:
+          type: string
+        status:
+          type: string
+      type: object
+    RevenueReport:
+      example:
+        total_discount: 5.962133916683182
+        total_revenue: 0.8008281904610115
+        period_from: 2000-01-23T04:56:07.000+00:00
+        period_to: 2000-01-23T04:56:07.000+00:00
+        table_revenue: 6.027456183070403
+        product_revenue: 1.4658129805029452
+      properties:
+        total_revenue:
+          format: decimal
+          type: number
+        table_revenue:
+          format: decimal
+          type: number
+        product_revenue:
+          format: decimal
+          type: number
+        total_discount:
+          format: decimal
+          type: number
+        period_from:
+          format: date-time
+          type: string
+        period_to:
+          format: date-time
+          type: string
+      type: object
+    OccupancyReport:
+      example:
+        occupancy_rate: 1.4658129805029452
+        by_table_type:
+        - occupancy_rate: 5.962133916683182
+          table_type: table_type
+        - occupancy_rate: 5.962133916683182
+          table_type: table_type
+        total_hours_available: 0.8008281904610115
+        total_hours_used: 6.027456183070403
+      properties:
+        total_hours_available:
+          format: decimal
+          type: number
+        total_hours_used:
+          format: decimal
+          type: number
+        occupancy_rate:
+          format: percentage
+          type: number
+        by_table_type:
+          items:
+            $ref: '#/components/schemas/OccupancyReport_by_table_type_inner'
+          type: array
+      type: object
+    _auth_login_post_request:
+      properties:
+        email:
+          format: email
+          type: string
+        password:
+          format: password
+          type: string
+      required:
+      - email
+      - password
+      type: object
+    _auth_refresh_post_request:
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+      type: object
+    OccupancyReport_by_table_type_inner:
+      example:
+        occupancy_rate: 5.962133916683182
+        table_type: table_type
+      properties:
+        table_type:
+          type: string
+        occupancy_rate:
+          format: percentage
+          type: number
+      type: object
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http

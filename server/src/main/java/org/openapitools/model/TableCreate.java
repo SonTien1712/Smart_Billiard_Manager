@@ -1,0 +1,207 @@
+package org.openapitools.model;
+
+import java.net.URI;
+import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.math.BigDecimal;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
+import javax.validation.Valid;
+import javax.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import javax.annotation.Generated;
+
+/**
+ * TableCreate
+ */
+
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-14T14:32:21.168513498+07:00[Asia/Bangkok]", comments = "Generator version: 7.7.0")
+public class TableCreate {
+
+  private String tableName;
+
+  /**
+   * Gets or Sets tableType
+   */
+  public enum TableTypeEnum {
+    CAROM("Carom"),
+    
+    PH_NG("Phăng"),
+    
+    L_("Lỗ");
+
+    private String value;
+
+    TableTypeEnum(String value) {
+      this.value = value;
+    }
+
+    @JsonValue
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static TableTypeEnum fromValue(String value) {
+      for (TableTypeEnum b : TableTypeEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+  }
+
+  private TableTypeEnum tableType;
+
+  private BigDecimal hourlyRate;
+
+  private String location;
+
+  public TableCreate() {
+    super();
+  }
+
+  /**
+   * Constructor with only required parameters
+   */
+  public TableCreate(String tableName, TableTypeEnum tableType, BigDecimal hourlyRate) {
+    this.tableName = tableName;
+    this.tableType = tableType;
+    this.hourlyRate = hourlyRate;
+  }
+
+  public TableCreate tableName(String tableName) {
+    this.tableName = tableName;
+    return this;
+  }
+
+  /**
+   * Get tableName
+   * @return tableName
+   */
+  @NotNull 
+  @Schema(name = "table_name", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("table_name")
+  public String getTableName() {
+    return tableName;
+  }
+
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
+  }
+
+  public TableCreate tableType(TableTypeEnum tableType) {
+    this.tableType = tableType;
+    return this;
+  }
+
+  /**
+   * Get tableType
+   * @return tableType
+   */
+  @NotNull 
+  @Schema(name = "table_type", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("table_type")
+  public TableTypeEnum getTableType() {
+    return tableType;
+  }
+
+  public void setTableType(TableTypeEnum tableType) {
+    this.tableType = tableType;
+  }
+
+  public TableCreate hourlyRate(BigDecimal hourlyRate) {
+    this.hourlyRate = hourlyRate;
+    return this;
+  }
+
+  /**
+   * Get hourlyRate
+   * @return hourlyRate
+   */
+  @NotNull @Valid 
+  @Schema(name = "hourly_rate", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("hourly_rate")
+  public BigDecimal getHourlyRate() {
+    return hourlyRate;
+  }
+
+  public void setHourlyRate(BigDecimal hourlyRate) {
+    this.hourlyRate = hourlyRate;
+  }
+
+  public TableCreate location(String location) {
+    this.location = location;
+    return this;
+  }
+
+  /**
+   * Get location
+   * @return location
+   */
+  
+  @Schema(name = "location", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("location")
+  public String getLocation() {
+    return location;
+  }
+
+  public void setLocation(String location) {
+    this.location = location;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    TableCreate tableCreate = (TableCreate) o;
+    return Objects.equals(this.tableName, tableCreate.tableName) &&
+        Objects.equals(this.tableType, tableCreate.tableType) &&
+        Objects.equals(this.hourlyRate, tableCreate.hourlyRate) &&
+        Objects.equals(this.location, tableCreate.location);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(tableName, tableType, hourlyRate, location);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class TableCreate {\n");
+    sb.append("    tableName: ").append(toIndentedString(tableName)).append("\n");
+    sb.append("    tableType: ").append(toIndentedString(tableType)).append("\n");
+    sb.append("    hourlyRate: ").append(toIndentedString(hourlyRate)).append("\n");
+    sb.append("    location: ").append(toIndentedString(location)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces
+   * (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace("\n", "\n    ");
+  }
+}
+

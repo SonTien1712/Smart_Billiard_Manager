@@ -1,394 +1,856 @@
-
 openapi: 3.0.3
 info:
-  title: Billiard POS Platform API
-  version: 0.1.0
+  title: Billiard Club Management System API
+  description: Comprehensive API for managing billiard clubs, tables, employees, and billing
+  version: 1.0.0
+  contact:
+    name: Support Team
+    email: support@billardmanagement.com
+  license:
+    name: MIT
+
 servers:
-  - url: https://api.example.com
+  - url: https://api.billardmanagement.com/v1
+    description: Production Server
+  - url: http://localhost:3000/v1
+    description: Development Server
+
 security:
   - bearerAuth: []
+
 paths:
+  # ==================== AUTHENTICATION ====================
   /auth/login:
     post:
       summary: Login and receive JWT tokens
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
-                email: { type: string, format: email }
-                password: { type: string }
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Login successful
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
-  /owners/signup:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+        '400':
+          description: Bad request
+
+  /auth/refresh:
     post:
-      summary: Owner self sign-up and create FREE shop
+      summary: Refresh access token
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OwnerSignup"
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
       responses:
-        "201":
-          description: Created
+        '200':
+          description: New tokens issued
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Shop"
-  /admin/shops:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid refresh token
+
+  # ==================== CUSTOMERS (SHOP OWNERS) ====================
+  /customers:
     post:
-      summary: Create shop (Admin)
+      summary: Register new customer (shop owner)
+      tags:
+        - Customers
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerSignup'
       responses:
-        "201":
-          description: Created
+        '201':
+          description: Customer registered successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Shop"
-  /admin/shops/{shopId}:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid input
+        '409':
+          description: Email already exists
+
+    get:
+      summary: Get current customer details
+      tags:
+        - Customers
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          description: Unauthorized
+
+  /customers/{customerId}:
     patch:
-      summary: Update plan/status/quota for a shop (Admin)
+      summary: Update customer information
+      tags:
+        - Customers
       parameters:
         - in: path
-          name: shopId
+          name: customerId
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminShopPatch"
+              $ref: '#/components/schemas/CustomerUpdate'
       responses:
-        "200": { description: Updated }
-  /shops/{shopId}/staff:
+        '200':
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '404':
+          description: Customer not found
+
+  # ==================== BILLIARD CLUBS ====================
+  /clubs:
     post:
-      summary: Invite/create staff under a shop (Owner)
-      parameters:
-        - in: path
-          name: shopId
-          required: true
-          schema: { type: string, format: uuid }
+      summary: Create a new billiard club
+      tags:
+        - Clubs
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateStaff"
+              $ref: '#/components/schemas/ClubCreate'
       responses:
-        "201": { description: Created }
-  /shops/{shopId}/usage:
-    get:
-      summary: View usage & token consumption (Owner/Admin)
-      parameters:
-        - in: path
-          name: shopId
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        "200":
-          description: OK
+        '201':
+          description: Club created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UsageSnapshot"
-  /shops/{shopId}/upgrade:
-    post:
-      summary: Start upgrade to Premium (Owner)
-      parameters:
-        - in: path
-          name: shopId
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        "200":
-          description: Payment session created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaymentSession"
-  /billing/webhook:
-    post:
-      summary: Payment provider webhook (Admin scope)
-      responses:
-        "200": { description: OK }
-  /tables:
+                $ref: '#/components/schemas/Club'
+        '400':
+          description: Invalid input
+
     get:
-      summary: List tables by shop
-      parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
+      summary: List all clubs for current customer
+      tags:
+        - Clubs
       responses:
-        "200":
-          description: OK
+        '200':
+          description: List of clubs
           content:
             application/json:
               schema:
                 type: array
-                items: { $ref: "#/components/schemas/Table" }
-    post:
-      summary: Create table (Owner)
+                items:
+                  $ref: '#/components/schemas/Club'
+
+  /clubs/{clubId}:
+    get:
+      summary: Get club details
+      tags:
+        - Clubs
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Club details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+        '404':
+          description: Club not found
+
+    patch:
+      summary: Update club information
+      tags:
+        - Clubs
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Table" }
+            schema:
+              $ref: '#/components/schemas/ClubUpdate'
       responses:
-        "201": { description: Created }
+        '200':
+          description: Club updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+
+  # ==================== BILLIARD TABLES ====================
+  /clubs/{clubId}/tables:
+    post:
+      summary: Create a billiard table
+      tags:
+        - Tables
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableCreate'
+      responses:
+        '201':
+          description: Table created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+
+    get:
+      summary: List all tables in a club
+      tags:
+        - Tables
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Table'
+
   /tables/{tableId}:
-    patch:
-      summary: Update table (Owner)
+    get:
+      summary: Get table details
+      tags:
+        - Tables
       parameters:
         - in: path
           name: tableId
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: integer
       responses:
-        "200": { description: Updated }
-  /sessions:
-    post:
-      summary: Open session (POS)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/OpenSession" }
-      responses:
-        "201":
-          description: Created
+        '200':
+          description: Table details
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Session" }
-  /sessions/{sessionId}:
+              schema:
+                $ref: '#/components/schemas/Table'
+
     patch:
-      summary: Pause/Resume/Transfer/Close session (POS)
+      summary: Update table information
+      tags:
+        - Tables
       parameters:
         - in: path
-          name: sessionId
+          name: tableId
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                op: { type: string, enum: [pause, resume, transfer, close] }
-                to_table_id: { type: string, format: uuid }
+              $ref: '#/components/schemas/TableUpdate'
       responses:
-        "200": { description: Updated }
-  /pricing/quote:
-    get:
-      summary: Get price quote for a time instant
-      parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
-        - in: query
-          name: tableType
-          schema: { type: string }
-        - in: query
-          name: at
-          schema: { type: string, format: date-time }
-      responses:
-        "200":
-          description: OK
+        '200':
+          description: Table updated
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  unit_price: { type: number }
-                  rounding_block: { type: integer }
-  /bills:
+                $ref: '#/components/schemas/Table'
+
+  # ==================== EMPLOYEES ====================
+  /clubs/{clubId}/employees:
+    post:
+      summary: Create employee
+      tags:
+        - Employees
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+      responses:
+        '201':
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+    get:
+      summary: List all employees in a club
+      tags:
+        - Employees
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of employees
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+
+  /employees/{employeeId}:
+    get:
+      summary: Get employee details
+      tags:
+        - Employees
+      parameters:
+        - in: path
+          name: employeeId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Employee details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+    patch:
+      summary: Update employee information
+      tags:
+        - Employees
+      parameters:
+        - in: path
+          name: employeeId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+      responses:
+        '200':
+          description: Employee updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  # ==================== PRODUCTS ====================
+  /clubs/{clubId}/products:
+    post:
+      summary: Create product
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+    get:
+      summary: List all products in a club
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /products/{productId}:
+    patch:
+      summary: Update product
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  # ==================== PROMOTIONS ====================
+  /clubs/{clubId}/promotions:
+    post:
+      summary: Create promotion
+      tags:
+        - Promotions
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionCreate'
+      responses:
+        '201':
+          description: Promotion created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+
+    get:
+      summary: List all promotions in a club
+      tags:
+        - Promotions
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of promotions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Promotion'
+
+  /promotions/{promotionId}:
+    patch:
+      summary: Update promotion
+      tags:
+        - Promotions
+      parameters:
+        - in: path
+          name: promotionId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionUpdate'
+      responses:
+        '200':
+          description: Promotion updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+
+  # ==================== BILLS ====================
+  /clubs/{clubId}/bills:
     post:
       summary: Create bill
+      tags:
+        - Bills
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Bill" }
+            schema:
+              $ref: '#/components/schemas/BillCreate'
       responses:
-        "201": { description: Created }
+        '201':
+          description: Bill created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+
+    get:
+      summary: List bills for a club
+      tags:
+        - Bills
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [Paid, Unpaid, Cancelled]
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of bills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bill'
+
+  /bills/{billId}:
+    get:
+      summary: Get bill details
+      tags:
+        - Bills
+      parameters:
+        - in: path
+          name: billId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Bill details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+
   /bills/{billId}/pay:
     post:
-      summary: Pay a bill
+      summary: Mark bill as paid
+      tags:
+        - Bills
       parameters:
         - in: path
           name: billId
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                method: { type: string, enum: [cash, qr] }
-                amount: { type: number }
+              $ref: '#/components/schemas/PaymentProcess'
       responses:
-        "200": { description: Paid }
-  /bills/{billId}/split:
+        '200':
+          description: Bill paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+
+  # ==================== BILL DETAILS ====================
+  /bills/{billId}/details:
     post:
-      summary: Split a bill
+      summary: Add product to bill
+      tags:
+        - BillDetails
       parameters:
         - in: path
           name: billId
           required: true
-          schema: { type: string, format: uuid }
-      responses:
-        "200": { description: Split OK }
-  /bills/{billId}/print:
-    post:
-      summary: Print bill via ESC/POS
-      parameters:
-        - in: path
-          name: billId
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        "200": { description: Printed }
-  /payments/qr:
-    post:
-      summary: Create QR payment intent
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreatePaymentIntent"
+              $ref: '#/components/schemas/BillDetailCreate'
       responses:
-        "201":
-          description: Created
+        '201':
+          description: Item added to bill
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentIntent"
-  /payments/webhook:
-    post:
-      summary: Payment provider callback
-      responses:
-        "200": { description: OK }
-  /products:
+                $ref: '#/components/schemas/BillDetail'
+
     get:
-      summary: List products by shop
+      summary: Get bill details
+      tags:
+        - BillDetails
       parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
+        - in: path
+          name: billId
+          required: true
+          schema:
+            type: integer
       responses:
-        "200":
-          description: OK
+        '200':
+          description: List of bill details
           content:
             application/json:
               schema:
                 type: array
-                items: { $ref: "#/components/schemas/Product" }
+                items:
+                  $ref: '#/components/schemas/BillDetail'
+
+  /bill-details/{detailId}:
+    delete:
+      summary: Remove item from bill
+      tags:
+        - BillDetails
+      parameters:
+        - in: path
+          name: detailId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Item removed
+
+  # ==================== EMPLOYEE SHIFTS ====================
+  /employees/{employeeId}/shifts:
     post:
-      summary: Create product (Owner)
+      summary: Create employee shift
+      tags:
+        - Shifts
+      parameters:
+        - in: path
+          name: employeeId
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Product" }
+            schema:
+              $ref: '#/components/schemas/ShiftCreate'
       responses:
-        "201": { description: Created }
-  /inventory/txns:
-    post:
-      summary: Create inventory transaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/InventoryTxn" }
-      responses:
-        "201": { description: Created }
-  /reports/revenue:
+        '201':
+          description: Shift created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+
     get:
-      summary: Revenue report
+      summary: List shifts for an employee
+      tags:
+        - Shifts
       parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
+        - in: path
+          name: employeeId
+          required: true
+          schema:
+            type: integer
         - in: query
           name: from
-          schema: { type: string, format: date-time }
+          schema:
+            type: string
+            format: date
         - in: query
           name: to
-          schema: { type: string, format: date-time }
+          schema:
+            type: string
+            format: date
       responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RevenueReport"
-  /reports/occupancy:
-    get:
-      summary: Occupancy report
-      parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
-        - in: query
-          name: from
-          schema: { type: string, format: date-time }
-        - in: query
-          name: to
-          schema: { type: string, format: date-time }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OccupancyReport"
-  /reports/stockvalue:
-    get:
-      summary: Stock value report
-      parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StockValueReport"
-  /admin/audit:
-    get:
-      summary: Audit logs (Admin)
-      parameters:
-        - in: query
-          name: shop_id
-          schema: { type: string, format: uuid }
-        - in: query
-          name: actor
-          schema: { type: string, format: uuid }
-        - in: query
-          name: action
-          schema: { type: string }
-      responses:
-        "200":
-          description: OK
+        '200':
+          description: List of shifts
           content:
             application/json:
               schema:
                 type: array
-                items: { $ref: "#/components/schemas/AuditLog" }
+                items:
+                  $ref: '#/components/schemas/Shift'
+
+  /shifts/{shiftId}:
+    patch:
+      summary: Update shift
+      tags:
+        - Shifts
+      parameters:
+        - in: path
+          name: shiftId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftUpdate'
+      responses:
+        '200':
+          description: Shift updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+
+  # ==================== REPORTS ====================
+  /clubs/{clubId}/reports/revenue:
+    get:
+      summary: Get revenue report for a club
+      tags:
+        - Reports
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Revenue report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+
+  /clubs/{clubId}/reports/table-occupancy:
+    get:
+      summary: Get table occupancy report
+      tags:
+        - Reports
+      parameters:
+        - in: path
+          name: clubId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Occupancy report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OccupancyReport'
 
 components:
   securitySchemes:
@@ -396,176 +858,583 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
   schemas:
     AuthResponse:
       type: object
       properties:
-        access_token: { type: string }
-        refresh_token: { type: string }
-        role: { type: string, enum: [ADMIN, OWNER, STAFF] }
-        shop_id: { type: string, nullable: true }
-    OwnerSignup:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        user_role:
+          type: string
+          enum: [ADMIN, CUSTOMER, EMPLOYEE]
+        customer_id:
+          type: integer
+
+    CustomerSignup:
       type: object
-      required: [email, password, shop_name]
+      required:
+        - customer_name
+        - phone_number
+        - email
+        - password
+        - address
       properties:
-        email: { type: string, format: email }
-        password: { type: string }
-        shop_name: { type: string }
-    AdminShopPatch:
+        customer_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        address:
+          type: string
+
+    Customer:
       type: object
       properties:
-        status: { type: string, enum: [active, locked, archived] }
-        plan: { type: string, enum: [FREE, PREMIUM, SUSPENDED] }
-        quota_json: { type: object, additionalProperties: true }
-    CreateStaff:
+        customer_id:
+          type: integer
+        customer_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        date_joined:
+          type: string
+          format: date-time
+        expiry_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+
+    CustomerUpdate:
       type: object
-      required: [email]
       properties:
-        email: { type: string, format: email }
-        display_name: { type: string }
-    Shop:
+        customer_name:
+          type: string
+        phone_number:
+          type: string
+        address:
+          type: string
+
+    ClubCreate:
+      type: object
+      required:
+        - club_name
+        - address
+        - phone_number
+      properties:
+        club_name:
+          type: string
+        address:
+          type: string
+        phone_number:
+          type: string
+
+    ClubUpdate:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        name: { type: string }
-        status: { type: string }
-        plan: { type: string }
-        quota_json: { type: object }
+        club_name:
+          type: string
+        address:
+          type: string
+        phone_number:
+          type: string
+
+    Club:
+      type: object
+      properties:
+        club_id:
+          type: integer
+        customer_id:
+          type: integer
+        club_name:
+          type: string
+        address:
+          type: string
+        phone_number:
+          type: string
+
+    TableCreate:
+      type: object
+      required:
+        - table_name
+        - table_type
+        - hourly_rate
+      properties:
+        table_name:
+          type: string
+        table_type:
+          type: string
+          enum: [Carom, Phăng, Lỗ]
+        hourly_rate:
+          type: number
+          format: decimal
+        location:
+          type: string
+
+    TableUpdate:
+      type: object
+      properties:
+        table_name:
+          type: string
+        table_type:
+          type: string
+          enum: [Carom, Phăng, Lỗ]
+        hourly_rate:
+          type: number
+          format: decimal
+        table_status:
+          type: string
+          enum: [Available, InUse, Maintenance]
+        location:
+          type: string
+
     Table:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        shop_id: { type: string, format: uuid }
-        code: { type: string }
-        type: { type: string, enum: [POOL, SNOOKER, CAROM] }
-        area: { type: string }
-        status: { type: string, enum: [IDLE, BUSY, PAUSED, CLEANING] }
-    OpenSession:
+        table_id:
+          type: integer
+        club_id:
+          type: integer
+        table_name:
+          type: string
+        table_type:
+          type: string
+        hourly_rate:
+          type: number
+          format: decimal
+        table_status:
+          type: string
+        location:
+          type: string
+
+    EmployeeCreate:
       type: object
-      required: [shop_id, table_id]
+      required:
+        - employee_name
+        - employee_type
+        - phone_number
+        - email
       properties:
-        shop_id: { type: string, format: uuid }
-        table_id: { type: string, format: uuid }
-    Session:
+        employee_name:
+          type: string
+        employee_type:
+          type: string
+          enum: [FullTime, PartTime]
+        phone_number:
+          type: string
+        email:
+          type: string
+          format: email
+        address:
+          type: string
+        salary:
+          type: number
+          format: decimal
+        hourly_rate:
+          type: number
+          format: decimal
+        bank_number:
+          type: string
+        bank_name:
+          type: string
+
+    EmployeeUpdate:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        shop_id: { type: string, format: uuid }
-        table_id: { type: string, format: uuid }
-        start_at: { type: string, format: date-time }
-        pause_total_s: { type: integer }
-        end_at: { type: string, format: date-time, nullable: true }
-        computed_fee: { type: number }
-        state: { type: string, enum: [OPEN, PAUSED, CLOSED] }
-    Bill:
+        employee_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        salary:
+          type: number
+          format: decimal
+        hourly_rate:
+          type: number
+          format: decimal
+        is_active:
+          type: boolean
+
+    Employee:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        shop_id: { type: string, format: uuid }
-        code: { type: string }
-        session_total: { type: number }
-        item_total: { type: number }
-        discount: { type: number }
-        payments_json: { type: object }
-        status: { type: string, enum: [OPEN, PAID, VOID] }
+        employee_id:
+          type: integer
+        club_id:
+          type: integer
+        employee_name:
+          type: string
+        employee_type:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        salary:
+          type: number
+          format: decimal
+        hourly_rate:
+          type: number
+          format: decimal
+        date_hired:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+
+    ProductCreate:
+      type: object
+      required:
+        - product_name
+        - price
+        - category
+      properties:
+        product_name:
+          type: string
+        price:
+          type: number
+          format: decimal
+        cost_price:
+          type: number
+          format: decimal
+        category:
+          type: string
+        product_description:
+          type: string
+
+    ProductUpdate:
+      type: object
+      properties:
+        product_name:
+          type: string
+        price:
+          type: number
+          format: decimal
+        cost_price:
+          type: number
+          format: decimal
+        category:
+          type: string
+        is_active:
+          type: boolean
+
     Product:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        shop_id: { type: string, format: uuid }
-        sku: { type: string }
-        name: { type: string }
-        category: { type: string }
-        uom: { type: string }
-        price: { type: number }
-        cost: { type: number }
-        stock_qty: { type: number }
-        min_stock: { type: number }
-        tax_rate: { type: number }
-        active: { type: boolean }
-    InventoryTxn:
+        product_id:
+          type: integer
+        club_id:
+          type: integer
+        product_name:
+          type: string
+        price:
+          type: number
+          format: decimal
+        cost_price:
+          type: number
+          format: decimal
+        category:
+          type: string
+        is_active:
+          type: boolean
+        created_date:
+          type: string
+          format: date-time
+
+    PromotionCreate:
+      type: object
+      required:
+        - promotion_name
+        - promotion_code
+        - discount_type
+        - discount_value
+      properties:
+        promotion_name:
+          type: string
+        promotion_code:
+          type: string
+        discount_type:
+          type: string
+          enum: [Percentage, FixedAmount]
+        discount_value:
+          type: number
+          format: decimal
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        min_play_time:
+          type: number
+          format: decimal
+        min_amount:
+          type: number
+          format: decimal
+        max_discount:
+          type: number
+          format: decimal
+        usage_limit:
+          type: integer
+        description:
+          type: string
+
+    PromotionUpdate:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        shop_id: { type: string, format: uuid }
-        product_id: { type: string, format: uuid }
-        type: { type: string, enum: [IN, OUT, ADJ] }
-        qty: { type: number }
-        cost: { type: number }
-        reason: { type: string }
-        ts: { type: string, format: date-time }
-    CreatePaymentIntent:
-      type: object
-      required: [shop_id, bill_id, amount, provider]
-      properties:
-        shop_id: { type: string, format: uuid }
-        bill_id: { type: string, format: uuid }
-        amount: { type: number }
-        provider: { type: string, enum: [momo, zalopay, bankqr] }
-    PaymentIntent:
+        promotion_name:
+          type: string
+        discount_type:
+          type: string
+          enum: [Percentage, FixedAmount]
+        discount_value:
+          type: number
+          format: decimal
+        is_active:
+          type: boolean
+
+    Promotion:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        qr_payload: { type: string }
-        amount: { type: number }
-        status: { type: string, enum: [created, paid, failed] }
-    PaymentSession:
+        promotion_id:
+          type: integer
+        club_id:
+          type: integer
+        promotion_name:
+          type: string
+        promotion_code:
+          type: string
+        discount_type:
+          type: string
+        discount_value:
+          type: number
+          format: decimal
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+
+    BillCreate:
+      type: object
+      required:
+        - table_id
+        - employee_id
+      properties:
+        table_id:
+          type: integer
+        employee_id:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        promotion_id:
+          type: integer
+
+    Bill:
       type: object
       properties:
-        session_id: { type: string }
-        checkout_url: { type: string }
+        bill_id:
+          type: integer
+        club_id:
+          type: integer
+        table_id:
+          type: integer
+        employee_id:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        total_hours:
+          type: number
+          format: decimal
+        total_table_cost:
+          type: number
+          format: decimal
+        total_product_cost:
+          type: number
+          format: decimal
+        discount_amount:
+          type: number
+          format: decimal
+        final_amount:
+          type: number
+          format: decimal
+        payment_method:
+          type: string
+        bill_status:
+          type: string
+          enum: [Paid, Unpaid, Cancelled]
+        created_date:
+          type: string
+          format: date-time
+
+    PaymentProcess:
+      type: object
+      required:
+        - payment_method
+        - amount
+      properties:
+        payment_method:
+          type: string
+          enum: [Cash, Card, Transfer]
+        amount:
+          type: number
+          format: decimal
+
+    BillDetailCreate:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+
+    BillDetail:
+      type: object
+      properties:
+        bill_detail_id:
+          type: integer
+        bill_id:
+          type: integer
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+          format: decimal
+        sub_total:
+          type: number
+          format: decimal
+
+    ShiftCreate:
+      type: object
+      required:
+        - shift_date
+        - shift_type
+      properties:
+        shift_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        shift_type:
+          type: string
+          enum: [Sáng, Chiều, Tối, Đêm]
+
+    ShiftUpdate:
+      type: object
+      properties:
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        actual_start_time:
+          type: string
+          format: date-time
+        actual_end_time:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [Scheduled, InProgress, Completed, Cancelled]
+
+    Shift:
+      type: object
+      properties:
+        shift_id:
+          type: integer
+        employee_id:
+          type: integer
+        shift_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        hours_worked:
+          type: number
+          format: decimal
+        shift_type:
+          type: string
+        status:
+          type: string
+
     RevenueReport:
       type: object
       properties:
-        from: { type: string, format: date-time }
-        to: { type: string, format: date-time }
-        totals_by_day:
-          type: array
-          items:
-            type: object
-            properties:
-              day: { type: string, format: date }
-              revenue: { type: number }
+        total_revenue:
+          type: number
+          format: decimal
+        table_revenue:
+          type: number
+          format: decimal
+        product_revenue:
+          type: number
+          format: decimal
+        total_discount:
+          type: number
+          format: decimal
+        period_from:
+          type: string
+          format: date-time
+        period_to:
+          type: string
+          format: date-time
+
     OccupancyReport:
       type: object
       properties:
-        slots:
+        total_hours_available:
+          type: number
+          format: decimal
+        total_hours_used:
+          type: number
+          format: decimal
+        occupancy_rate:
+          type: number
+          format: percentage
+        by_table_type:
           type: array
           items:
             type: object
             properties:
-              slot: { type: string }
-              occupancy_pct: { type: number }
-    StockValueReport:
-      type: object
-      properties:
-        total_value: { type: number }
-        by_category:
-          type: array
-          items:
-            type: object
-            properties:
-              category: { type: string }
-              value: { type: number }
-    AuditLog:
-      type: object
-      properties:
-        id: { type: string, format: uuid }
-        actor_user_id: { type: string, format: uuid }
-        shop_id: { type: string, format: uuid, nullable: true }
-        action: { type: string }
-        entity: { type: string }
-        entity_id: { type: string, format: uuid, nullable: true }
-        meta_json: { type: object }
-        ts: { type: string, format: date-time }
-    UsageSnapshot:
-      type: object
-      properties:
-        shop_id: { type: string, format: uuid }
-        total_tokens_used: { type: integer }
-        total_sessions: { type: integer }
-        last_reset_at: { type: string, format: date-time }
-        quota_json:
-          type: object
-          additionalProperties: true
-
+              table_type:
+                type: string
+              occupancy_rate:
+                type: number
+                format: percentage
