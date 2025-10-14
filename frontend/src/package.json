@@ -1,0 +1,38 @@
+{
+  "name": "billiard-management-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Billiards Club Management System - React Frontend",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext js,jsx --fix",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\""
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.263.1",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^1.14.0",
+    "class-variance-authority": "^0.7.0",
+    "sonner": "^1.0.3",
+    "recharts": "^2.8.0",
+    "react-hook-form": "^7.45.4",
+    "@hookform/resolvers": "^3.3.1",
+    "zod": "^3.22.2",
+    "axios": "^1.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "prettier": "^3.0.0",
+    "prettier-plugin-tailwindcss": "^0.5.4",
+    "vite": "^4.4.5",
+    "@tailwindcss/vite": "^4.0.0-alpha.18"
+  }
+}
