@@ -31,6 +31,8 @@
             "@radix-ui/react-toggle-group": "^1.1.2",
             "@radix-ui/react-tooltip": "^1.1.8",
             "@tailwindcss/vite": "*",
+            "@types/react": "^19.2.2",
+            "@types/react-dom": "^19.2.2",
             "@vitejs/plugin-react": "*",
             "class-variance-authority": "^0.7.1",
             "clsx": "^2.1.1",

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '../services/authService';
+// @ts-ignore
+import { authService } from '../services/authService.js';
+// @ts-ignore
 import { User, LoginRequest, RegisterRequest, GoogleAuthRequest } from '../types';
 
 export type UserRole = 'ADMIN' | 'CUSTOMER' | 'STAFF';

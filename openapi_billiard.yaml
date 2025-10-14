@@ -558,3 +558,14 @@ components:
         entity_id: { type: string, format: uuid, nullable: true }
         meta_json: { type: object }
         ts: { type: string, format: date-time }
+    UsageSnapshot:
+      type: object
+      properties:
+        shop_id: { type: string, format: uuid }
+        total_tokens_used: { type: integer }
+        total_sessions: { type: integer }
+        last_reset_at: { type: string, format: date-time }
+        quota_json:
+          type: object
+          additionalProperties: true
+
