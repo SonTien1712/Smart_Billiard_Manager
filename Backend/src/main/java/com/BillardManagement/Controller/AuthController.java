@@ -25,16 +25,16 @@ public class AuthController {
         return authService.login(request);
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<LogoutResponse> logout(@RequestBody(required = false) LogoutRequest req) {
-        // Nếu bạn cần refreshToken => check tay
-        if (req == null || !StringUtils.hasText(req.getRefreshToken())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "refreshToken is required");
-        }
-
-        // revoke hoặc delete tuỳ bạn
-        refreshTokenService.revoke(req.getRefreshToken());
-        return ResponseEntity.ok(new LogoutResponse(true, "Logout thành công"));
-    }
+//    @PostMapping("/logout")
+//    public ResponseEntity<LogoutResponse> logout(@RequestBody(required = false) LogoutRequest req) {
+//        // Nếu bạn cần refreshToken => check tay
+//        if (req == null || !StringUtils.hasText(req.getRefreshToken())) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "refreshToken is required");
+//        }
+//
+//        // revoke hoặc delete tuỳ bạn
+//        refreshTokenService.revoke(req.getRefreshToken());
+//        return ResponseEntity.ok(new LogoutResponse(true, "Logout thành công"));
+//    }
 }
 
