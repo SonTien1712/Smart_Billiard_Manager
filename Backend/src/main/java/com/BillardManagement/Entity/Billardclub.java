@@ -1,8 +1,10 @@
 package com.BillardManagement.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -19,6 +21,7 @@ public class Billardclub {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "CustomerID", nullable = false)
+    @JsonIgnore  // ⚠️ Thêm dòng này để tránh lỗi tuần hoàn và lỗi ByteBuddy
     private Customer customerID;
 
     @Column(name = "ClubName", nullable = false)
@@ -30,5 +33,9 @@ public class Billardclub {
 
     @Column(name = "PhoneNumber", length = 20)
     private String phoneNumber;
+
+    @ColumnDefault("1")
+    @Column(name = "IsActive")
+    private Boolean isActive;
 
 }
