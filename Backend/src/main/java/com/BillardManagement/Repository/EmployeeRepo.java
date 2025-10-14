@@ -1,0 +1,9 @@
+package com.BillardManagement.Repository;
+import com.BillardManagement.Entity.Employee;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface EmployeeRepo extends JpaRepository<Employee, Long> {
+    Optional<Object> findById(Employee employeeID);
+}

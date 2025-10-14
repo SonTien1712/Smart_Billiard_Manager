@@ -1,8 +1,10 @@
 package com.BillardManagement.Entity;
 
+import com.fasterxml.jackson.databind.deser.impl.CreatorCandidate;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -30,5 +32,9 @@ public class Billardclub {
 
     @Column(name = "PhoneNumber", length = 20)
     private String phoneNumber;
+
+    @ColumnDefault("1")
+    @Column(name = "isActive")
+    private Boolean isActive;
 
 }
