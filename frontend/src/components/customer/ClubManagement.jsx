@@ -5,18 +5,12 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Textarea } from '../ui/textarea';
-import { PageType } from '../Dashboard';
-import { Building, Plus, Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
+import { Building, Plus, Edit, Trash2, MapPin, Phone } from 'lucide-react';
 import { customerService } from '../../services/customerService';
-import { useApi, usePaginatedApi } from '../../hooks/useApi';
+import { useApi } from '../../hooks/useApi';
 import { handleSuccess, handleApiError } from '../../utils/errorHandler';
-
-
-/**
- * @typedef {import('../../types').Club} Club
- */
 
 export function ClubManagement({ onPageChange }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -25,64 +19,76 @@ export function ClubManagement({ onPageChange }) {
     name: '',
     address: '',
     phone: '',
-    email: '',
-    description: '',
     isActive: true
-  });
+  }); 
 
-  // Paginated API hook for fetching clubs
+  // ✅ Tạo stable reference cho API function
+  const getClubsFunction = React.useCallback(() => {
+    return customerService.getClubs();
+  }, []);
+
   const {
-    data: clubs,
+    data: clubsData,
     loading: clubsLoading,
-    fetchData: fetchClubs,
-    refresh: refreshClubs
-  } = usePaginatedApi(customerService.getClubs.bind(customerService));
+    execute: fetchClubs
+  } = useApi(getClubsFunction);
+  
+  const clubs = clubsData || [];
 
   // API hooks for CRUD operations
   const { execute: createClub, loading: createLoading } = useApi(
-    customerService.createClub.bind(customerService),
+    async (data) => customerService.createClub(data),
     {
       onSuccess: (newClub) => {
         handleSuccess('Club created successfully');
         setIsDialogOpen(false);
-        refreshClubs();
+        fetchClubs();
       }
     }
   );
 
   const { execute: updateClub, loading: updateLoading } = useApi(
-    customerService.updateClub.bind(customerService),
+    async (id, data) => customerService.updateClub(id, data),
     {
       onSuccess: () => {
         handleSuccess('Club updated successfully');
         setIsDialogOpen(false);
-        refreshClubs();
+        fetchClubs();
       }
     }
   );
 
   const { execute: deleteClub, loading: deleteLoading } = useApi(
-    customerService.deleteClub.bind(customerService),
+    async (id) => customerService.deleteClub(id),
     {
       onSuccess: () => {
         handleSuccess('Club deleted successfully');
-        refreshClubs();
+        fetchClubs();
       }
     }
   );
 
+  // ✅ Fetch clubs on mount
   useEffect(() => {
-    fetchClubs({ page: 0, size: 10 });
+    console.log('[ClubManagement] Component mounted, fetching clubs...');
+    fetchClubs().catch(err => console.error('fetchClubs error:', err));
   }, [fetchClubs]);
+
+  // ✅ Debug log
+  useEffect(() => {
+    console.log('=== CLUB STATE DEBUG ===');
+    console.log('clubsData:', clubsData);
+    console.log('clubs:', clubs);
+    console.log('clubsLoading:', clubsLoading);
+    console.log('clubs.length:', clubs?.length);
+  }, [clubsData, clubs, clubsLoading]);
 
   const handleEdit = (club) => {
     setEditingClub(club);
     setFormData({
-      name: club.name,
+      name: club.clubName, 
       address: club.address,
-      phone: club.phone,
-      email: club.email,
-      description: club.description || '',
+      phone: club.phoneNumber, 
       isActive: club.isActive
     });
     setIsDialogOpen(true);
@@ -94,19 +100,24 @@ export function ClubManagement({ onPageChange }) {
       name: '',
       address: '',
       phone: '',
-      email: '',
-      description: '',
       isActive: true
     });
     setIsDialogOpen(true);
   };
 
   const handleSave = async () => {
+    const payload = {
+        clubName: formData.name,
+        address: formData.address,
+        phoneNumber: formData.phone,
+        isActive: formData.isActive
+    };
+
     try {
       if (editingClub) {
-        await updateClub(editingClub.id, formData);
+        await updateClub(editingClub.id, payload);
       } else {
-        await createClub(formData);
+        await createClub(payload);
       }
     } catch (error) {
       // Error is already handled by the useApi hook
@@ -179,21 +190,14 @@ export function ClubManagement({ onPageChange }) {
                   <TableRow key={club.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{club.name}</div>
-                        {club.description && (
-                          <div className="text-sm text-muted-foreground">{club.description}</div>
-                        )}
+                        <div className="font-medium">{club.clubName}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center gap-1 text-sm">
                           <Phone className="h-3 w-3" />
-                          {club.phone}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Mail className="h-3 w-3" />
-                          {club.email}
+                          {club.phoneNumber}
                         </div>
                       </div>
                     </TableCell>
@@ -263,18 +267,6 @@ export function ClubManagement({ onPageChange }) {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter club email"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
@@ -295,16 +287,6 @@ export function ClubManagement({ onPageChange }) {
                 required
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter club description"
-              />
-            </div>
           </div>
           
           <DialogFooter>
@@ -317,7 +299,7 @@ export function ClubManagement({ onPageChange }) {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={isLoading || !formData.name || !formData.email || !formData.phone || !formData.address}
+              disabled={isLoading || !formData.name || !formData.phone || !formData.address}
             >
               {isLoading ? 'Saving...' : editingClub ? 'Update Club' : 'Create Club'}
             </Button>
