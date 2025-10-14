@@ -6,8 +6,8 @@ import com.BillardManagement.Entity.Admin;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Entity.Employeeaccount;
 import com.BillardManagement.Repository.AdminRepo;
-import com.BillardManagement.Repository.CustomerRepository;
-import com.BillardManagement.Repository.EmployeeAccountRepository;
+import com.BillardManagement.Repository.CustomerRepo;
+import com.BillardManagement.Repository.EmployeeAccountRepo;
 
 import com.BillardManagement.Service.AuthService;
 import com.BillardManagement.Util.PasswordUtil;
@@ -21,8 +21,8 @@ import java.util.Optional;
 public class AuthServiceImpl implements AuthService {
 
     private final AdminRepo adminRepo;
-    private final CustomerRepository customerRepo;
-    private final EmployeeAccountRepository employeeRepo;
+    private final CustomerRepo customerRepo;
+    private final EmployeeAccountRepo employeeRepo;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -39,19 +39,19 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(false, "Sai mật khẩu admin", null, null);
         }
 
-//        Optional<Employeeaccount> empOpt = employeeRepo.findByUsername(username);
-//        if (empOpt.isPresent()) {
-//            Employeeaccount emp = empOpt.get();
-//            if (PasswordUtil.matches(password, emp.getPasswordHash())) {
-//                return new LoginResponse(true, "Đăng nhập nhân viên thành công", "TOKEN_EMPLOYEE", emp);
-//            }
-//            return new LoginResponse(false, "Sai mật khẩu nhân viên", null, null);
-//        }
-//
-//        Optional<Customer> customerOpt = customerRepo.findByEmail(username);
-//        if (customerOpt.isPresent()) {
-//            return new LoginResponse(true, "Đăng nhập khách hàng thành công", "TOKEN_CUSTOMER", customerOpt.get());
-//        }
+        Optional<Employeeaccount> empOpt = employeeRepo.findEmployeeaccountByUsernameAndPasswordHash(username, password);
+        if (empOpt.isPresent()) {
+            Employeeaccount emp = empOpt.get();
+            if (PasswordUtil.matches(password, emp.getPasswordHash())) {
+                return new LoginResponse(true, "Đăng nhập nhân viên thành công", "TOKEN_EMPLOYEE", emp);
+            }
+            return new LoginResponse(false, "Sai mật khẩu nhân viên", null, null);
+        }
+
+        Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(username, password);
+        if (customerOpt.isPresent()) {
+            return new LoginResponse(true, "Đăng nhập khách hàng thành công", "TOKEN_CUSTOMER", customerOpt.get());
+        }
 
         return new LoginResponse(false, "Không tìm thấy tài khoản phù hợp", null, null);
     }
