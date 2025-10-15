@@ -1,6 +1,7 @@
 package com.BillardManagement.Entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -10,8 +11,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-@Getter
-@Setter
+@Data
 @Entity
 @Table(name = "promotions")
 public class Promotion {
@@ -38,7 +38,7 @@ public class Promotion {
 
     @Lob
     @Column(name = "DiscountType", nullable = false)
-    private String discountType;
+    private Enum discountType;
 
     @Column(name = "DiscountValue", nullable = false, precision = 10, scale = 2)
     private BigDecimal discountValue;

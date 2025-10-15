@@ -34,7 +34,7 @@ import { ShiftManagement } from './customer/ShiftManagement';
 // @ts-ignore
 import { StaffAccountManagement } from './customer/StaffAccountManagement';
 // @ts-ignore
-import { PromotionManagement } from './customer/PromotionManagement';
+import { PromotionManagement } from './customer/promotions/PromotionManagement';
 // @ts-ignore
 import { ProductManagement } from './customer/ProductManagement';
 

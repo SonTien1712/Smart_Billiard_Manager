@@ -1,42 +1,35 @@
 package org.openapitools.api;
 
-import org.openapitools.model.Promotion;
+import com.BillardManagement.Entity.Promotion;
+import com.BillardManagement.Service.PromotionService;
 import org.openapitools.model.PromotionUpdate;
-
-
+import org.openapitools.model.Promotion as PromotionModel; // tránh trùng tên entity
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.context.request.NativeWebRequest;
 
-import javax.validation.constraints.*;
 import javax.validation.Valid;
-
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-10-14T14:32:21.168513498+07:00[Asia/Bangkok]", comments = "Generator version: 7.7.0")
+/**
+ * Triển khai thực tế API PATCH /promotions/{promotionId}
+ * Cập nhật thông tin khuyến mãi trong hệ thống bi-da.
+ */
 @Controller
 @RequestMapping("${openapi.billiardClubManagementSystem.base-path:/v1}")
 public class PromotionsApiController implements PromotionsApi {
 
     private final NativeWebRequest request;
 
+    private final PromotionService promotionService;
+
     @Autowired
-    public PromotionsApiController(NativeWebRequest request) {
+    public PromotionsApiController(NativeWebRequest request, PromotionService promotionService) {
         this.request = request;
+        this.promotionService = promotionService;
     }
 
     @Override
@@ -44,4 +37,72 @@ public class PromotionsApiController implements PromotionsApi {
         return Optional.ofNullable(request);
     }
 
+    /**
+     * API PATCH /promotions/{promotionId}
+     * Cập nhật thông tin khuyến mãi
+     */
+    @Override
+    public ResponseEntity<PromotionModel> promotionsPromotionIdPatch(
+            @PathVariable("promotionId") Integer promotionId,
+            @Valid @RequestBody PromotionUpdate promotionUpdate) {
+
+        try {
+            // B1: Lấy promotion hiện tại từ DB
+            Optional<Promotion> optionalPromotion = promotionService.getPromotionById(promotionId);
+            if (optionalPromotion.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Promotion existing = optionalPromotion.get();
+
+            // B2: Áp dụng các giá trị mới từ PromotionUpdate (nếu có)
+            if (promotionUpdate.getPromotionName() != null)
+                existing.setPromotionName(promotionUpdate.getPromotionName());
+
+            if (promotionUpdate.getPromotionCode() != null)
+                existing.setPromotionCode(promotionUpdate.getPromotionCode());
+
+            if (promotionUpdate.getDiscountType() != null)
+                existing.setDiscountType(promotionUpdate.getDiscountType());
+
+            if (promotionUpdate.getDiscountValue() != null)
+                existing.setDiscountValue(promotionUpdate.getDiscountValue());
+
+            if (promotionUpdate.getStartDate() != null)
+                existing.setStartDate(promotionUpdate.getStartDate());
+
+            if (promotionUpdate.getEndDate() != null)
+                existing.setEndDate(promotionUpdate.getEndDate());
+
+            if (promotionUpdate.getIsActive() != null)
+                existing.setIsActive(promotionUpdate.getIsActive());
+
+            // Nếu OpenAPI model có thêm field nào khác (ví dụ: min_amount, usage_limit, max_discount)
+            // bạn thêm mapping tương ứng ở đây
+            // if (promotionUpdate.getMinAmount() != null)
+            //     existing.setMinAmount(promotionUpdate.getMinAmount());
+            // ...
+
+            // B3: Lưu vào DB
+            Promotion updated = promotionService.save(existing);
+
+            // B4: Map từ Entity -> OpenAPI model để trả về client
+            PromotionModel response = new PromotionModel();
+            response.setPromotionId(updated.getId());
+            response.setPromotionName(updated.getPromotionName());
+            response.setPromotionCode(updated.getPromotionCode());
+            response.setDiscountType(updated.getDiscountType());
+            response.setDiscountValue(updated.getDiscountValue());
+            response.setStartDate(updated.getStartDate());
+            response.setEndDate(updated.getEndDate());
+            response.setIsActive(updated.getIsActive());
+
+            // B5: Trả kết quả thành công
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // B6: Nếu lỗi server hoặc lỗi khác
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

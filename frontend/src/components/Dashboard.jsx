@@ -19,7 +19,7 @@ import { TableManagement } from './customer/TableManagement';
 import { StaffManagement } from './customer/StaffManagement';
 import { ShiftManagement } from './customer/ShiftManagement';
 import { StaffAccountManagement } from './customer/StaffAccountManagement';
-import { PromotionManagement } from './customer/PromotionManagement';
+import { PromotionManagement } from './customer/promotions/PromotionManagement';
 import { ProductManagement } from './customer/ProductManagement';
 
 import { BillManagement } from './staff/BillManagement';
