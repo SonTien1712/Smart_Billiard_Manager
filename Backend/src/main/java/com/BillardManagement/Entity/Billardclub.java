@@ -21,6 +21,7 @@ public class Billardclub {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "CustomerID", nullable = false)
+    @JsonIgnore  // ⚠️ Thêm dòng này để tránh lỗi tuần hoàn và lỗi ByteBuddy
     private Customer customerID;
 
     @Column(name = "ClubName", nullable = false)
