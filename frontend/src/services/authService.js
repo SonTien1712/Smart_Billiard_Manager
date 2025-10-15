@@ -41,13 +41,15 @@ export class AuthService {
       API_CONFIG.ENDPOINTS.AUTH.REGISTER,
       userData
     );
+
+    const data = response?.data ?? response;
     
-    if (response.success) {
-      apiClient.setToken(response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+    if (data?.success) {
+      apiClient.setToken(data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
     }
-    
-    return response.data;
+
+    return data;
   }
 
   async googleAuth(googleData) {

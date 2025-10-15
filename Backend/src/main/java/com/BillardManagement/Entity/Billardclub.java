@@ -1,5 +1,6 @@
 package com.BillardManagement.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.deser.impl.CreatorCandidate;
 import jakarta.persistence.*;
 import lombok.Getter;
