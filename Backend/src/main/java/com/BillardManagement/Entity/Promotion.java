@@ -38,7 +38,7 @@ public class Promotion {
 
     @Lob
     @Column(name = "DiscountType", nullable = false)
-    private Enum discountType;
+    private DiscountType discountType;
 
     @Column(name = "DiscountValue", nullable = false, precision = 10, scale = 2)
     private BigDecimal discountValue;
