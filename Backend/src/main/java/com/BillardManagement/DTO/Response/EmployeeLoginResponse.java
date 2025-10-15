@@ -12,12 +12,9 @@ public class EmployeeLoginResponse {
         return EmployeeLoginResponse.builder()
                 .success(true).message(msg).accessToken(token).user(user).build();
     }
+
     public static EmployeeLoginResponse fail(String msg) {
         return EmployeeLoginResponse.builder()
                 .success(false).message(msg).accessToken(null).user(null).build();
     }
-<<<<<<< Updated upstream
 }
-=======
-}
->>>>>>> Stashed changes
