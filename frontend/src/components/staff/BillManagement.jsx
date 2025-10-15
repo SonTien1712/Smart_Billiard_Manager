@@ -1,40 +1,81 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { PageType } from '../Dashboard';
 import { Receipt, Plus, Play, Calculator, CreditCard, Clock } from 'lucide-react';
+import { formatVND } from '../../utils/currency';
+import { staffService } from '../../services/staffService';
+import { useAuth } from '../AuthProvider';
 
 
 export function BillManagement({ onPageChange }) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('tables');
   const [selectedTable, setSelectedTable] = useState(null);
   const [currentOrder, setCurrentOrder] = useState([]);
+  const [products, setProducts] = useState([]);
 
-  const tables = [
-    { id: '1', name: 'Table 1', type: 'Pool', status: 'available', hourlyRate: 25 },
-    { id: '2', name: 'Table 2', type: 'Snooker', status: 'occupied', hourlyRate: 30, startTime: '2:00 PM', customer: 'John Doe' },
-    { id: '3', name: 'Table 3', type: 'Pool', status: 'available', hourlyRate: 25 },
-    { id: '4', name: 'Table 4', type: 'Carom', status: 'maintenance', hourlyRate: 35 },
-  ];
+  const [tables, setTables] = useState([]);
 
-  const products = [
-    { id: '1', name: 'Coca Cola', price: 3.50, category: 'Beverages' },
-    { id: '2', name: 'Chips - Original', price: 2.25, category: 'Snacks' },
-    { id: '3', name: 'Energy Drink', price: 4.75, category: 'Beverages' },
-    { id: '4', name: 'Beer - Domestic', price: 5.00, category: 'Alcohol' },
-  ];
+  const fetchProducts = async () => {
+    try {
+      const data = await staffService.getProducts(clubId ? { clubId } : undefined);
+      const normalized = (Array.isArray(data) ? data : []).map(p => ({
+        id: p.id,
+        name: p.productName,
+        price: Number(p.price || 0),
+        category: p.category || ''
+      }));
+      setProducts(normalized);
+    } catch (e) {
+      console.error('load products failed', e);
+      setProducts([]);
+    }
+  };
 
-  const recentBills = [
-    { id: '#001', table: 'Table 1', customer: 'Alice Smith', amount: 45.50, time: '2:30 PM', status: 'completed' },
-    { id: '#002', table: 'Table 3', customer: 'Bob Johnson', amount: 38.25, time: '2:15 PM', status: 'completed' },
-    { id: '#003', table: 'Table 2', customer: 'Carol Brown', amount: 52.75, time: '1:45 PM', status: 'completed' },
-  ];
+  const [recentBills, setRecentBills] = useState([]);
 
-  const handleTableOpen = (table) => {
-    setSelectedTable(table);
-    setActiveTab('order');
+  const clubId = useMemo(() => user?.clubId || user?.club?.id || user?.employeeClubId || user?.employee?.clubId, [user]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [tbls, bills] = await Promise.all([
+          staffService.getTables(clubId ? { clubId } : undefined),
+          staffService.getBills({ limit: 5, status: 'Paid', ...(clubId ? { clubId } : {}) })
+        ]);
+        setTables(Array.isArray(tbls) ? tbls : []);
+        setRecentBills(Array.isArray(bills) ? bills : []);
+        await fetchProducts();
+      } catch (e) {
+        console.error('Failed to load tables/bills', e);
+        setTables([]);
+        setRecentBills([]);
+      }
+    };
+    load();
+  }, [clubId]);
+
+  const handleTableOpen = async (table) => {
+    try {
+      // Attempt to create/open an active bill for this table
+      await staffService.openTable({
+        tableId: table.id,
+        clubId: user?.clubId || user?.club?.id,
+        customerId: user?.customerId || user?.customer?.id || 1,
+        employeeId: user?.employeeId
+      });
+      setSelectedTable(table);
+      setActiveTab('order');
+      // refresh tables to reflect occupied state
+      const refreshed = await staffService.getTables(clubId ? { clubId } : undefined);
+      setTables(Array.isArray(refreshed) ? refreshed : []);
+    } catch (e) {
+      console.error('Open table failed', e);
+      alert('Bàn đã có phiên đang mở hoặc lỗi kết nối.');
+    }
   };
 
   const addToOrder = (product) => {
@@ -104,11 +145,14 @@ export function BillManagement({ onPageChange }) {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{table.type}</p>
-                        <p className="text-sm font-medium">${table.hourlyRate}/hour</p>
+                        <p className="text-sm font-medium">{formatVND(table.hourlyRate)}/hour</p>
                         {table.status === 'occupied' && (
                           <div className="text-xs text-muted-foreground">
-                            <p>Customer: {table.customer}</p>
-                            <p>Started: {table.startTime}</p>
+                            {table.customer && <p>Customer: {table.customer}</p>}
+                            {table.startedAt && (
+                              <p>Started: {new Date(table.startedAt).toLocaleTimeString()}
+                              </p>
+                            )}
                           </div>
                         )}
                         {table.status === 'available' && (
@@ -135,13 +179,15 @@ export function BillManagement({ onPageChange }) {
                 {recentBills.map((bill) => (
                   <div key={bill.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
-                      <p className="font-medium">{bill.id}</p>
-                      <p className="text-sm text-muted-foreground">{bill.table} - {bill.customer}</p>
-                      <p className="text-xs text-muted-foreground">{bill.time}</p>
+                      <p className="font-medium">#{String(bill.id).padStart(3,'0')}</p>
+                      <p className="text-sm text-muted-foreground">{bill.tableName || '—'}</p>
+                      {bill.createdAt && (
+                        <p className="text-xs text-muted-foreground">{new Date(bill.createdAt).toLocaleTimeString()}</p>
+                      )}
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">${bill.amount}</p>
-                      <Badge variant="outline">{bill.status}</Badge>
+                      <p className="font-medium">{formatVND(bill.amount)}</p>
+                      <Badge variant="outline">{(bill.status || '').toLowerCase()}</Badge>
                     </div>
                   </div>
                 ))}
@@ -167,7 +213,7 @@ export function BillManagement({ onPageChange }) {
                           <div>
                             <p className="font-medium">{product.name}</p>
                             <p className="text-sm text-muted-foreground">{product.category}</p>
-                            <p className="text-sm font-medium">${product.price}</p>
+                            <p className="text-sm font-medium">{formatVND(product.price)}</p>
                           </div>
                           <Button size="sm" onClick={() => addToOrder(product)}>
                             <Plus className="h-4 w-4" />
@@ -186,7 +232,7 @@ export function BillManagement({ onPageChange }) {
                             <div>
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                ${item.price} x {item.quantity}
+                                {formatVND(item.price)} x {item.quantity}
                               </p>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -200,7 +246,7 @@ export function BillManagement({ onPageChange }) {
                         <div className="border-t pt-2">
                           <div className="flex justify-between font-medium">
                             <span>Total:</span>
-                            <span>${calculateTotal().toFixed(2)}</span>
+                            <span>{formatVND(calculateTotal())}</span>
                           </div>
                         </div>
                       </div>
@@ -242,10 +288,10 @@ export function BillManagement({ onPageChange }) {
                           <span>Playing Time: 2 hours 30 minutes</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Rate: ${selectedTable.hourlyRate}/hour
+                          Rate: {formatVND(selectedTable.hourlyRate)}/hour
                         </p>
                         <p className="font-medium">
-                          Subtotal: ${(selectedTable.hourlyRate * 2.5).toFixed(2)}
+                          Subtotal: {formatVND(selectedTable.hourlyRate * 2.5)}
                         </p>
                       </div>
                     </div>
@@ -258,13 +304,13 @@ export function BillManagement({ onPageChange }) {
                             {currentOrder.map((item) => (
                               <div key={item.id} className="flex justify-between text-sm">
                                 <span>{item.name} x{item.quantity}</span>
-                                <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                <span>{formatVND(item.price * item.quantity)}</span>
                               </div>
                             ))}
                             <div className="border-t pt-2 font-medium">
                               <div className="flex justify-between">
                                 <span>Products Total:</span>
-                                <span>${calculateTotal().toFixed(2)}</span>
+                                <span>{formatVND(calculateTotal())}</span>
                               </div>
                             </div>
                           </div>
@@ -279,19 +325,19 @@ export function BillManagement({ onPageChange }) {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>Table Time:</span>
-                        <span>${(selectedTable.hourlyRate * 2.5).toFixed(2)}</span>
+                        <span>{formatVND(selectedTable.hourlyRate * 2.5)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Products:</span>
-                        <span>${calculateTotal().toFixed(2)}</span>
+                        <span>{formatVND(calculateTotal())}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Tax (10%):</span>
-                        <span>${((selectedTable.hourlyRate * 2.5 + calculateTotal()) * 0.1).toFixed(2)}</span>
+                        <span>{formatVND((selectedTable.hourlyRate * 2.5 + calculateTotal()) * 0.1)}</span>
                       </div>
                       <div className="border-t pt-2 flex justify-between font-bold text-lg">
                         <span>Total:</span>
-                        <span>${((selectedTable.hourlyRate * 2.5 + calculateTotal()) * 1.1).toFixed(2)}</span>
+                        <span>{formatVND((selectedTable.hourlyRate * 2.5 + calculateTotal()) * 1.1)}</span>
                       </div>
                     </div>
                   </div>

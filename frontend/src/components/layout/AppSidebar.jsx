@@ -14,28 +14,31 @@ import {
   useSidebar,
 } from '../ui/sidebar';
 import { useAuth } from '../AuthProvider';
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserPlus, 
-  Building, 
-  Table, 
-  UserCheck, 
-  Calendar, 
-  UserCog, 
-  Percent, 
-  Package,
-  Receipt,
-  ClipboardList,
-  Clock,
-  Gamepad2,
-  User
-} from 'lucide-react';
+  import { 
+    LayoutDashboard, 
+    Users, 
+    UserPlus, 
+    Building, 
+    Table, 
+    UserCheck, 
+    Calendar, 
+    UserCog, 
+    Percent, 
+    Package,
+    Receipt,
+    ClipboardList,
+    Clock,
+    Gamepad2,
+    User,
+    DollarSign
+  } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Button } from '../ui/button';
+import { LogOut } from 'lucide-react';
 
 
-export function AppSidebar({ currentPage, onPageChange }) {
-  const { user } = useAuth();
+export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
+  const { user, logout } = useAuth();
   const { state } = useSidebar();
 
   const getInitials = (firstName, lastName, user) => {
@@ -127,8 +130,8 @@ export function AppSidebar({ currentPage, onPageChange }) {
             title: 'Operations',
             items: [
               { title: 'Bill Management', page: 'bills', icon: Receipt },
-              { title: 'Work Schedule', page: 'schedule', icon: ClipboardList },
-              { title: 'Attendance', page: 'attendance', icon: Clock },
+              { title: 'Work & Attendance', page: 'work', icon: Clock },
+              { title: 'Payroll', page: 'payroll', icon: DollarSign },
             ]
           }
         ];
@@ -143,9 +146,9 @@ export function AppSidebar({ currentPage, onPageChange }) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-4 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <Gamepad2 className="h-5 w-5" />
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white shadow-sm ring-1 ring-white/10">
+            <span className="text-sm font-semibold">8</span>
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold text-sidebar-foreground">Billiards Club</span>
@@ -191,6 +194,14 @@ export function AppSidebar({ currentPage, onPageChange }) {
               {user?.role && getRoleDisplayName(user.role)}
             </span>
           </div>
+        </div>
+        <div className="px-2 pb-2 grid grid-cols-2 gap-2">
+          <Button variant="outline" size="sm" onClick={() => onNavigate && onNavigate('profile')}>
+            <User className="h-4 w-4 mr-1" /> Profile
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => { logout(); onNavigate && onNavigate('signin'); }}>
+            <LogOut className="h-4 w-4 mr-1" /> Logout
+          </Button>
         </div>
       </SidebarFooter>
       <SidebarRail />

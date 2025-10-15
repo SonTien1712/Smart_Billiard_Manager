@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface EmployeeAccountRepo extends JpaRepository<Employeeaccount, Integer> {
     Optional<Employeeaccount> findByUsername(String username);
 
-    Optional<Employeeaccount> findEmployeeaccountByUsernameAndPasswordHash(String username, String passwordHash);
+    // Allow lookup by the linked employee's email for convenience
+    Optional<Employeeaccount> findByEmployeeID_Email(String email);
 }

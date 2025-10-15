@@ -40,6 +40,9 @@ public class Employeeshift {
     @Column(name = "ShiftDate", nullable = false)
     private LocalDate shiftDate;
 
+    @Column(name = "SlotCode")
+    private String slotCode;
+
     @Column(name = "StartTime")
     private LocalTime startTime;
 
@@ -60,8 +63,7 @@ public class Employeeshift {
     @Column(name = "OvertimeHours", precision = 4, scale = 2)
     private BigDecimal overtimeHours;
 
-    @Lob
-    @Column(name = "ShiftType")
+    @Transient
     private String shiftType;
 
     @ColumnDefault("'Scheduled'")
