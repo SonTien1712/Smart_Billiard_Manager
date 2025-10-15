@@ -16,4 +16,8 @@ public class EmployeeLoginResponse {
         return EmployeeLoginResponse.builder()
                 .success(false).message(msg).accessToken(null).user(null).build();
     }
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes

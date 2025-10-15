@@ -10,4 +10,8 @@ public class EmployeeUserView {
     private String fullName;    // nếu có cột name trong Employee
     private String email;       // nếu có
     private String role;        // "STAFF"
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
