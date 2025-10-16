@@ -22,6 +22,10 @@ public class BilliardClubServiceImpl implements BilliardClubService {
     public Optional<Billardclub> getClubById(Integer id) {
         return repo.findById(id);
     }
+    public List<Billardclub> getClubsByCustomerId(Integer customerId) {
+        return repo.findByCustomerID(customerId);
+    }
+
 
     // Tạo mới
     public Billardclub createClub(Billardclub club) {
