@@ -21,9 +21,5 @@ public interface BilliardClubService {
     // Xóa (xóa cứng khỏi DB)
     void deleteClub(Integer id);
 
-    // ✅ Bật / tắt trạng thái hoạt động
-    Billardclub toggleActive(Integer id);
 
-    // ✅ Lấy tất cả CLB đang hoạt động (nếu cần hiển thị riêng)
-    List<Billardclub> getActiveClubs();
 }
