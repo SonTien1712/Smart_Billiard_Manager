@@ -13,4 +13,6 @@ public interface CustomerService {
     Customer updateCustomer(Integer id, Customer customer);
 
     void deleteCustomer(Integer id);
+
+    boolean registerCustomer(String name, String email, String phone, String address, String rawPassword);
 }

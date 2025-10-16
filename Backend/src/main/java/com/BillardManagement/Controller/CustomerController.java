@@ -29,7 +29,7 @@ public class CustomerController {
     }
 
     // Thêm mới
-    @PostMapping
+    @PostMapping("/{}")
     public Customer createCustomer(@RequestBody Customer customer) {
         return customerService.createCustomer(customer);
     }

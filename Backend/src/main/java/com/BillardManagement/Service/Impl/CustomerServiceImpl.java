@@ -59,4 +59,25 @@ public class CustomerServiceImpl implements CustomerService {
     public void deleteCustomer(Integer id) {
         customerRepository.deleteById(id);
     }
+
+    @Override
+    public boolean registerCustomer(String name, String email, String phone, String address, String rawPassword) {
+        if (customerRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email đã tồn tại");
+        }
+        if (customerRepository.existsByPhoneNumber(phone)) {
+            throw new IllegalArgumentException("Số điện thoại đã tồn tại");
+        }
+
+        Customer c = new Customer();
+        c.setCustomerName(name);
+        c.setEmail(email);
+        c.setPhoneNumber(phone);
+        c.setAddress(address);
+        c.setPassword(rawPassword);
+        c.setIsActive(true);
+
+        customerRepository.save(c);
+        return true;
+    }
 }
