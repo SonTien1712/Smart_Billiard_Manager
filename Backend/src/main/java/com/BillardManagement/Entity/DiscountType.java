@@ -1,6 +1,6 @@
 package com.BillardManagement.Entity;
 
-public enum DiscountType {
+ public enum DiscountType {
     PERCENTAGE("Percentage"),
     FIXED_AMOUNT("FixedAmount");
 

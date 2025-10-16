@@ -1,134 +1,94 @@
-// PromotionDTO.java
 package com.BillardManagement.DTO;
 
 import com.BillardManagement.Entity.DiscountType;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import javax.validation.constraints.*;
+import java.time.Instant;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class PromotionDTO {
     private Integer promotionId;
 
-    @NotNull(message = "Club ID is required")
+    @NotNull(message = "Club ID không được để trống")
     private Integer clubId;
 
-    @NotNull(message = "Promotion name is required")
-    @Size(min = 1, max = 255, message = "Promotion name must be between 1 and 255 characters")
+    private Integer customerId;
+
+    @NotBlank(message = "Tên khuyến mãi không được để trống")
+    @Size(min = 3, max = 255, message = "Tên khuyến mãi phải từ 3-255 ký tự")
     private String promotionName;
 
-    @NotNull(message = "Promotion code is required")
-    @Size(min = 1, max = 50, message = "Promotion code must be between 1 and 50 characters")
+    @NotBlank(message = "Mã khuyến mãi không được để trống")
+    @Size(min = 3, max = 50, message = "Mã khuyến mãi phải từ 3-50 ký tự")
+    @Pattern(regexp = "^[A-Z0-9_-]+$", message = "Mã khuyến mãi chỉ chứa chữ in hoa, số, gạch dưới và gạch ngang")
     private String promotionCode;
 
-    @NotNull(message = "Discount type is required")
-    @Enumerated(EnumType.STRING) // Store as string in DB
-    private DiscountTypeEnum discountType;
+    @NotNull(message = "Loại giảm giá không được để trống")
+    private DiscountType discountType;
 
-    @NotNull(message = "Discount value is required")
-    @DecimalMin(value = "0.0", inclusive = false)
+    @NotNull(message = "Giá trị giảm giá không được để trống")
+    @DecimalMin(value = "0.01", message = "Giá trị giảm giá phải lớn hơn 0")
+    @DecimalMax(value = "100.00", message = "Giá trị giảm giá không được vượt quá 100")
     private BigDecimal discountValue;
 
-    @NotNull(message = "Start date is required")
-    private OffsetDateTime startDate;
+    @NotNull(message = "Ngày bắt đầu không được để trống")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+    private Instant startDate;
 
-    @NotNull(message = "End date is required")
-    private OffsetDateTime endDate;
+    @NotNull(message = "Ngày kết thúc không được để trống")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+    private Instant endDate;
+
+    private String applicableTableTypes;
+
+    @DecimalMin(value = "0.00", message = "Thời gian chơi tối thiểu không được âm")
+    private BigDecimal minPlayTime;
+
+    @DecimalMin(value = "0.00", message = "Số tiền tối thiểu không được âm")
+    private BigDecimal minAmount;
+
+    @DecimalMin(value = "0.00", message = "Giảm giá tối đa không được âm")
+    private BigDecimal maxDiscount;
+
+    @Min(value = 0, message = "Giới hạn sử dụng không được âm")
+    private Integer usageLimit;
+
+    @Min(value = 0, message = "Số lần đã sử dụng không được âm")
+    private Integer usedCount;
 
     private Boolean isActive;
 
-    // Getters and Setters
-    public Integer getPromotionId() {
-        return promotionId;
-    }
+    @Size(max = 1000, message = "Mô tả không được vượt quá 1000 ký tự")
+    private String description;
 
-    public void setPromotionId(Integer promotionId) {
-        this.promotionId = promotionId;
-    }
+    private Instant createdAt;
+    private Instant updatedAt;
 
-    public Integer getClubId() {
-        return clubId;
-    }
-
-    public void setClubId(Integer clubId) {
-        this.clubId = clubId;
-    }
-
-    public String getPromotionName() {
-        return promotionName;
-    }
-
-    public void setPromotionName(String promotionName) {
-        this.promotionName = promotionName;
-    }
-
-    public String getPromotionCode() {
-        return promotionCode;
-    }
-
-    public void setPromotionCode(String promotionCode) {
-        this.promotionCode = promotionCode;
-    }
-
-    public DiscountType getDiscountType() {
-        return discountType;
-    }
-
-    public void setDiscountType(DiscountTypeEnum discountType) {
-        this.discountType = discountType;
-    }
-
-    public BigDecimal getDiscountValue() {
-        return discountValue;
-    }
-
-    public void setDiscountValue(BigDecimal discountValue) {
-        this.discountValue = discountValue;
-    }
-
-    public OffsetDateTime getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(OffsetDateTime startDate) {
-        this.startDate = startDate;
-    }
-
-    public OffsetDateTime getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(OffsetDateTime endDate) {
-        this.endDate = endDate;
-    }
-
-    public Boolean getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-
-    public enum DiscountTypeEnum {
-        PERCENTAGE("Percentage"),
-        FIXED_AMOUNT("FixedAmount");
-
-        private final String value;
-
-        DiscountTypeEnum(String value) {
-            this.value = value;
+    // Custom validation
+    @AssertTrue(message = "Ngày kết thúc phải sau ngày bắt đầu")
+    public boolean isEndDateValid() {
+        if (startDate == null || endDate == null) {
+            return true; // Let @NotNull handle null validation
         }
+        return endDate.isAfter(startDate);
+    }
 
-        public String getValue() {
-            return value;
+    @AssertTrue(message = "Giá trị giảm giá phần trăm không được vượt quá 100")
+    public boolean isDiscountValueValid() {
+        if (discountType == null || discountValue == null) {
+            return true;
         }
-
-        @Override
-        public String toString() {
-            return value;
+        if (discountType == DiscountType.PERCENTAGE) {
+            return discountValue.compareTo(BigDecimal.valueOf(100)) <= 0;
         }
+        return true;
     }
 }
