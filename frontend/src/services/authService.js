@@ -42,14 +42,8 @@ export class AuthService {
       userData
     );
 
-    const data = response?.data ?? response;
-    
-    if (data?.success) {
-      apiClient.setToken(data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-    }
-
-    return data;
+    console.log('Register response:', response);
+    return response;
   }
 
   async googleAuth(googleData) {
