@@ -106,11 +106,14 @@ export function ClubManagement({ onPageChange }) {
   };
 
   const handleSave = async () => {
+    const customer = JSON.parse(localStorage.getItem("currentUser"));
+    const customerId = customer?.id;
     const payload = {
         clubName: formData.name,
         address: formData.address,
         phoneNumber: formData.phone,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        customerID: customerId
     };
 
     try {

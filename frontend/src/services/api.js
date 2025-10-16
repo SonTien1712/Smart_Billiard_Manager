@@ -52,7 +52,9 @@ export class ApiClient {
       throw new Error(errorData.message || 'An error occurred');
     }
 
-    return response.json();
+    // return response.json();
+    const text = await response.text();
+  return text ? JSON.parse(text) : null;
   }
 
   async #refreshToken() {
