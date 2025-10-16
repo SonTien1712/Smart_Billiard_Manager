@@ -23,6 +23,7 @@ export function SignUp({ onNavigate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { loginWithGoogle } = useAuth();
+  const { register } = useAuth();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,10 +51,13 @@ export function SignUp({ onNavigate }) {
     }
 
     try {
-      // Mock signup - in real app, this would call an API
-      setTimeout(() => {
-        onNavigate('signin');
-      }, 1000);
+      await register({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+      });
+      onNavigate('signin');
     } catch (err) {
       setError('Failed to create account');
     } finally {
