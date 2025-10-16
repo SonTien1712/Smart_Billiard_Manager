@@ -1,11 +1,10 @@
 package com.BillardManagement.DTO.Request;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+/** Tùy chọn: FE của bạn hiện đang POST không body,
+ *  nên field này là optional để dùng khi bạn muốn gửi kèm refreshToken. */
+@Data
 public class LogoutRequest {
-    private String refreshToken;
-    private String deviceId; // optional
+    private String refreshToken; // optional
 }

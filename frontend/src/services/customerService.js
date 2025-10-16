@@ -6,17 +6,46 @@ const USE_MOCK_DATA = false; // Set to false when you have a real backend
 
 export class CustomerService {
   // Club Management
-  async getClubs(params) {
-    if (USE_MOCK_DATA) {
-      return MockService.getClubs(params);
+  async getClubsByCustomer(customerId) {
+  if (USE_MOCK_DATA) {
+    return MockService.getClubsByCustomer(customerId);
+  }
+
+  try {
+    const endpoint = API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS_BY_CUSTOMER(customerId);
+    console.log('[API Club] Fetching from:', endpoint);
+
+    const data = await apiClient.get(endpoint);
+
+    console.log('[API Club] Raw data:', data);
+    let clubData;
+
+    if (Array.isArray(data)) {
+      clubData = data;
+    } else if (data && Array.isArray(data.data)) {
+      clubData = data.data;
+    } else if (data && Array.isArray(data.clubs)) {
+      clubData = data.clubs;
+    } else {
+      console.warn('[API Club] Unexpected response:', data);
+      clubData = [];
     }
 
-    const response = await apiClient.get(
-      API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS,
-      params
-    );
-    return response.data;
+    console.log('[API Club] Final club data:', clubData);
+    return clubData;
+
+  } catch (error) {
+    const status = error.response?.status;
+    const errData = error.response?.data || error.message;
+
+    console.error('[API Club] FAILED:', error);
+    console.error('[API Club] Status:', status || 'Network/CORS');
+    console.error('[API Club] Error data:', errData);
+
+    return [];
   }
+}
+
 
   async createClub(clubData) {
     if (USE_MOCK_DATA) {

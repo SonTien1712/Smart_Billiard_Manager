@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface CustomerRepo extends JpaRepository<Customer, Integer> {
     Optional<Customer> findByEmailAndPassword(String email, String password);
+    // Kiểm tra trùng số điện thoại
+    boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByEmail(String email);
 }

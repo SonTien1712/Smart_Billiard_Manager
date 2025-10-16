@@ -27,6 +27,10 @@ public class BilliardClubController {
     public Optional<Billardclub> getClubById(@PathVariable Integer id) {
         return clubService.getClubById(id);
     }
+    @GetMapping("/customer/{customerId}")
+    public List<Billardclub> getClubsByCustomer(@PathVariable Integer customerId) {
+        return clubService.getClubsByCustomerId(customerId);
+    }
 
     // ✅ Tạo mới club
     @PostMapping

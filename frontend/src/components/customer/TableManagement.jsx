@@ -1,67 +1,141 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Badge } from '../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-import { PageType } from '../Dashboard';
-import { Table as TableIcon, Plus, Edit, Trash2, DollarSign } from 'lucide-react';
-
+import React, { useState } from "react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "../ui/card"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "../ui/table"
+import { Badge } from "../ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "../ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "../ui/dialog"
+import {
+  Table as TableIcon,
+  Plus,
+  Edit,
+  Trash2,
+  DollarSign
+} from "lucide-react"
 
 export function TableManagement({ onPageChange }) {
   const [tables, setTables] = useState([
-    { id: '1', name: 'Table 1', type: 'Pool', hourlyRate: 25, status: 'available', club: 'Downtown Billiards Club' },
-    { id: '2', name: 'Table 2', type: 'Snooker', hourlyRate: 30, status: 'occupied', club: 'Downtown Billiards Club' },
-    { id: '3', name: 'Table 3', type: 'Pool', hourlyRate: 25, status: 'maintenance', club: 'Downtown Billiards Club' },
-    { id: '4', name: 'Table 4', type: 'Carom', hourlyRate: 35, status: 'available', club: 'Uptown Pool Hall' },
-  ]);
+    {
+      id: "1",
+      name: "Table 1",
+      type: "Pool",
+      hourlyRate: 25,
+      status: "available",
+      club: "Downtown Billiards Club"
+    },
+    {
+      id: "2",
+      name: "Table 2",
+      type: "Snooker",
+      hourlyRate: 30,
+      status: "occupied",
+      club: "Downtown Billiards Club"
+    },
+    {
+      id: "3",
+      name: "Table 3",
+      type: "Pool",
+      hourlyRate: 25,
+      status: "maintenance",
+      club: "Downtown Billiards Club"
+    },
+    {
+      id: "4",
+      name: "Table 4",
+      type: "Carom",
+      hourlyRate: 35,
+      status: "available",
+      club: "Uptown Pool Hall"
+    }
+  ])
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingTable, setEditingTable] = useState(null)
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'Pool',
+    name: "",
+    type: "Pool",
     hourlyRate: 25,
-    status: 'available',
-    club: 'Downtown Billiards Club'
-  });
+    status: "available",
+    club: "Downtown Billiards Club"
+  })
 
-  const handleEdit = (table) => {
-    setEditingTable(table);
-    setFormData(table);
-    setIsDialogOpen(true);
-  };
+  const handleEdit = table => {
+    setEditingTable(table)
+    setFormData(table)
+    setIsDialogOpen(true)
+  }
 
   const handleAdd = () => {
-    setEditingTable(null);
-    setFormData({ name: '', type: 'Pool', hourlyRate: 25, status: 'available', club: 'Downtown Billiards Club' });
-    setIsDialogOpen(true);
-  };
+    setEditingTable(null)
+    setFormData({
+      name: "",
+      type: "Pool",
+      hourlyRate: 25,
+      status: "available",
+      club: "Downtown Billiards Club"
+    })
+    setIsDialogOpen(true)
+  }
 
   const handleSave = () => {
     if (editingTable) {
-      setTables(tables.map(table => table.id === editingTable.id ? { ...formData, id: editingTable.id } : table));
+      setTables(
+        tables.map(table =>
+          table.id === editingTable.id
+            ? { ...formData, id: editingTable.id }
+            : table
+        )
+      )
     } else {
-      setTables([...tables, { ...formData, id: Date.now().toString() }]);
+      setTables([...tables, { ...formData, id: Date.now().toString() }])
     }
-    setIsDialogOpen(false);
-  };
+    setIsDialogOpen(false)
+  }
 
-  const handleDelete = (id) => {
-    setTables(tables.filter(table => table.id !== id));
-  };
+  const handleDelete = id => {
+    setTables(tables.filter(table => table.id !== id))
+  }
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
-      case 'available': return 'default';
-      case 'occupied': return 'destructive';
-      case 'maintenance': return 'secondary';
-      default: return 'outline';
+      case "available":
+        return "default"
+      case "occupied":
+        return "destructive"
+      case "maintenance":
+        return "secondary"
+      default:
+        return "outline"
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -94,7 +168,7 @@ export function TableManagement({ onPageChange }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tables.map((table) => (
+              {tables.map(table => (
                 <TableRow key={table.id}>
                   <TableCell>
                     <div className="flex items-center space-x-2">
@@ -119,10 +193,18 @@ export function TableManagement({ onPageChange }) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(table)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(table)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(table.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(table.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -137,9 +219,13 @@ export function TableManagement({ onPageChange }) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingTable ? 'Edit Table' : 'Add New Table'}</DialogTitle>
+            <DialogTitle>
+              {editingTable ? "Edit Table" : "Add New Table"}
+            </DialogTitle>
             <DialogDescription>
-              {editingTable ? 'Update table information' : 'Create a new billiard table'}
+              {editingTable
+                ? "Update table information"
+                : "Create a new billiard table"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -148,13 +234,20 @@ export function TableManagement({ onPageChange }) {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Enter table name"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">Table Type</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+              <Select
+                value={formData.type}
+                onValueChange={value =>
+                  setFormData({ ...formData, type: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select table type" />
                 </SelectTrigger>
@@ -162,8 +255,6 @@ export function TableManagement({ onPageChange }) {
                   <SelectItem value="Pool">Pool</SelectItem>
                   <SelectItem value="Snooker">Snooker</SelectItem>
                   <SelectItem value="Carom">Carom</SelectItem>
-                  <SelectItem value="8-Ball">8-Ball</SelectItem>
-                  <SelectItem value="9-Ball">9-Ball</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -173,13 +264,23 @@ export function TableManagement({ onPageChange }) {
                 id="hourlyRate"
                 type="number"
                 value={formData.hourlyRate}
-                onChange={(e) => setFormData({ ...formData, hourlyRate: parseInt(e.target.value) })}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    hourlyRate: parseInt(e.target.value)
+                  })
+                }
                 placeholder="Enter hourly rate"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select
+                value={formData.status}
+                onValueChange={value =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -196,11 +297,11 @@ export function TableManagement({ onPageChange }) {
               Cancel
             </Button>
             <Button onClick={handleSave}>
-              {editingTable ? 'Update' : 'Create'} Table
+              {editingTable ? "Update" : "Create"} Table
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }
