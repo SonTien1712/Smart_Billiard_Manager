@@ -13,6 +13,8 @@ import { useApi } from '../../hooks/useApi';
 import { handleSuccess, handleApiError } from '../../utils/errorHandler';
 
 export function ClubManagement({ onPageChange }) {
+const customer = JSON.parse(localStorage.getItem("currentUser"));
+    const customerId = customer?.id;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
   const [formData, setFormData] = useState({
@@ -24,7 +26,7 @@ export function ClubManagement({ onPageChange }) {
 
   // ✅ Tạo stable reference cho API function
   const getClubsFunction = React.useCallback(() => {
-    return customerService.getClubs();
+    return customerService.getClubsByCustomer(customerId);
   }, []);
 
   const {
@@ -106,11 +108,13 @@ export function ClubManagement({ onPageChange }) {
   };
 
   const handleSave = async () => {
+    
     const payload = {
         clubName: formData.name,
         address: formData.address,
         phoneNumber: formData.phone,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        customerID: customerId
     };
 
     try {

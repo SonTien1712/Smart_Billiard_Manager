@@ -12,6 +12,8 @@ public interface BilliardClubService {
     // Lấy theo ID
     Optional<Billardclub> getClubById(Integer id);
 
+    List<Billardclub> getClubsByCustomerId(Integer customerId);
+
     // Tạo mới
     Billardclub createClub(Billardclub club);
 
@@ -21,9 +23,5 @@ public interface BilliardClubService {
     // Xóa (xóa cứng khỏi DB)
     void deleteClub(Integer id);
 
-    // ✅ Bật / tắt trạng thái hoạt động
-    Billardclub toggleActive(Integer id);
 
-    // ✅ Lấy tất cả CLB đang hoạt động (nếu cần hiển thị riêng)
-    List<Billardclub> getActiveClubs();
 }
