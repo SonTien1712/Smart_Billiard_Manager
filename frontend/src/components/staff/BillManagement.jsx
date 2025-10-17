@@ -7,6 +7,7 @@ import { PageType } from '../Dashboard';
 import { Receipt, Plus, Play, Calculator, CreditCard, Clock } from 'lucide-react';
 import { formatVND } from '../../utils/currency';
 import { staffService } from '../../services/staffService';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { useAuth } from '../AuthProvider';
 
 
@@ -14,14 +15,19 @@ export function BillManagement({ onPageChange }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('tables');
   const [selectedTable, setSelectedTable] = useState(null);
+  const [activeBillId, setActiveBillId] = useState(null);
   const [currentOrder, setCurrentOrder] = useState([]);
   const [products, setProducts] = useState([]);
 
-  const [tables, setTables] = useState([]);
+      const [tables, setTables] = useState([]);
 
   const fetchProducts = async () => {
     try {
-      const data = await staffService.getProducts(clubId ? { clubId } : undefined);
+      const data = await staffService.getProducts(
+        (clubId || user?.customerId)
+          ? { ...(clubId ? { clubId } : {}), ...(user?.customerId ? { customerId: user.customerId } : {}) }
+          : undefined
+      );
       const normalized = (Array.isArray(data) ? data : []).map(p => ({
         id: p.id,
         name: p.productName,
@@ -36,16 +42,46 @@ export function BillManagement({ onPageChange }) {
   };
 
   const [recentBills, setRecentBills] = useState([]);
+  const [billDetail, setBillDetail] = useState(null);
+      const [detailOpen, setDetailOpen] = useState(false);
 
-  const clubId = useMemo(() => user?.clubId || user?.club?.id || user?.employeeClubId || user?.employee?.clubId, [user]);
+      const clubId = useMemo(() => user?.clubId || user?.club?.id || user?.employeeClubId || user?.employee?.clubId, [user]);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [tbls, bills] = await Promise.all([
-          staffService.getTables(clubId ? { clubId } : undefined),
-          staffService.getBills({ limit: 5, status: 'Paid', ...(clubId ? { clubId } : {}) })
-        ]);
+      // Load items for the current active bill (when resuming), ensure per-bill isolation
+      useEffect(() => {
+        const loadItems = async () => {
+          try {
+            if (!activeBillId) {
+              return;
+            }
+            const detail = await staffService.getBillById(activeBillId);
+            const items = Array.isArray(detail?.items) ? detail.items : [];
+            const mapped = items.map(it => ({
+              id: it.productId,
+              name: it.productName || `#${it.productId}`,
+              price: Number(it.unitPrice || 0),
+              quantity: Number(it.quantity || 0),
+              detailId: it.id,
+            })).filter(x => x.id && x.quantity > 0);
+            setCurrentOrder(mapped);
+          } catch (e) {
+            // If load fails, don't carry over previous order
+            setCurrentOrder([]);
+          }
+        };
+        loadItems();
+      }, [activeBillId]);
+
+      useEffect(() => {
+        const load = async () => {
+          try {
+            const params = (clubId || user?.customerId)
+              ? { ...(clubId ? { clubId } : {}), ...(user?.customerId ? { customerId: user.customerId } : {}), ...(user?.employeeId ? { employeeId: user.employeeId } : {}) }
+              : undefined;
+            const [tbls, bills] = await Promise.all([
+              staffService.getTables(params),
+              staffService.getBills({ limit: 5, status: 'Paid', ...(params || {}) })
+            ]);
         setTables(Array.isArray(tbls) ? tbls : []);
         setRecentBills(Array.isArray(bills) ? bills : []);
         await fetchProducts();
@@ -58,40 +94,191 @@ export function BillManagement({ onPageChange }) {
     load();
   }, [clubId]);
 
-  const handleTableOpen = async (table) => {
-    try {
-      // Attempt to create/open an active bill for this table
-      await staffService.openTable({
-        tableId: table.id,
-        clubId: user?.clubId || user?.club?.id,
-        customerId: user?.customerId || user?.customer?.id || 1,
-        employeeId: user?.employeeId
-      });
-      setSelectedTable(table);
-      setActiveTab('order');
+      const handleTableOpen = async (table) => {
+        try {
+          // Attempt to create/open an active bill for this table
+          const opened = await staffService.openTable({
+            tableId: table.id,
+            clubId: user?.clubId || user?.club?.id,
+            customerId: user?.customerId || user?.customer?.id || 1,
+            employeeId: user?.employeeId
+          });
+          // Reset order to avoid leaking items into new bills
+          setCurrentOrder([]);
+          if (opened?.id) setActiveBillId(opened.id);
+          setSelectedTable(table);
+          setActiveTab('order');
       // refresh tables to reflect occupied state
-      const refreshed = await staffService.getTables(clubId ? { clubId } : undefined);
-      setTables(Array.isArray(refreshed) ? refreshed : []);
+      const refreshed = await staffService.getTables(
+        (clubId || user?.customerId)
+          ? { ...(clubId ? { clubId } : {}), ...(user?.customerId ? { customerId: user.customerId } : {}) }
+          : undefined
+      );
+      const list = Array.isArray(refreshed) ? refreshed : [];
+      setTables(list);
+      const justOpened = list.find(t => t.id === table.id);
+      if (justOpened) {
+        setSelectedTable(justOpened);
+        if (justOpened.activeBillId && !opened?.id) setActiveBillId(justOpened.activeBillId);
+      }
     } catch (e) {
       console.error('Open table failed', e);
       alert('Bàn đã có phiên đang mở hoặc lỗi kết nối.');
     }
   };
 
-  const addToOrder = (product) => {
-    const existingItem = currentOrder.find((item) => item.id === product.id);
-    if (existingItem) {
-      setCurrentOrder(currentOrder.map((item) => 
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      ));
-    } else {
-      setCurrentOrder([...currentOrder, { ...product, quantity: 1 }]);
+  const handleCancelBill = async () => {
+    try {
+      if (!activeBillId) return;
+      await staffService.cancelBill(activeBillId, { employeeId: user?.employeeId });
+          const params = (clubId || user?.customerId)
+            ? { ...(clubId ? { clubId } : {}), ...(user?.customerId ? { customerId: user.customerId } : {}), ...(user?.employeeId ? { employeeId: user.employeeId } : {}) }
+            : undefined;
+      const [tbls, bills] = await Promise.all([
+        staffService.getTables(params),
+        staffService.getBills({ limit: 5, status: 'Paid', ...(params || {}) })
+      ]);
+      setTables(Array.isArray(tbls) ? tbls : []);
+      setRecentBills(Array.isArray(bills) ? bills : []);
+      setSelectedTable(null);
+      setActiveBillId(null);
+      setCurrentOrder([]);
+      setActiveTab('tables');
+    } catch (e) {
+      console.error('Cancel bill failed', e);
+      alert('Hủy bàn thất bại.');
     }
   };
 
-  const removeFromOrder = (productId) => {
-    setCurrentOrder(currentOrder.filter((item) => item.id !== productId));
+  const openBillDetail = async (billId) => {
+    try {
+      const detail = await staffService.getBillById(billId);
+      setBillDetail(detail || null);
+      setDetailOpen(true);
+    } catch (e) {
+      console.error('Load bill detail failed', e);
+      setBillDetail(null);
+      setDetailOpen(true);
+    }
   };
+
+  const handleProcessPayment = async () => {
+    try {
+      if (!activeBillId) return;
+      // Use current UI state for simple product total and 10% tax
+      const productsSubtotal = calculateTotal();
+      await staffService.completeBill(activeBillId, {
+        employeeId: user?.employeeId,
+        productTotal: productsSubtotal,
+        taxPercent: 10,
+        items: currentOrder.map(i => ({ productId: i.id, quantity: i.quantity }))
+      });
+      // refresh lists and reset state
+          const params = (clubId || user?.customerId)
+            ? { ...(clubId ? { clubId } : {}), ...(user?.customerId ? { customerId: user.customerId } : {}), ...(user?.employeeId ? { employeeId: user.employeeId } : {}) }
+            : undefined;
+      const [tbls, bills] = await Promise.all([
+        staffService.getTables(params),
+        staffService.getBills({ limit: 5, status: 'Paid', ...(params || {}) })
+      ]);
+      setTables(Array.isArray(tbls) ? tbls : []);
+      setRecentBills(Array.isArray(bills) ? bills : []);
+      setSelectedTable(null);
+      setActiveBillId(null);
+      setCurrentOrder([]);
+      setActiveTab('tables');
+    } catch (e) {
+      console.error('Complete bill failed', e);
+      alert('Thanh toán thất bại.');
+    }
+  };
+
+      const addToOrder = async (product) => {
+        // Persist to backend so order survives navigation
+        if (activeBillId) {
+          try {
+            const res = await staffService.addBillItem(activeBillId, { productId: product.id, quantity: 1, employeeId: user?.employeeId });
+            // Refresh from server to ensure consistency
+            const detail = await staffService.getBillById(activeBillId);
+            const items = Array.isArray(detail?.items) ? detail.items : [];
+            const mapped = items.map(it => ({
+              id: it.productId,
+              name: it.productName || `#${it.productId}`,
+              price: Number(it.unitPrice || 0),
+              quantity: Number(it.quantity || 0),
+              detailId: it.id,
+            })).filter(x => x.id && x.quantity > 0);
+            setCurrentOrder(mapped);
+          } catch (e) {
+            console.error('add item failed', e);
+          }
+          return;
+        }
+        // Fallback: local state (should not normally happen because bill opens first)
+        const existingItem = currentOrder.find((item) => item.id === product.id);
+        if (existingItem) {
+          setCurrentOrder(currentOrder.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+        } else {
+          setCurrentOrder([...currentOrder, { ...product, quantity: 1 }]);
+        }
+      };
+
+      const decrementItem = async (productId) => {
+        const found = currentOrder.find(i => i.id === productId);
+        if (!found) return;
+        if (activeBillId && found.detailId) {
+          try {
+            const nextQty = (found.quantity || 0) - 1;
+            if (nextQty <= 0) {
+              await staffService.removeBillItem(activeBillId, found.detailId, { employeeId: user?.employeeId });
+            } else {
+              await staffService.updateBillItem(activeBillId, found.detailId, { quantity: nextQty, employeeId: user?.employeeId });
+            }
+            const detail = await staffService.getBillById(activeBillId);
+            const items = Array.isArray(detail?.items) ? detail.items : [];
+            const mapped = items.map(it => ({
+              id: it.productId,
+              name: it.productName || `#${it.productId}`,
+              price: Number(it.unitPrice || 0),
+              quantity: Number(it.quantity || 0),
+              detailId: it.id,
+            })).filter(x => x.id && x.quantity > 0);
+            setCurrentOrder(mapped);
+          } catch (e) {
+            console.error('decrement item failed', e);
+          }
+          return;
+        }
+        // fallback local
+        if (found.quantity <= 1) {
+          setCurrentOrder(currentOrder.filter(i => i.id !== productId));
+        } else {
+          setCurrentOrder(currentOrder.map(i => i.id === productId ? { ...i, quantity: i.quantity - 1 } : i));
+        }
+      };
+
+      const removeFromOrder = async (productId) => {
+        const found = currentOrder.find(i => i.id === productId);
+        if (activeBillId && found?.detailId) {
+          try {
+            await staffService.removeBillItem(activeBillId, found.detailId, { employeeId: user?.employeeId });
+            const detail = await staffService.getBillById(activeBillId);
+            const items = Array.isArray(detail?.items) ? detail.items : [];
+            const mapped = items.map(it => ({
+              id: it.productId,
+              name: it.productName || `#${it.productId}`,
+              price: Number(it.unitPrice || 0),
+              quantity: Number(it.quantity || 0),
+              detailId: it.id,
+            })).filter(x => x.id && x.quantity > 0);
+            setCurrentOrder(mapped);
+          } catch (e) {
+            console.error('remove item failed', e);
+          }
+          return;
+        }
+        setCurrentOrder(currentOrder.filter((item) => item.id !== productId));
+      };
 
   const calculateTotal = () => {
     return currentOrder.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -132,9 +319,18 @@ export function BillManagement({ onPageChange }) {
                   <Card 
                     key={table.id} 
                     className={`cursor-pointer transition-colors ${
-                      table.status === 'available' ? 'hover:bg-accent border-primary/20' : 'opacity-50'
+                      table.status === 'available' || (table.status === 'occupied' && table.openedByEmployeeId && user?.employeeId && table.openedByEmployeeId === user.employeeId)
+                        ? 'hover:bg-accent border-primary/20' : 'opacity-50'
                     }`}
-                    onClick={() => table.status === 'available' && handleTableOpen(table)}
+                    onClick={() => {
+                      if (table.status === 'available') return handleTableOpen(table);
+                      // Allow resume if this employee owns the active bill
+                      if (table.status === 'occupied' && table.openedByEmployeeId && user?.employeeId && table.openedByEmployeeId === user.employeeId) {
+                        setSelectedTable(table);
+                        setActiveBillId(table.activeBillId || null);
+                        setActiveTab('order');
+                      }
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="space-y-2">
@@ -161,6 +357,11 @@ export function BillManagement({ onPageChange }) {
                             Open Table
                           </Button>
                         )}
+                        {table.status === 'occupied' && table.openedByEmployeeId && user?.employeeId && table.openedByEmployeeId === user.employeeId && (
+                          <Button size="sm" variant="outline" className="w-full">
+                            Resume
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -177,7 +378,7 @@ export function BillManagement({ onPageChange }) {
             <CardContent>
               <div className="space-y-4">
                 {recentBills.map((bill) => (
-                  <div key={bill.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={bill.id} className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-accent/40" onClick={() => openBillDetail(bill.id)}>
                     <div className="space-y-1">
                       <p className="font-medium">#{String(bill.id).padStart(3,'0')}</p>
                       <p className="text-sm text-muted-foreground">{bill.tableName || '—'}</p>
@@ -194,6 +395,41 @@ export function BillManagement({ onPageChange }) {
               </div>
             </CardContent>
           </Card>
+          {/* Bill Detail Dialog */}
+          <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Bill #{billDetail?.id}</DialogTitle>
+                <DialogDescription>{billDetail?.tableName || ''} — {(billDetail?.status || '').toLowerCase()}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>Start: {billDetail?.startedAt ? new Date(billDetail.startedAt).toLocaleString() : '—'}</div>
+                  <div>End: {billDetail?.endedAt ? new Date(billDetail.endedAt).toLocaleString() : '—'}</div>
+                  <div>Total Hours: {billDetail?.totalHours ?? 0}</div>
+                  <div>Table Cost: {formatVND(Number(billDetail?.totalTableCost || 0))}</div>
+                  <div>Products: {formatVND(Number(billDetail?.totalProductCost || 0))}</div>
+                  <div>Discount: {formatVND(Number(billDetail?.discount || 0))}</div>
+                  <div className="col-span-2 font-semibold">Final: {formatVND(Number(billDetail?.finalAmount || 0))}</div>
+                </div>
+                <div className="border-t pt-2">
+                  <p className="font-medium mb-2">Items</p>
+                  {Array.isArray(billDetail?.items) && billDetail.items.length > 0 ? (
+                    <div className="space-y-1 text-sm">
+                      {billDetail.items.map(it => (
+                        <div key={it.id} className="flex justify-between">
+                          <span>{it.productName || `#${it.productId}` } x{it.quantity}</span>
+                          <span>{formatVND(Number(it.subTotal || 0))}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No items</p>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="order" className="space-y-6">
@@ -236,7 +472,8 @@ export function BillManagement({ onPageChange }) {
                               </p>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                              <span className="font-medium">{formatVND(item.price * item.quantity)}</span>
+                              <Button size="sm" variant="outline" onClick={() => decrementItem(item.id)}>-</Button>
                               <Button size="sm" variant="outline" onClick={() => removeFromOrder(item.id)}>
                                 Remove
                               </Button>
@@ -259,6 +496,9 @@ export function BillManagement({ onPageChange }) {
                 <div className="flex justify-end space-x-2 mt-6">
                   <Button variant="outline" onClick={() => setActiveTab('tables')}>
                     Back to Tables
+                  </Button>
+                  <Button variant="destructive" onClick={handleCancelBill} disabled={!activeBillId}>
+                    Cancel Bill
                   </Button>
                   <Button onClick={() => setActiveTab('checkout')}>
                     <Calculator className="h-4 w-4 mr-2" />
@@ -285,14 +525,32 @@ export function BillManagement({ onPageChange }) {
                       <div className="p-4 border rounded-lg">
                         <div className="flex items-center space-x-2 mb-2">
                           <Clock className="h-4 w-4 text-primary" />
-                          <span>Playing Time: 2 hours 30 minutes</span>
+                          {(() => {
+                            const start = selectedTable.startedAt ? new Date(selectedTable.startedAt) : null;
+                            let diffMin = 0;
+                            if (start) {
+                              diffMin = Math.max(0, Math.round((Date.now() - start.getTime()) / 60000));
+                            }
+                            const rem = diffMin % 6;
+                            const rounded = rem >= 3 ? diffMin + (6 - rem) : diffMin - rem;
+                            const h = Math.floor(rounded / 60);
+                            const m = rounded % 60;
+                            return <span>Playing Time: {h} hour{h!==1?'s':''} {m} minutes</span>;
+                          })()}
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Rate: {formatVND(selectedTable.hourlyRate)}/hour
                         </p>
-                        <p className="font-medium">
-                          Subtotal: {formatVND(selectedTable.hourlyRate * 2.5)}
-                        </p>
+                        {(() => {
+                          const start = selectedTable.startedAt ? new Date(selectedTable.startedAt) : null;
+                          let diffMin = 0;
+                          if (start) diffMin = Math.max(0, Math.round((Date.now() - start.getTime()) / 60000));
+                          const rem = diffMin % 6;
+                          const rounded = rem >= 3 ? diffMin + (6 - rem) : diffMin - rem;
+                          const hours = rounded / 60;
+                          const subtotal = (selectedTable.hourlyRate || 0) * hours;
+                          return <p className="font-medium">Subtotal: {formatVND(subtotal)}</p>;
+                        })()}
                       </div>
                     </div>
 
@@ -321,32 +579,49 @@ export function BillManagement({ onPageChange }) {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Table Time:</span>
-                        <span>{formatVND(selectedTable.hourlyRate * 2.5)}</span>
+                  {(() => {
+                    const start = selectedTable.startedAt ? new Date(selectedTable.startedAt) : null;
+                    let diffMin = 0;
+                    if (start) diffMin = Math.max(0, Math.round((Date.now() - start.getTime()) / 60000));
+                    const rem = diffMin % 6;
+                    const rounded = rem >= 3 ? diffMin + (6 - rem) : diffMin - rem;
+                    const hours = rounded / 60;
+                    const tableSubtotal = (selectedTable.hourlyRate || 0) * hours;
+                    const productsSubtotal = calculateTotal();
+                    const tax = (tableSubtotal + productsSubtotal) * 0.1;
+                    const total = tableSubtotal + productsSubtotal + tax;
+                    return (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Table Time:</span>
+                            <span>{formatVND(tableSubtotal)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Products:</span>
+                            <span>{formatVND(productsSubtotal)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Tax (10%):</span>
+                            <span>{formatVND(tax)}</span>
+                          </div>
+                          <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                            <span>Total:</span>
+                            <span>{formatVND(total)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Products:</span>
-                        <span>{formatVND(calculateTotal())}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Tax (10%):</span>
-                        <span>{formatVND((selectedTable.hourlyRate * 2.5 + calculateTotal()) * 0.1)}</span>
-                      </div>
-                      <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                        <span>Total:</span>
-                        <span>{formatVND((selectedTable.hourlyRate * 2.5 + calculateTotal()) * 1.1)}</span>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setActiveTab('order')}>
                       Back to Order
                     </Button>
-                    <Button className="bg-green-600 hover:bg-green-700">
+                    <Button variant="destructive" onClick={handleCancelBill} disabled={!activeBillId}>
+                      Cancel Bill
+                    </Button>
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={handleProcessPayment} disabled={!activeBillId}>
                       <CreditCard className="h-4 w-4 mr-2" />
                       Process Payment
                     </Button>

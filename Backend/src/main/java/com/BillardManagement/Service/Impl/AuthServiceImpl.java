@@ -2,6 +2,7 @@ package com.BillardManagement.Service.Impl;
 
 import com.BillardManagement.DTO.Request.LoginRequest;
 import com.BillardManagement.DTO.Response.LoginResponse;
+import com.BillardManagement.DTO.Response.EmployeeUserView;
 import com.BillardManagement.Entity.Admin;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Entity.Employeeaccount;
@@ -24,13 +25,18 @@ public class AuthServiceImpl implements AuthService {
     private final CustomerRepo customerRepo;
     private final EmployeeAccountRepo employeeRepo;
 
+    // Nghiệp vụ đăng nhập (ưu tiên nhân viên)
+    // - Nhận identifier (email/username) + password
+    // - Thứ tự kiểm tra: admin → employee → customer
+    // - Với nhân viên: cho phép đăng nhập bằng username hoặc email nhân viên
+    // - Trả về LoginResponse chứa token mẫu và thông tin người dùng rút gọn
     @Override
     public LoginResponse login(LoginRequest request) {
-        String username = request.getEmail();
+        String identifier = request.getEmail(); // can be username or email
         String password = request.getPassword();
 
         // thử kiểm tra theo thứ tự: admin → employee → customer
-        Optional<Admin> adminOpt = adminRepo.findByEmail(username);
+        Optional<Admin> adminOpt = adminRepo.findByEmail(identifier);
         if (adminOpt.isPresent()) {
             Admin admin = adminOpt.get();
             if (PasswordUtil.matches(password, admin.getPasswordHash())) {
@@ -39,16 +45,24 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(false, "Sai mật khẩu admin", null, null);
         }
 
-        Optional<Employeeaccount> empOpt = employeeRepo.findEmployeeaccountByUsernameAndPasswordHash(username, password);
+        // Prefer employee if identifier matches an employee username or email
+        Optional<Employeeaccount> empOpt = employeeRepo.findByUsername(identifier);
+        if (empOpt.isEmpty() && identifier != null && identifier.contains("@")) {
+            empOpt = employeeRepo.findByEmployeeEmail(identifier);
+        }
         if (empOpt.isPresent()) {
             Employeeaccount emp = empOpt.get();
             if (PasswordUtil.matches(password, emp.getPasswordHash())) {
-                return new LoginResponse(true, "Đăng nhập nhân viên thành công", "TOKEN_EMPLOYEE", emp);
+                Optional<EmployeeUserView> viewOpt = identifier != null && identifier.contains("@")
+                        ? employeeRepo.findViewByEmployeeEmail(identifier)
+                        : employeeRepo.findWithEmployeeByUsername(identifier);
+                return new LoginResponse(true, "Đăng nhập nhân viên thành công", "TOKEN_EMPLOYEE", viewOpt.orElse(null));
             }
+            // If identified as employee, do not fall through to customer
             return new LoginResponse(false, "Sai mật khẩu nhân viên", null, null);
         }
 
-        Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(username, password);
+        Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(identifier, password);
         if (customerOpt.isPresent()) {
             return new LoginResponse(true, "Đăng nhập khách hàng thành công", "TOKEN_CUSTOMER", customerOpt.get());
         }

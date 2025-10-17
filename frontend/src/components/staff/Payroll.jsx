@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Calendar } from 'lucide-react';
 import { staffService } from '../../services/staffService';
+import { formatVND } from '../../utils/currency';
 import { useAuth } from '../AuthProvider';
 
 export function Payroll() {
@@ -23,7 +24,7 @@ export function Payroll() {
   const load = async () => {
     setLoading(true);
     try {
-      const result = await staffService.getPayrollSummary({ accountId: user?.id, startDate, endDate });
+      const result = await staffService.getPayrollSummary({ accountId: user?.accountId, startDate, endDate });
       setSummary(result);
     } catch (e) {
       console.error('Failed to load payroll summary', e);
@@ -75,13 +76,13 @@ export function Payroll() {
               <Card className="card-elevated">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Hourly Rate</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${Number(summary?.hourlyRate ?? 0).toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{formatVND(summary?.hourlyRate ?? 0)}</div>
                 </CardContent>
               </Card>
               <Card className="card-elevated">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Total Pay</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${Number(summary?.totalPay ?? 0).toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{formatVND(summary?.totalPay ?? 0)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -89,7 +90,7 @@ export function Payroll() {
               <Card className="card-elevated">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Total Công</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{summary?.totalShifts ?? 0}</div>
+                  <div className="text-2xl font-bold">{summary?.totalShifts ?? 0}/{summary?.scheduledShifts ?? 0}</div>
                 </CardContent>
               </Card>
               <Card className="card-elevated">
@@ -101,7 +102,7 @@ export function Payroll() {
               <Card className="card-elevated">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Night Bonus</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${Number(summary?.nightBonus ?? 0).toFixed(0)}</div>
+                  <div className="text-2xl font-bold">{formatVND(summary?.nightBonus ?? 0)}</div>
                 </CardContent>
               </Card>
             </div>

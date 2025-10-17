@@ -33,7 +33,7 @@ export function WorkAndAttendance() {
     setLoading(true);
     try {
       const data = await staffService.getSchedule({
-        accountId: user?.id,
+        accountId: user?.accountId,
         employeeId: user?.employeeId,
         startDate: toLocalYMD(startOfWeek),
         endDate: toLocalYMD(endOfWeek)
@@ -122,11 +122,14 @@ export function WorkAndAttendance() {
   const canCheckInNow = (slot, shift) => {
     if (!shift) return false;
     if (hasActive) return false;
+    if ((shift.status || '').toLowerCase() === 'absent') return false;
     const now = new Date();
     const [sh, sm] = (shift.startTime || '00:00:00').split(':').map(Number);
     const [yy, mm, dd] = (shift.shiftDate || '').split('-').map(Number);
     const start = new Date(yy || now.getFullYear(), (mm ? mm - 1 : now.getMonth()), dd || now.getDate(), sh, sm, 0);
-    return now >= start;
+    const earliest = new Date(start.getTime() - 15 * 60 * 1000);
+    const latest = new Date(start.getTime() + 5 * 60 * 1000);
+    return now >= earliest && now <= latest;
   };
 
   const getShiftPill = (t) => {
@@ -146,6 +149,16 @@ export function WorkAndAttendance() {
       case 'completed': return 'outline';
       case 'absent': return 'destructive';
       default: return 'secondary';
+    }
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch ((status || '').toLowerCase()) {
+      case 'completed':
+        // Force green styling for Completed
+        return 'bg-green-600 text-white hover:bg-green-700 border-transparent';
+      default:
+        return '';
     }
   };
 
@@ -201,17 +214,27 @@ export function WorkAndAttendance() {
                       {daySlots.map((slot) => {
                         const code = slotLabelToCode[slot.label];
                         const s = dayShifts.find((x) => (x.slotCode && x.slotCode.toUpperCase() === code) || inSlot(x, slot));
+                        const status = (s?.status || '').toLowerCase();
+                        const containerClass = s
+                          ? (status === 'absent'
+                              ? 'bg-red-50 border-red-200'
+                              : status === 'completed'
+                                ? 'bg-green-50 border-green-200'
+                                : status === 'present'
+                                  ? 'bg-yellow-50 border-yellow-200'
+                                  : 'bg-background')
+                          : 'bg-muted/40';
                         return (
-                          <div key={slot.label} className={`p-3 rounded-lg border ${s ? 'bg-background' : 'bg-muted/40'}`}>
+                          <div key={slot.label} className={`p-3 rounded-lg border ${containerClass}`}>
                             <div className="flex items-center justify-between mb-1">
                               <span className={`px-2 py-1 text-xs rounded border ${getShiftPill(slot.label)}`}>{slot.label}</span>
-                              {s && <Badge variant={getStatusBadge(s.status)} className="capitalize">{s.status || 'scheduled'}</Badge>}
+                              {s && <Badge variant={getStatusBadge(s.status)} className={`capitalize ${getStatusBadgeClass(s.status)}`}>{s.status || 'scheduled'}</Badge>}
                             </div>
                             {s ? (
                               <>
                                 <div className="text-sm text-muted-foreground">{s.startTime || ''} - {s.endTime || ''} {isNightByStart(s.startTime) && <span className="ml-2 text-xs">(Đêm +20k)</span>}</div>
                                 <div className="flex items-center space-x-2 mt-2">
-                                  {!s.actualStartTime && (
+                                  {!s.actualStartTime && (status !== 'absent') && (
                                     <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={!canCheckInNow(slot, s)} onClick={() => handleCheckIn(s.id)}>
                                       <LogIn className="h-4 w-4 mr-2" />Check In
                                     </Button>

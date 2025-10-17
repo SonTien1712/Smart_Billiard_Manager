@@ -28,29 +28,37 @@ export class StaffService {
     return this.normalize(response);
   }
 
-  async completeBill(id) {
-    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/complete`);
+  async completeBill(id, opts) {
+    const query = new URLSearchParams(opts && opts.employeeId ? { employeeId: opts.employeeId } : {}).toString();
+    const body = {};
+    if (opts && typeof opts.productTotal !== 'undefined') body.productTotal = opts.productTotal;
+    if (opts && typeof opts.taxPercent !== 'undefined') body.taxPercent = opts.taxPercent;
+    if (opts && typeof opts.discount !== 'undefined') body.discount = opts.discount;
+    if (opts && Array.isArray(opts.items)) body.items = opts.items;
+    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/complete${query ? `?${query}` : ''}`, body);
     return this.normalize(response);
   }
 
-  async cancelBill(id) {
-    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/cancel`);
+  async cancelBill(id, opts) {
+    const query = new URLSearchParams(opts && opts.employeeId ? { employeeId: opts.employeeId } : {}).toString();
+    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/cancel${query ? `?${query}` : ''}`);
     return this.normalize(response);
   }
 
   // Bill Items Management
   async addBillItem(billId, itemData) {
-    const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items`, itemData);
+    const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items${itemData?.employeeId ? `?employeeId=${itemData.employeeId}` : ''}`, itemData);
     return this.normalize(response);
   }
 
   async updateBillItem(billId, itemId, itemData) {
-    const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items/${itemId}`, itemData);
+    const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items/${itemId}${itemData?.employeeId ? `?employeeId=${itemData.employeeId}` : ''}`, itemData);
     return this.normalize(response);
   }
 
-  async removeBillItem(billId, itemId) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items/${itemId}`);
+  async removeBillItem(billId, itemId, opts) {
+    const query = new URLSearchParams(opts && opts.employeeId ? { employeeId: opts.employeeId } : {}).toString();
+    await apiClient.delete(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items/${itemId}${query ? `?${query}` : ''}`);
   }
 
   // Table Management (Staff View)

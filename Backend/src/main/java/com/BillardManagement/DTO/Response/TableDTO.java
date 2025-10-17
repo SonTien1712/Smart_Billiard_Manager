@@ -19,5 +19,7 @@ public class TableDTO {
     private BigDecimal hourlyRate;
     private String status; // available | occupied | maintenance (from DB/status logic)
     private Instant startedAt; // if occupied
+    private Integer activeBillId; // if occupied
+    private Integer openedByEmployeeId; // owner of the active bill (if any)
 }
 

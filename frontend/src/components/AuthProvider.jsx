@@ -51,17 +51,16 @@ export function AuthProvider({ children }) {
       const token = authResponse?.accessToken || '';
       localStorage.setItem('accessToken', token);
 
-      // gán role từ token
-      const role =
+      // Ưu tiên role từ server (nếu có), sau đó mới suy ra từ token
+      const serverRole = authResponse?.user?.role;
+      const derivedRole =
         getRoleFromToken(token)
-        // (tùy chọn) fallback nếu cần:
         || (/\badmin\b/i.test(authResponse?.message || '') ? 'ADMIN' : undefined)
-        || 'CUSTOMER'; // mặc định nếu vẫn không xác định
+        || 'CUSTOMER';
 
-      // chuẩn hoá user trước khi lưu vào context/local storage
       const normalizedUser = {
         ...(authResponse?.user || {}),
-        role, // ==> ADMIN | STAFF | CUSTOMER
+        role: serverRole || derivedRole, // ADMIN | STAFF | CUSTOMER
       };
       setUser(normalizedUser);
       authService.setCurrentUser(normalizedUser);

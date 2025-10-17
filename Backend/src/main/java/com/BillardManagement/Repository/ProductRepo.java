@@ -10,5 +10,6 @@ import java.util.List;
 public interface ProductRepo extends JpaRepository<Product, Integer> {
     List<Product> findByIsActiveTrueOrderByProductNameAsc();
     List<Product> findByClubID_IdAndIsActiveTrueOrderByProductNameAsc(Integer clubId);
+    List<Product> findByCustomerID_IdAndIsActiveTrueOrderByProductNameAsc(Integer customerId);
 }
 

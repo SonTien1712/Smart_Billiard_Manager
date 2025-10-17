@@ -3,6 +3,7 @@ package com.BillardManagement.Repository;
 import com.BillardManagement.Entity.Billiardtable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,6 +14,6 @@ public interface BilliardtableRepo extends JpaRepository<Billiardtable, Integer>
     List<Billiardtable> findByClubID_Id(Integer clubId);
     List<Billiardtable> findByCustomerID_Id(Integer customerId);
 
-    @Lock(org.springframework.data.jpa.repository.LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Billiardtable> findLockedById(Integer id);
 }

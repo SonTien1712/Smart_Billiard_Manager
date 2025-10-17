@@ -28,6 +28,11 @@ public class StaffController {
     private final EmployeeshiftRepo employeeshiftRepo;
     private final EmployeeAccountRepo employeeAccountRepo;
 
+    // Nghiệp vụ: Lấy lịch làm việc theo tuần cho nhân viên
+    // - Tự suy ra employeeId từ accountId nếu cung cấp accountId (đăng nhập)
+    // - Mặc định phạm vi là tuần hiện tại nếu không truyền startDate/endDate
+    // - Tự động đánh vắng (Absent) nếu quá 5 phút sau giờ bắt đầu mà chưa check-in
+    // - Trả về danh sách ShiftDTO cho frontend hiển thị lịch
     @GetMapping("/schedule")
     public ResponseEntity<List<ShiftDTO>> getSchedule(
             @RequestParam(value = "employeeId", required = false) Integer employeeId,
@@ -59,14 +64,28 @@ public class StaffController {
         List<Employeeshift> shifts = employeeshiftRepo
                 .findByEmployeeID_IdAndShiftDateBetween(resolvedEmployeeId, startDate, endDate);
 
-        // Auto-mark absent if late > 5 minutes without check-in
+        // Auto-mark absent if late > 5 minutes without check-in.
+        // Also revert premature Absent to Scheduled if not yet in grace window.
         Instant now = Instant.now();
         boolean changed = false;
         for (Employeeshift s : shifts) {
-            if (s.getActualStartTime() == null && s.getStatus() != null && s.getStatus().equalsIgnoreCase("Scheduled")) {
-                Instant shiftStart = toShiftStartInstant(s);
+            String st = s.getStatus();
+            boolean isScheduledLike = (st == null || st.isBlank() || st.equalsIgnoreCase("Scheduled"));
+            Instant shiftStart = toShiftStartInstant(s);
+
+            // Late without check-in -> mark Absent
+            if (s.getActualStartTime() == null && isScheduledLike) {
                 if (shiftStart != null && now.isAfter(shiftStart.plus(5, ChronoUnit.MINUTES))) {
                     s.setStatus("Absent");
+                    employeeshiftRepo.save(s);
+                    changed = true;
+                }
+            }
+
+            // If previously marked Absent but it's not yet time, revert to Scheduled
+            if (s.getActualStartTime() == null && st != null && st.equalsIgnoreCase("Absent")) {
+                if (shiftStart != null && now.isBefore(shiftStart.plus(5, ChronoUnit.MINUTES))) {
+                    s.setStatus("Scheduled");
                     employeeshiftRepo.save(s);
                     changed = true;
                 }
@@ -80,6 +99,11 @@ public class StaffController {
         return ResponseEntity.ok(dtos);
     }
 
+    // Nghiệp vụ: Check-in ca làm việc
+    // - Chặn việc một nhân viên có 2 ca đang hoạt động (đã start nhưng chưa end)
+    // - Cho phép check-in từ 15 phút trước giờ bắt đầu đến 5 phút sau giờ bắt đầu
+    // - Nếu trễ hơn +5 phút mà chưa check-in: đánh trạng thái Absent và trả lỗi
+    // - Check-in thành công sẽ lưu thời điểm thực tế và đặt trạng thái Present
     @PostMapping("/attendance/check-in")
     public ResponseEntity<ShiftDTO> checkIn(@RequestBody CheckInRequest request) {
         Optional<Employeeshift> opt = employeeshiftRepo.findById(request.getShiftId());
@@ -96,12 +120,17 @@ public class StaffController {
         Instant now = Instant.now();
         Instant shiftStart = toShiftStartInstant(shift);
         if (shiftStart != null) {
-            // cannot check in before shift
-            if (now.isBefore(shiftStart)) {
+            // Allow check-in from 15 minutes before to 5 minutes after start
+            Instant earliest = shiftStart.minus(15, ChronoUnit.MINUTES);
+            Instant latest = shiftStart.plus(5, ChronoUnit.MINUTES);
+
+            // Too early
+            if (now.isBefore(earliest)) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
-            // mark absent if > 5 minutes late
-            if (now.isAfter(shiftStart.plus(5, ChronoUnit.MINUTES)) && shift.getActualStartTime() == null) {
+
+            // Too late -> mark absent
+            if (now.isAfter(latest) && shift.getActualStartTime() == null) {
                 shift.setStatus("Absent");
                 employeeshiftRepo.save(shift);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(toDTO(shift));
@@ -116,6 +145,10 @@ public class StaffController {
         return ResponseEntity.ok(toDTO(shift));
     }
 
+    // Nghiệp vụ: Check-out ca làm việc
+    // - Yêu cầu ca đã được check-in trước đó
+    // - Lưu thời điểm kết thúc thực tế, tính số giờ làm = Duration(actualStart, actualEnd)
+    // - Đặt trạng thái Completed sau khi tính giờ
     @PatchMapping("/attendance/{shiftId}/check-out")
     public ResponseEntity<ShiftDTO> checkOut(@PathVariable Integer shiftId) {
         Optional<Employeeshift> opt = employeeshiftRepo.findById(shiftId);
@@ -137,6 +170,12 @@ public class StaffController {
         return ResponseEntity.ok(toDTO(shift));
     }
 
+    // Nghiệp vụ: Tổng hợp lương theo tháng/khoảng thời gian
+    // - Xác định nhân viên từ employeeId hoặc accountId
+    // - Tính các chỉ số: tổng công (trừ Absent), công đêm, tổng giờ thực tế
+    // - NightBonus = công đêm * 20.000
+    // - TotalPay = tổng công * 4 giờ * HourlyRate + NightBonus
+    // - scheduledShifts: tổng số ca theo lịch trong khoảng, dùng để hiển thị a/b
     @GetMapping("/payroll/summary")
     public ResponseEntity<PayrollSummaryDTO> payrollSummary(
             @RequestParam(value = "employeeId", required = false) Integer employeeId,
@@ -169,6 +208,7 @@ public class StaffController {
                 .findByEmployeeID_IdAndShiftDateBetween(resolvedEmployeeId, startDate, endDate);
 
         // Calculate công and night công
+        long scheduledShifts = shifts.size();
         long totalShifts = shifts.stream()
                 .filter(s -> s.getStatus() != null && !s.getStatus().equalsIgnoreCase("Absent"))
                 .count();
@@ -193,21 +233,13 @@ public class StaffController {
                 .flatMap(list -> list.stream().findFirst())
                 .map(s -> s.getEmployeeID() != null ? s.getEmployeeID().getEmployeeType() : null)
                 .orElse("");
-        BigDecimal baseSalary = Optional.ofNullable(shifts)
-                .flatMap(list -> list.stream().findFirst())
-                .map(s -> s.getEmployeeID() != null ? s.getEmployeeID().getSalary() : null)
-                .orElse(BigDecimal.ZERO);
 
-        BigDecimal totalPay;
-        if (employmentType != null && employmentType.toLowerCase().contains("full")) {
-            // Full time: 50 công => 100% salary, prorated, + night bonus
-            BigDecimal ratio = BigDecimal.valueOf(Math.min(totalShifts, 50L)).divide(BigDecimal.valueOf(50L), 4, java.math.RoundingMode.HALF_UP);
-            totalPay = baseSalary.multiply(ratio).add(nightBonus);
-        } else {
-            // Part time: số công x 4 x hourlyRate + night bonus
-            BigDecimal ptPay = BigDecimal.valueOf(totalShifts).multiply(BigDecimal.valueOf(4)).multiply(hourlyRate);
-            totalPay = ptPay.add(nightBonus);
-        }
+        // Total pay = totalShifts x 4h x hourlyRate + nightBonus
+        BigDecimal safeHourly = hourlyRate == null ? BigDecimal.ZERO : hourlyRate;
+        BigDecimal shiftPay = BigDecimal.valueOf(totalShifts)
+                .multiply(BigDecimal.valueOf(4))
+                .multiply(safeHourly);
+        BigDecimal totalPay = shiftPay.add(nightBonus == null ? BigDecimal.ZERO : nightBonus);
 
         PayrollSummaryDTO dto = new PayrollSummaryDTO();
         dto.setStartDate(startDate);
@@ -216,13 +248,16 @@ public class StaffController {
         dto.setHourlyRate(hourlyRate);
         dto.setTotalPay(totalPay);
         dto.setTotalShifts((int) totalShifts);
+        dto.setScheduledShifts((int) scheduledShifts);
         dto.setNightShifts((int) nightShifts);
         dto.setEmploymentType(employmentType);
-        dto.setBaseSalary(baseSalary);
         dto.setNightBonus(nightBonus);
         return ResponseEntity.ok(dto);
     }
 
+    // Chuyển đổi thực thể Employeeshift sang ShiftDTO cho frontend
+    // - Suy ra loại ca (Sáng/Chiều/Đêm) từ slotCode nếu có
+    // - Suy ra trạng thái nếu DB chưa set: Scheduled/Present/Completed theo actual times
     private ShiftDTO toDTO(Employeeshift e) {
         ShiftDTO d = new ShiftDTO();
         d.setId(e.getId());
@@ -258,18 +293,32 @@ public class StaffController {
         return d;
     }
 
+    // Xác định ca đêm dựa trên giờ bắt đầu (>=22:00 hoặc <06:00)
     private boolean isNightShift(Employeeshift s) {
         if (s.getStartTime() == null) return false;
         int startMin = s.getStartTime().getHour() * 60 + s.getStartTime().getMinute();
         return startMin >= 22 * 60 || startMin < 6 * 60;
     }
 
+    // Tạo mốc thời gian Instant cho thời điểm bắt đầu ca theo ngày + giờ bắt đầu
     private Instant toShiftStartInstant(Employeeshift s) {
         if (s.getShiftDate() == null || s.getStartTime() == null) return null;
-        LocalDateTime ldt = LocalDateTime.of(s.getShiftDate(), s.getStartTime());
+        LocalDate date = s.getShiftDate();
+        // Nếu là ca đêm (Đêm/DEM) và bắt đầu trước 06:00, coi như thuộc ngày kế tiếp
+        String code = s.getSlotCode();
+        int startHour = s.getStartTime().getHour();
+        if (startHour < 6) {
+            String n = code == null ? "" : code.trim();
+            String lower = n.toLowerCase();
+            if (lower.startsWith("dem") || lower.startsWith("đêm")) {
+                date = date.plusDays(1);
+            }
+        }
+        LocalDateTime ldt = LocalDateTime.of(date, s.getStartTime());
         return ldt.atZone(ZoneId.systemDefault()).toInstant();
     }
 
+    // Payload nhận khi check-in: chỉ cần shiftId
     public static class CheckInRequest {
         private Integer shiftId;
         public Integer getShiftId() { return shiftId; }
