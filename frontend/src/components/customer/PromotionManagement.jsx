@@ -19,7 +19,7 @@ export function PromotionManagement({ onPageChange }) {
   ]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPromotion, setEditingPromotion] = useState<any>(null);
+    const [editingPromotion, setEditingPromotion] = useState(null);
   const [formData, setFormData] = useState({
     code: '',
     name: '',
