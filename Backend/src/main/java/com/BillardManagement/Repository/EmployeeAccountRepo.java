@@ -1,6 +1,7 @@
 package com.BillardManagement.Repository;
 
 import com.BillardManagement.DTO.Response.EmployeeUserView;
+import com.BillardManagement.Entity.Employee;
 import com.BillardManagement.Entity.Employeeaccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

@@ -14,6 +14,7 @@ export function SignUp({ onNavigate }) {
     name: '',
     email: '',
     phone: '',
+    address: '',
     password: '',
     confirmPassword: ''
   });
@@ -23,6 +24,7 @@ export function SignUp({ onNavigate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { loginWithGoogle } = useAuth();
+  const { register } = useAuth();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,12 +52,23 @@ export function SignUp({ onNavigate }) {
     }
 
     try {
-      // Mock signup - in real app, this would call an API
-      setTimeout(() => {
-        onNavigate('signin');
-      }, 1000);
+    const result = await register({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      password: formData.password,
+    });
+
+    if (result?.success) {
+      // chỉ thông báo
+      window.alert(result.message || 'Đăng ký thành công');
+      onNavigate('signin');
+    } else {
+      window.alert(result?.message || 'Đăng ký thất bại');
+    }
     } catch (err) {
-      setError('Failed to create account');
+      window.alert('Có lỗi xảy ra khi đăng ký');
     } finally {
       setIsLoading(false);
     }
@@ -126,6 +139,18 @@ export function SignUp({ onNavigate }) {
                 type="tel"
                 placeholder="Enter your phone number"
                 value={formData.phone}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                name="address"
+                type="text"
+                placeholder="Enter your address"
+                value={formData.address}
                 onChange={handleInputChange}
               />
             </div>

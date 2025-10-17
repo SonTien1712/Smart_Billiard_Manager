@@ -79,11 +79,10 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true);
       const authResponse = await authService.register(userData);
-      setUser(authResponse.user);
-      authService.setCurrentUser(authResponse.user);
+      return authResponse;
     } catch (error) {
       console.error('Registration failed:', error);
-      throw error;
+      return { success: false, message: 'Đăng ký thất bại' };
     } finally {
       setLoading(false);
     }

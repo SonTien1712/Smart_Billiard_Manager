@@ -1,8 +1,11 @@
 package com.BillardManagement.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.deser.impl.CreatorCandidate;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -16,10 +19,9 @@ public class Billardclub {
     @Column(name = "ClubID", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "CustomerID", nullable = false)
-    private Customer customerID;
+
+    @Column(name = "CustomerID", nullable = false)
+    private Integer customerID;
 
     @Column(name = "ClubName", nullable = false)
     private String clubName;
@@ -30,5 +32,9 @@ public class Billardclub {
 
     @Column(name = "PhoneNumber", length = 20)
     private String phoneNumber;
+
+    @ColumnDefault("1")
+    @Column(name = "isActive")
+    private Boolean isActive;
 
 }

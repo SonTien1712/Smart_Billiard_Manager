@@ -41,13 +41,9 @@ export class AuthService {
       API_CONFIG.ENDPOINTS.AUTH.REGISTER,
       userData
     );
-    
-    if (response.success) {
-      apiClient.setToken(response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-    }
-    
-    return response.data;
+
+    console.log('Register response:', response);
+    return response;
   }
 
   async googleAuth(googleData) {
