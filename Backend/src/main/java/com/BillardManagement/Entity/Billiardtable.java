@@ -33,8 +33,8 @@ public class Billiardtable {
     @Column(name = "TableName", nullable = false, length = 50)
     private String tableName;
 
-    @Lob
-    @Column(name = "TableType", nullable = false)
+    // Use a short VARCHAR for type instead of LOB; aligns with DB enum
+    @Column(name = "TableType", nullable = false, length = 20)
     private String tableType;
 
     @Column(name = "HourlyRate", nullable = false, precision = 10, scale = 2)

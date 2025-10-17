@@ -12,6 +12,9 @@ import java.time.Instant;
 
 @Getter
 @Setter
+// Nghiệp vụ nhân viên: Bảng employees
+// - Lưu thông tin nhân viên và mức lương theo giờ (HourlyRate)
+
 @Entity
 @Table(name = "employees")
 public class Employee {
@@ -33,8 +36,8 @@ public class Employee {
     @Column(name = "EmployeeName", nullable = false)
     private String employeeName;
 
-    @Lob
-    @Column(name = "EmployeeType", nullable = false)
+    @Column(name = "EmployeeType", nullable = false, length = 20)
+    // Loại nhân viên: FullTime/PartTime (chuỗi mô tả)
     private String employeeType;
 
     @Column(name = "PhoneNumber", length = 20)
@@ -47,10 +50,7 @@ public class Employee {
     @Column(name = "Address")
     private String address;
 
-    @ColumnDefault("0.00")
-    @Column(name = "Salary", precision = 10, scale = 2)
-    private BigDecimal salary;
-
+    // Mức lương theo giờ dùng để tính Payroll
     @ColumnDefault("0.00")
     @Column(name = "HourlyRate", precision = 10, scale = 2)
     private BigDecimal hourlyRate;
