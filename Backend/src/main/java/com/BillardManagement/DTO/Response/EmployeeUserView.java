@@ -5,9 +5,9 @@ import lombok.*;
 // - Dùng để hiển thị thông tin cơ bản và phân quyền ở FE
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class EmployeeUserView {
-    private Integer accountId;   // ID tài khoản (Employeeaccount)
-    private Integer employeeId;  // ID nhân viên
-    private Integer clubId;      // ID câu lạc bộ làm việc
+    private long accountId;   // ID tài khoản (Employeeaccount)
+    private long employeeId;  // ID nhân viên
+    private long clubId;      // ID câu lạc bộ làm việc
     private String username;     // tên đăng nhập
     private String fullName;     // tên nhân viên
     private String email;        // email nhân viên

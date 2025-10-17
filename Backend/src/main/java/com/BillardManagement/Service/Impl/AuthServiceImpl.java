@@ -51,9 +51,9 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(false, "Sai mật khẩu admin", null, null);
         }
 
-        Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(username, password);
+        Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(identifier, password);
         if (empOpt.isPresent()) {
-            return loginEmployee(username, password);
+            return loginEmployee(identifier, password);
         }
 
         Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(identifier, password);
