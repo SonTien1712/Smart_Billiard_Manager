@@ -23,7 +23,8 @@ export const API_CONFIG = {
     CUSTOMER: {
       CLUBS: '/customer/clubs',
       CLUBS_BY_CUSTOMER: (customerId) => `/customer/clubs/customer/${customerId}`,
-      TABLES: '/customer/tables',
+      TABLES_BY_CUSTOMER: (customerId) => `/tables/customer/${customerId}`,
+      TABLES: '/tables',
       STAFF: '/customer/staff',
       SHIFTS: '/customer/shifts',
       PROMOTIONS: '/customer/promotions',
