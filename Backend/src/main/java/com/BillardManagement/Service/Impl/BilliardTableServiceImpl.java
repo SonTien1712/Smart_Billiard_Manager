@@ -4,120 +4,108 @@ import com.BillardManagement.DTO.Request.BilliardTableRequest;
 import com.BillardManagement.DTO.Response.BilliardTableResponse;
 import com.BillardManagement.Entity.Billardclub;
 import com.BillardManagement.Entity.Billiardtable;
-import com.BillardManagement.Repository.BilliardClubRepo;
+import com.BillardManagement.Repository.BillardclubRepo;
 import com.BillardManagement.Repository.BilliardTableRepo;
 import com.BillardManagement.Service.BilliardTableService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class BilliardTableServiceImpl implements BilliardTableService {
 
-    @Autowired
-    private BilliardTableRepo tableRepository;
-
-    @Autowired
-    private BilliardClubRepo clubRepository;
+    private final BilliardTableRepo tableRepository;
+    private final BillardclubRepo clubRepository;
 
     @Override
+    @Transactional(readOnly = true)
+    public List<BilliardTableResponse> getAllTables() {
+        return tableRepository.findAllTablesWithClub();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<BilliardTableResponse> getTablesByCustomer(Integer customerId) {
         return tableRepository.findTablesWithClubByCustomerId(customerId);
     }
 
     @Override
-    public List<BilliardTableResponse> getAllTables() {
-        List<Billiardtable> tables = tableRepository.findAll();
-        List<BilliardTableResponse> result = new ArrayList<>();
-
-        for (Billiardtable t : tables) {
-            BilliardTableResponse dto = new BilliardTableResponse();
-            dto.setId(t.getId());
-            dto.setTableName(t.getTableName());
-            dto.setTableType(t.getTableType());
-            dto.setHourlyRate(t.getHourlyRate());
-            dto.setTableStatus(t.getTableStatus());
-            dto.setClubId(t.getClubID().getId());
-            dto.setClubName(t.getClubID().getClubName());
-            result.add(dto);
-        }
-        return result;
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public BilliardTableResponse getTableById(Integer id) {
         Billiardtable t = tableRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Table not found"));
+                .orElseThrow(() -> new RuntimeException("Table not found with id: " + id));
 
-        BilliardTableResponse dto = new BilliardTableResponse();
-        dto.setId(t.getId());
-        dto.setTableName(t.getTableName());
-        dto.setTableType(t.getTableType());
-        dto.setHourlyRate(t.getHourlyRate());
-        dto.setTableStatus(t.getTableStatus());
-        dto.setClubId(t.getClubID().getId());
-        dto.setClubName(t.getClubID().getClubName());
-        return dto;
+        return new BilliardTableResponse(
+                t.getId(),
+                t.getTableName(),
+                t.getTableType(),
+                t.getHourlyRate(),
+                t.getTableStatus(),
+                t.getClubID().getId(),
+                t.getClubID().getClubName()
+        );
     }
 
     @Override
     public BilliardTableResponse addTable(BilliardTableRequest request) {
         Billardclub club = clubRepository.findById(request.getClubId())
-                .orElseThrow(() -> new RuntimeException("Club not found"));
+                .orElseThrow(() -> new RuntimeException("Club not found with id: " + request.getClubId()));
 
-        Billiardtable t = new Billiardtable();
-        t.setTableName(request.getTableName());
-        t.setTableType(request.getTableType());
-        t.setHourlyRate(request.getHourlyRate());
-        t.setTableStatus(request.getTableStatus());
-        t.setClubID(club);
+        Billiardtable table = new Billiardtable();
+        table.setTableName(request.getTableName());
+        table.setTableType(request.getTableType());
+        table.setHourlyRate(request.getHourlyRate());
+        table.setTableStatus(request.getTableStatus() != null ? request.getTableStatus() : "Available");
+        table.setClubID(club);
 
-        Billiardtable saved = tableRepository.save(t);
+        Billiardtable saved = tableRepository.save(table);
 
-        BilliardTableResponse dto = new BilliardTableResponse();
-        dto.setId(saved.getId());
-        dto.setTableName(saved.getTableName());
-        dto.setTableType(saved.getTableType());
-        dto.setHourlyRate(saved.getHourlyRate());
-        dto.setTableStatus(saved.getTableStatus());
-        dto.setClubId(club.getId());
-        dto.setClubName(club.getClubName());
-        return dto;
+        return new BilliardTableResponse(
+                saved.getId(),
+                saved.getTableName(),
+                saved.getTableType(),
+                saved.getHourlyRate(),
+                saved.getTableStatus(),
+                club.getId(),
+                club.getClubName()
+        );
     }
 
     @Override
     public BilliardTableResponse updateTable(Integer id, BilliardTableRequest request) {
-        Billiardtable t = tableRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Table not found"));
+        Billiardtable table = tableRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Table not found with id: " + id));
 
         Billardclub club = clubRepository.findById(request.getClubId())
-                .orElseThrow(() -> new RuntimeException("Club not found"));
+                .orElseThrow(() -> new RuntimeException("Club not found with id: " + request.getClubId()));
 
-        t.setTableName(request.getTableName());
-        t.setTableType(request.getTableType());
-        t.setHourlyRate(request.getHourlyRate());
-        t.setTableStatus(request.getTableStatus());
-        t.setClubID(club);
+        table.setTableName(request.getTableName());
+        table.setTableType(request.getTableType());
+        table.setHourlyRate(request.getHourlyRate());
+        table.setTableStatus(request.getTableStatus());
+        table.setClubID(club);
 
-        Billiardtable updated = tableRepository.save(t);
+        Billiardtable updated = tableRepository.save(table);
 
-        BilliardTableResponse dto = new BilliardTableResponse();
-        dto.setId(updated.getId());
-        dto.setTableName(updated.getTableName());
-        dto.setTableType(updated.getTableType());
-        dto.setHourlyRate(updated.getHourlyRate());
-        dto.setTableStatus(updated.getTableStatus());
-        dto.setClubId(club.getId());
-        dto.setClubName(club.getClubName());
-        return dto;
+        return new BilliardTableResponse(
+                updated.getId(),
+                updated.getTableName(),
+                updated.getTableType(),
+                updated.getHourlyRate(),
+                updated.getTableStatus(),
+                club.getId(),
+                club.getClubName()
+        );
     }
 
     @Override
     public void deleteTable(Integer id) {
         if (!tableRepository.existsById(id)) {
-            throw new RuntimeException("Table not found");
+            throw new RuntimeException("Table not found with id: " + id);
         }
         tableRepository.deleteById(id);
     }
