@@ -23,13 +23,13 @@ import { PromotionManagement } from './customer/PromotionManagement';
 import { ProductManagement } from './customer/ProductManagement';
 
 import { BillManagement } from './staff/BillManagement';
-import { WorkSchedule } from './staff/WorkSchedule';
-import { AttendanceTracking } from './staff/AttendanceTracking';
+import { WorkAndAttendance } from './staff/WorkAndAttendance';
+import { Payroll } from './staff/Payroll';
 
 /**
  * @typedef {'admin-dashboard' | 'customer-list' | 'customer-details' | 'create-admin' | 
  *           'customer-dashboard' | 'clubs' | 'tables' | 'staff' | 'shifts' | 'staff-accounts' | 'promotions' | 'products' |
- *           'staff-dashboard' | 'bills' | 'schedule' | 'attendance'} PageType
+ *           'staff-dashboard' | 'bills' | 'work' | 'payroll'} PageType
  */
 
 /**
@@ -103,10 +103,10 @@ export function Dashboard({ onNavigate }) {
         return <StaffDashboard onPageChange={handlePageChange} />;
       case 'bills':
         return <BillManagement onPageChange={handlePageChange} />;
-      case 'schedule':
-        return <WorkSchedule onPageChange={handlePageChange} />;
-      case 'attendance':
-        return <AttendanceTracking onPageChange={handlePageChange} />;
+      case 'work':
+        return <WorkAndAttendance />;
+      case 'payroll':
+        return <Payroll />;
 
       default:
         return <div>Page not found</div>;
@@ -115,10 +115,10 @@ export function Dashboard({ onNavigate }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar currentPage={currentPage} onPageChange={handlePageChange} />
+      <AppSidebar currentPage={currentPage} onPageChange={handlePageChange} onNavigate={onNavigate} />
       <SidebarInset>
-        <Header onNavigate={onNavigate} />
-        <main className="flex-1 overflow-y-auto bg-muted/30 p-4 md:p-6">
+        <Header />
+        <main className="flex-1 overflow-y-auto felt-bg p-4 md:p-6">
           <div className="mx-auto max-w-7xl">
             {renderContent()}
           </div>

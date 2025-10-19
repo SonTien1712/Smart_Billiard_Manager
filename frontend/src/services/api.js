@@ -36,7 +36,6 @@ export class ApiClient {
   async #handleResponse(response) {
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired, try to refresh
         const refreshed = await this.#refreshToken();
         if (!refreshed) {
           this.removeToken();
@@ -45,16 +44,34 @@ export class ApiClient {
         }
       }
 
-      const errorData = await response.json().catch(() => ({
-        message: `HTTP ${response.status}: ${response.statusText}`
-      }));
-      
-      throw new Error(errorData.message || 'An error occurred');
+      // Try to parse error body, but tolerate empty/non-JSON
+      let message = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const ct = response.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const data = await response.json();
+          if (data && data.message) message = data.message;
+        } else {
+          const text = await response.text();
+          if (text) message = text;
+        }
+      } catch (_) { /* ignore */ }
+      throw new Error(message);
     }
 
-    // return response.json();
-    const text = await response.text();
-  return text ? JSON.parse(text) : null;
+    // Success: return parsed JSON if present; otherwise empty object
+    if (response.status === 204) return {};
+    const ct = response.headers.get('content-type') || '';
+    if (!ct || !ct.includes('application/json')) {
+      const text = await response.text().catch(() => '');
+      return text ? { message: text } : {};
+    }
+    // Parse JSON; if empty body, return {}
+    try {
+      return await response.json();
+    } catch (_) {
+      return {};
+    }
   }
 
   async #refreshToken() {

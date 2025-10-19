@@ -4,6 +4,10 @@ import com.BillardManagement.DTO.Request.LoginRequest;
 
 import com.BillardManagement.DTO.Response.EmployeeUserView;
 import com.BillardManagement.DTO.Response.LoginResponse;
+import com.BillardManagement.DTO.Response.EmployeeUserView;
+import com.BillardManagement.Entity.Admin;
+import com.BillardManagement.Entity.Customer;
+import com.BillardManagement.Entity.Employeeaccount;
 import com.BillardManagement.Entity.*;
 import com.BillardManagement.Repository.AdminRepo;
 import com.BillardManagement.Repository.CustomerRepo;
@@ -27,13 +31,18 @@ public class AuthServiceImpl implements AuthService {
     private final EmployeeAccountRepo employeeAccountRepo;
     private final EmployeeRepo employeeRepo;
 
+    // Nghiệp vụ đăng nhập (ưu tiên nhân viên)
+    // - Nhận identifier (email/username) + password
+    // - Thứ tự kiểm tra: admin → employee → customer
+    // - Với nhân viên: cho phép đăng nhập bằng username hoặc email nhân viên
+    // - Trả về LoginResponse chứa token mẫu và thông tin người dùng rút gọn
     @Override
     public LoginResponse login(LoginRequest request) {
-        String username = request.getEmail();
+        String identifier = request.getEmail(); // can be username or email
         String password = request.getPassword();
 
         // thử kiểm tra theo thứ tự: admin → employee → customer
-        Optional<Admin> adminOpt = adminRepo.findByEmail(username);
+        Optional<Admin> adminOpt = adminRepo.findByEmail(identifier);
         if (adminOpt.isPresent()) {
             Admin admin = adminOpt.get();
             if (PasswordUtil.matches(password, admin.getPasswordHash())) {
@@ -42,12 +51,12 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(false, "Sai mật khẩu admin", null, null);
         }
 
-        Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(username, password);
+        Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(identifier, password);
         if (empOpt.isPresent()) {
-            return loginEmployee(username, password);
+            return loginEmployee(identifier, password);
         }
 
-        Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(username, password);
+        Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(identifier, password);
         if (customerOpt.isPresent()) {
             return new LoginResponse(true, "Đăng nhập khách hàng thành công", "TOKEN_CUSTOMER", customerOpt.get());
         }

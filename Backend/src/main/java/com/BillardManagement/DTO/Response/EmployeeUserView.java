@@ -1,13 +1,15 @@
 package com.BillardManagement.DTO.Response;
 import lombok.*;
 
+// View rút gọn trả về khi đăng nhập nhân viên
+// - Dùng để hiển thị thông tin cơ bản và phân quyền ở FE
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class EmployeeUserView {
-    private Long accountId;     // id bảng Employeeaccount (nếu có)
-    private Long employeeId;    // id bảng Employee
-    private Long clubId;        // id BillardClub (nếu cần)
-    private String username;
-    private String fullName;    // nếu có cột name trong Employee
-    private String email;       // nếu có
-    private String role;        // "STAFF"
+    private long accountId;   // ID tài khoản (Employeeaccount)
+    private long employeeId;  // ID nhân viên
+    private long clubId;      // ID câu lạc bộ làm việc
+    private String username;     // tên đăng nhập
+    private String fullName;     // tên nhân viên
+    private String email;        // email nhân viên
+    private String role;         // vai trò: "STAFF"
 }
