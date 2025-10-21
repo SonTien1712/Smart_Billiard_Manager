@@ -88,19 +88,34 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // AuthProvider.jsx
+  const GOOGLE_CLIENT_ID = '585309011001-3d2a3mpvaea4ffr1vqrjqbfgaqdobode.apps.googleusercontent.com';
+
   const loginWithGoogle = async (googleData) => {
     try {
       setLoading(true);
-      const authResponse = await authService.googleAuth(googleData);
-      setUser(authResponse.user);
-      authService.setCurrentUser(authResponse.user);
-    } catch (error) {
-      console.error('Google login failed:', error);
-      throw error;
+
+      const authResponse = await authService.googleAuth({
+        authCode: googleData?.authCode ?? null,
+        idToken:  googleData?.idToken  ?? null,
+        role:     googleData?.role     || 'CUSTOMER',
+      });
+
+      const accessToken = authResponse?.accessToken || authResponse?.data?.accessToken || '';
+      const refreshToken = authResponse?.refreshToken || authResponse?.data?.refreshToken || '';
+      if (accessToken) localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+      const serverUser = authResponse?.user || authResponse?.data?.user || {};
+      setUser(serverUser);
+      authService.setCurrentUser(serverUser);
+      return { success: true, user: serverUser };
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const logout = async () => {
     try {

@@ -4,6 +4,7 @@ import { MockService } from './mockService';
 
 const USE_MOCK_DATA = false; // Set to false when you have a real backend
 
+
 export class AuthService {
   
   async login(credentials) {
@@ -46,26 +47,34 @@ export class AuthService {
     return response;
   }
 
+  // authService.js
   async googleAuth(googleData) {
     if (USE_MOCK_DATA) {
       const authResponse = await MockService.googleAuth(googleData);
       apiClient.setToken(authResponse.accessToken);
-      localStorage.setItem('refreshToken', authResponse.refreshToken);
+      localStorage.setItem('refreshToken', authResponse.refreshToken || '');
       return authResponse;
     }
-    
-    const response = await apiClient.post(
-      API_CONFIG.ENDPOINTS.AUTH.GOOGLE_AUTH,
-      googleData
-    );
-    
-    if (response.success) {
-      apiClient.setToken(response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-    }
-    
-    return response.data;
+
+    // Ưu tiên code-flow; fallback idToken
+    const payload = {
+      role: googleData?.role || 'CUSTOMER',
+    };
+    if (googleData?.authCode) payload.code = googleData.authCode;
+    if (googleData?.idToken)  payload.idToken = googleData.idToken;
+
+    // Dùng 1 endpoint duy nhất nếu BE bạn đang là /api/auth/google
+    const response = await apiClient.post(API_CONFIG.ENDPOINTS.AUTH.GOOGLE_AUTH, payload);
+
+    const data = response?.data ?? response;
+    const accessToken = data?.accessToken || data?.data?.accessToken || '';
+    const refreshToken = data?.refreshToken || data?.data?.refreshToken || '';
+    if (accessToken) apiClient.setToken(accessToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+    return { ...(data?.data || data) };
   }
+
 
   async logout() {
     try {

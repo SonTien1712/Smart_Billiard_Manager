@@ -1,8 +1,11 @@
 package com.BillardManagement.Service;
 import com.BillardManagement.Entity.Customer;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public interface CustomerService {
     List<Customer> getAllCustomers();
 
@@ -15,4 +18,6 @@ public interface CustomerService {
     void deleteCustomer(Integer id);
 
     boolean registerCustomer(String name, String email, String phone, String address, String rawPassword);
+
+    Customer upsertGoogleUser(String sub, String email, String name, boolean emailVerified);
 }

@@ -1,20 +1,17 @@
 package com.BillardManagement.Controller;
 
 import com.BillardManagement.DTO.Request.LoginRequest;
-import com.BillardManagement.DTO.Request.LogoutRequest;
 import com.BillardManagement.DTO.Request.RegisterRequest;
 import com.BillardManagement.DTO.Response.LoginResponse;
 import com.BillardManagement.DTO.Response.LogoutResponse;
 import com.BillardManagement.DTO.Response.RegisterResponse;
-import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Service.AuthService;
 import com.BillardManagement.Service.CustomerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
+import com.BillardManagement.DTO.Request.GoogleRequest;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import com.BillardManagement.Service.GoogleService;
 
 import javax.validation.Valid;
 
@@ -26,6 +23,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final CustomerService customerService;
+    private final GoogleService GoogleService;
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
@@ -61,5 +59,9 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> googleAuth(@RequestBody GoogleRequest req) {
+        return ResponseEntity.ok(GoogleService.handleGoogleAuth(req));
+    }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -25,6 +25,33 @@ export function SignUp({ onNavigate }) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { loginWithGoogle } = useAuth();
   const { register } = useAuth();
+
+  const GOOGLE_CLIENT_ID = '585309011001-3d2a3mpvaea4ffr1vqrjqbfgaqdobode.apps.googleusercontent.com';
+  const googleBtnRef = useRef(null);
+  const [gisReady, setGisReady] = useState(false);
+  const codeClientRef = useRef(null);
+
+  useEffect(() => {
+    if (!window.google?.accounts?.oauth2 || codeClientRef.current) return;
+
+    codeClientRef.current = window.google.accounts.oauth2.initCodeClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid email profile',
+      ux_mode: 'popup',
+      callback: async (resp) => {
+        try {
+          if (!resp || !resp.code) throw new Error('Không nhận được authorization code từ Google');
+          setIsGoogleLoading(true);
+          await loginWithGoogle({ authCode: resp.code, role: 'CUSTOMER' });
+          onNavigate('dashboard');
+        } catch {
+          setError('Failed to sign up with Google');
+        } finally {
+          setIsGoogleLoading(false);
+        }
+      },
+    });
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -74,19 +101,15 @@ export function SignUp({ onNavigate }) {
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    setIsGoogleLoading(true);
+  const handleGoogleSignUp = () => {
     setError('');
-
-    try {
-      await loginWithGoogle();
-      onNavigate('dashboard');
-    } catch (err) {
-      setError('Failed to sign up with Google');
-    } finally {
-      setIsGoogleLoading(false);
+    if (!codeClientRef.current) {
+      setError('Google SDK chưa sẵn sàng.');
+      return;
     }
+    codeClientRef.current.requestCode();
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8">
@@ -258,6 +281,8 @@ export function SignUp({ onNavigate }) {
               {isGoogleLoading ? 'Signing up with Google...' : 'Sign up with Google'}
             </Button>
             
+            <div className="mt-3" ref={googleBtnRef} />
+
             <div className="text-center">
               <span className="text-sm text-muted-foreground">
                 Already have an account?{' '}

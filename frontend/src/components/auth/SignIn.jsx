@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -18,6 +18,33 @@ export function SignIn({ onNavigate }) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
 
+  const GOOGLE_CLIENT_ID = '585309011001-3d2a3mpvaea4ffr1vqrjqbfgaqdobode.apps.googleusercontent.com';
+  const googleBtnRef = useRef(null);
+  const [gisReady, setGisReady] = useState(false);
+  const codeClientRef = useRef(null);
+
+  useEffect(() => {
+      if (!window.google?.accounts?.oauth2 || codeClientRef.current) return;
+
+      codeClientRef.current = window.google.accounts.oauth2.initCodeClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'openid email profile',
+        ux_mode: 'popup',
+        callback: async (resp) => {
+          try {
+            if (!resp || !resp.code) throw new Error('Không nhận được authorization code từ Google');
+            setIsGoogleLoading(true);
+            await loginWithGoogle({ authCode: resp.code, role: 'CUSTOMER' });
+            onNavigate('dashboard');
+          } catch (e) {
+            setError(e?.message || 'Failed to sign in with Google');
+          } finally {
+            setIsGoogleLoading(false);
+          }
+        },
+      });
+    }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -33,22 +60,15 @@ export function SignIn({ onNavigate }) {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
+  const handleGoogleSignIn = () => {
     setError('');
-
-    try {
-      // In a real implementation, you would get the Google token from Google OAuth flow
-      // For now, we'll simulate it
-      const mockGoogleToken = 'mock-google-token';
-      await loginWithGoogle({ googleToken: mockGoogleToken, role: 'CUSTOMER' });
-      onNavigate('dashboard');
-    } catch (err) {
-      setError(err.message || 'Failed to sign in with Google');
-    } finally {
-      setIsGoogleLoading(false);
+    if (!codeClientRef.current) {
+      setError('Google SDK chưa sẵn sàng. Kiểm tra <script src="https://accounts.google.com/gsi/client"> trong index.html');
+      return;
     }
+    codeClientRef.current.requestCode(); // mở popup ngay – KHÔNG render nút khác
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">

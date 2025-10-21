@@ -3,6 +3,7 @@ package com.BillardManagement.Service.Impl;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Repository.CustomerRepo;
 import com.BillardManagement.Service.CustomerService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
     @Autowired
@@ -79,5 +81,23 @@ public class CustomerServiceImpl implements CustomerService {
 
         customerRepository.save(c);
         return true;
+    }
+
+    @Override
+    public Customer upsertGoogleUser(String sub, String email, String name, boolean emailVerified) {
+        Optional<Customer> existing = customerRepository.findByGoogleIdOrEmail(sub, email);
+        if (existing.isPresent()) {
+            existing.get().setGoogleId(sub);
+            return existing.get();
+        }
+
+        // Nếu chưa có, tạo mới
+        Customer c = new Customer();
+        c.setGoogleId(sub);
+        c.setEmail(email);
+        c.setCustomerName(name);
+        c.setIsActive(true);
+
+        return customerRepository.save(c);
     }
 }
