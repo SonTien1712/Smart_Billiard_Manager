@@ -4,11 +4,16 @@ import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Repository.CustomerRepo;
 import com.BillardManagement.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
+import java.time.ZoneId;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -80,4 +85,24 @@ public class CustomerServiceImpl implements CustomerService {
         customerRepository.save(c);
         return true;
     }
+
+    @Override public long countAll() { return customerRepository.count(); }
+    @Override public long countActive() { return customerRepository.countByIsActiveTrue(); }
+    @Override public long countNewInMonth(YearMonth ym) {
+        var zone = ZoneId.systemDefault();
+        var start = ym.atDay(1).atStartOfDay(zone).toInstant();
+        var end   = ym.atEndOfMonth().atTime(23,59,59).atZone(zone).toInstant();
+        return customerRepository.countByDateJoinedBetween(start, end);
+    }
+    @Override
+    public long countJoinedBetween(Instant from, Instant to) {
+        return customerRepository.countByDateJoinedBetween(from, to);
+    }
+    @Override public double growthRateInMonth(YearMonth ym) {
+        var prev = ym.minusMonths(1);
+        long cur = countNewInMonth(ym);
+        long pre = countNewInMonth(prev);
+        return pre == 0 ? (cur > 0 ? 100.0 : 0.0) : ((cur - pre) * 100.0 / pre);
+    }
+    @Override public Page<Customer> findAll(Pageable pageable) { return customerRepository.findAll(pageable); }
 }
