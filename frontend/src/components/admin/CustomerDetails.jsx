@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,26 +9,89 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { PageType } from '../Dashboard';
 import { ArrowLeft, Edit, Save, X, Building, Table, Users } from 'lucide-react';
 
+import { useApi } from '../../hooks/useApi';
+import { adminService } from '../../services/adminService';
 
 export function CustomerDetails({ customerId, onPageChange }) {
   const [isEditing, setIsEditing] = useState(false);
   
   // Mock customer data - in real app, fetch based on customerId
-  const [customer, setCustomer] = useState({
-    id: customerId || '1',
-    name: 'John Smith',
-    email: 'john@example.com',
-    phone: '+1234567890',
-    address: '123 Main St, New York, NY 10001',
-    status: 'active',
-    joinDate: '2024-01-15',
-    lastLogin: '2024-01-20 10:30 AM'
-  });
+  // const [customer, setCustomer] = useState({
+  //   id: customerId || '1',
+  //   name: 'John Smith',
+  //   email: 'john@example.com',
+  //   phone: '+1234567890',
+  //   address: '123 Main St, New York, NY 10001',
+  //   status: 'active',
+  //   joinDate: '2024-01-15',
+  //   lastLogin: '2024-01-20 10:30 AM'
+  // });
 
-  const customerClubs = [
-    { id: '1', name: 'Downtown Billiards Club', address: '456 Downtown Ave', tables: 8, status: 'active' },
-    { id: '2', name: 'Uptown Pool Hall', address: '789 Uptown Blvd', tables: 12, status: 'active' }
-  ];
+  const fetchCustomer = useCallback(
+    () => adminService.getCustomerById(customerId),
+    [customerId]
+  );
+
+  const fetchClubs = useCallback(
+    () => adminService.getCustomerClubs(customerId),
+    [customerId]
+  );
+
+  // const customerClubs = [
+  //   { id: '1', name: 'Downtown Billiards Club', address: '456 Downtown Ave', tables: 8, status: 'active' },
+  //   { id: '2', name: 'Uptown Pool Hall', address: '789 Uptown Blvd', tables: 12, status: 'active' }
+  // ];
+
+  const {
+    data: customerRaw,
+    loading: loadingCustomer,
+    execute: loadCustomer,
+  } = useApi(fetchCustomer);
+
+  const {
+    data: clubsRaw,
+    loading: loadingClubs,
+    execute: loadClubs,
+  } = useApi(fetchClubs);
+
+  useEffect(() => {
+    if (customerId) {
+      loadCustomer();
+      loadClubs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  const customer = useMemo(() => {
+    const c = customerRaw || {};
+    return {
+      id: c.id ?? c.customerId ?? customerId,
+      name: c.name ?? c.fullName ?? c.customerName ?? 'N/A',
+      email: c.email ?? 'N/A',
+      phone: c.phone ?? c.phoneNumber ?? '',
+      address: c.address ?? '',
+      status: (c.isActive ?? c.active ?? c.enabled) ? 'active' : 'inactive',
+      joinDate: c.dateJoined
+        ? new Date(c.dateJoined).toISOString().slice(0, 10)
+        : (c.joinDate ?? ''),
+      lastLogin: c.lastLogin
+        ? new Date(c.lastLogin).toLocaleString()
+        : (c.lastLoginAt ?? ''),
+    };
+  }, [customerRaw, customerId]);
+
+  const customerClubs = useMemo(() => {
+    const list = Array.isArray(clubsRaw?.content) ? clubsRaw.content
+                : Array.isArray(clubsRaw) ? clubsRaw
+                : [];
+    return list.map((club) => ({
+      id: club.id ?? club.clubId ?? String(Math.random()),
+      name: club.name ?? club.clubName ?? 'N/A',
+      address: club.address ?? '',
+      tables: club.tables ?? club.tablesCount ?? 0,
+      status: (club.active ?? club.isActive) ? 'active' : 'inactive'
+    }));
+  }, [clubsRaw]);
 
   const customerStats = {
     totalRevenue: 12450,
@@ -38,11 +101,12 @@ export function CustomerDetails({ customerId, onPageChange }) {
   };
 
   const [editData, setEditData] = useState(customer);
+  useEffect(() => setEditData(customer), [customer]);
 
-  const handleSave = () => {
-    setCustomer(editData);
+
+  const handleSave = async () => {
+    // TODO: call API update nếu backend có
     setIsEditing(false);
-    // In real app, would save to API
   };
 
   const handleCancel = () => {
@@ -50,11 +114,13 @@ export function CustomerDetails({ customerId, onPageChange }) {
     setIsEditing(false);
   };
 
-  const handleStatusToggle = () => {
-    const newStatus = customer.status === 'active' ? 'inactive' : 'active';
-    setCustomer({ ...customer, status: newStatus });
-    // In real app, would update via API
+  const handleStatusToggle = async () => {
+    const nextActive = customer.status !== 'active';
+    await adminService.updateCustomerStatus(customer.id, nextActive);
+    await loadCustomer(); // refresh lại trạng thái mới
   };
+
+  const anyLoading = loadingCustomer || loadingClubs;
 
   return (
     <div className="space-y-6">
@@ -69,7 +135,7 @@ export function CustomerDetails({ customerId, onPageChange }) {
             Back to Customers
           </Button>
           <div>
-            <h1 className="text-3xl font-semibold">Customer Details</h1>
+            <h1 className="text-3xl font-semibold">{anyLoading ? 'Loading...' : 'Customer Details'}</h1>
             <p className="text-muted-foreground">View and manage customer information</p>
           </div>
         </div>
@@ -87,7 +153,7 @@ export function CustomerDetails({ customerId, onPageChange }) {
               </Button>
             </>
           ) : (
-            <Button onClick={() => setIsEditing(true)}>
+            <Button onClick={() => setIsEditing(true)} disabled={anyLoading}>
               <Edit className="h-4 w-4 mr-2" />
               Edit Customer
             </Button>
@@ -116,8 +182,8 @@ export function CustomerDetails({ customerId, onPageChange }) {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={isEditing ? editData.name : customer.name}
-                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                    value={isEditing ? editData.customerName : customer.customerName}
+                    onChange={(e) => setEditData({ ...editData, customerName: e.target.value })}
                     disabled={!isEditing}
                   />
                 </div>
@@ -149,7 +215,7 @@ export function CustomerDetails({ customerId, onPageChange }) {
                     <Switch
                       checked={customer.status === 'active'}
                       onCheckedChange={handleStatusToggle}
-                      disabled={isEditing}
+                      disabled={isEditing || anyLoading}
                     />
                     <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
                       {customer.status}
