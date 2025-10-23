@@ -11,20 +11,15 @@ export class AdminService {
   }
 
   async getCustomerById(id) {
-    const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}`);
-    return response.data;
+    return apiClient.get(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}`);
   }
 
   async updateCustomerStatus(id, isActive) {
-    const response = await apiClient.patch(
-      `${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}/status`,
-      { isActive }
-    );
-    return response.data;
+    return apiClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}/status`, { isActive });
   }
 
   async deleteCustomer(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}`);
+    return apiClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}`);
   }
 
   // Admin Management
