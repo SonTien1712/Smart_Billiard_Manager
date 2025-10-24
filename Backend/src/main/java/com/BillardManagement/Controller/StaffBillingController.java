@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -425,29 +426,27 @@ public class StaffBillingController {
             if (payload != null) {
                 Object pt = payload.get("productTotal");
                 if (pt instanceof Number) {
-                    product = new java.math.BigDecimal(((Number) pt).toString());
+                    product = new java.math.BigDecimal(pt.toString());
                 } else if (pt instanceof String && !((String) pt).isBlank()) {
                     try { product = new java.math.BigDecimal((String) pt); } catch (Exception ignored) {}
                 }
 
                 Object disc = payload.get("discount");
                 if (disc instanceof Number) {
-                    discount = new java.math.BigDecimal(((Number) disc).toString());
+                    discount = new java.math.BigDecimal(disc.toString());
                 } else if (disc instanceof String && !((String) disc).isBlank()) {
                     try { discount = new java.math.BigDecimal((String) disc); } catch (Exception ignored) {}
                 }
             }
 
             // If checkout includes items list, replace bill details accordingly and recalc product total
-            if (payload != null && payload.get("items") instanceof java.util.List) {
-                java.util.List<?> list = (java.util.List<?>) payload.get("items");
+            if (payload != null && payload.get("items") instanceof List<?> list) {
                 // Remove existing details to replace
                 billdetailRepo.deleteByBillID_Id(b.getId());
 
                 java.math.BigDecimal productSum = java.math.BigDecimal.ZERO;
                 for (Object o : list) {
-                    if (!(o instanceof java.util.Map)) continue;
-                    var m = (java.util.Map<?,?>) o;
+                    if (!(o instanceof Map<?, ?> m)) continue;
                     Object pid = m.get("productId");
                     Object qty = m.get("quantity");
                     if (pid == null || qty == null) continue;
@@ -484,7 +483,7 @@ public class StaffBillingController {
                 Object tax = payload.get("taxPercent");
                 java.math.BigDecimal taxPercent = java.math.BigDecimal.ZERO;
                 if (tax instanceof Number) {
-                    taxPercent = new java.math.BigDecimal(((Number) tax).toString());
+                    taxPercent = new java.math.BigDecimal(tax.toString());
                 } else if (tax instanceof String && !((String) tax).isBlank()) {
                     try { taxPercent = new java.math.BigDecimal((String) tax); } catch (Exception ignored) {}
                 }

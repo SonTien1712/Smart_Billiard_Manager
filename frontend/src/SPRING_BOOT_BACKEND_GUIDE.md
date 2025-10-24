@@ -171,7 +171,7 @@ public class User {
     private UserRole role;
     
     private String avatar;
-    private boolean isActive = true;
+    private final boolean isActive = true;
     
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -205,7 +205,7 @@ public class Club {
     @JoinColumn(name = "owner_id")
     private User owner;
     
-    private boolean isActive = true;
+    private final boolean isActive = true;
     
     @CreationTimestamp
     private LocalDateTime createdAt;

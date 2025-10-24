@@ -50,7 +50,7 @@ function CommandDialog({
         </Command>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 function CommandInput({
