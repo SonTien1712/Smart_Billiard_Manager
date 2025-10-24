@@ -1,19 +1,26 @@
 package com.BillardManagement.Controller;
 
 
+import com.BillardManagement.DTO.Request.UpdateCustomerRequest;
+import com.BillardManagement.DTO.Request.UpdateStatusRequest;
+import com.BillardManagement.Entity.Billardclub;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Service.AdminService;
+import com.BillardManagement.Service.BilliardClubService;
 import com.BillardManagement.Service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import static org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Map;
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -23,6 +30,7 @@ import java.util.Map;
 public class AdminController {
     private final AdminService adminService;
     private final CustomerService customerService;
+    private final BilliardClubService billiardClubService;
 
     @GetMapping("/statistics")
     public Map<String, Object> getStatistics(
@@ -62,4 +70,42 @@ public class AdminController {
         return customerService.findAll(PageRequest.of(page, size, Sort.by(dir, prop)));
     }
 
+    @GetMapping("/customers/{id}")
+    public ResponseEntity<?> getById(@PathVariable Integer id) {
+        return customerService.getCustomerById(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Customer not found")));
+    }
+
+    // Lấy danh sách clubs của 1 customer
+    @GetMapping("/customers/{id}/clubs")
+    public ResponseEntity<?> getClubsByCustomer(@PathVariable Integer id) {
+        List<Billardclub> clubs = billiardClubService.getClubsByCustomerId(id);
+        return ResponseEntity.ok(clubs);
+    }
+
+    @PatchMapping("/customers/{id}/status")
+    public ResponseEntity<?> updateStatus(
+            @PathVariable Integer id,
+            @RequestBody UpdateStatusRequest req) {
+
+        if (req.getIsActive() == null) {
+            return ResponseEntity.badRequest().body("isActive is required");
+        }
+        return customerService.updateStatus(id, req.getIsActive())
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/customers/{id}/update")
+    public ResponseEntity<?> updateCustomer(
+            @PathVariable Integer id,
+            @RequestBody UpdateCustomerRequest req) {
+
+        return customerService.updateCustomer(id, req)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Customer not found")));
+    }
 }

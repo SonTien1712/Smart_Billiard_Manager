@@ -1,5 +1,6 @@
 package com.BillardManagement.Service.Impl;
 
+import com.BillardManagement.DTO.Request.UpdateCustomerRequest;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Repository.CustomerRepo;
 import com.BillardManagement.Service.CustomerService;
@@ -29,40 +30,6 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Optional<Customer> getCustomerById(Integer id) {
         return customerRepository.findById(id);
-    }
-
-    @Override
-    public Customer createCustomer(Customer customer) {
-        // Gán thời gian tạo nếu chưa có
-        if (customer.getDateJoined() == null) {
-            customer.setDateJoined(Instant.now());
-        }
-        if (customer.getIsActive() == null) {
-            customer.setIsActive(true);
-        }
-        return customerRepository.save(customer);
-    }
-
-    @Override
-    public Customer updateCustomer(Integer id, Customer customer) {
-        Optional<Customer> existing = customerRepository.findById(id);
-        if (existing.isPresent()) {
-            Customer c = existing.get();
-            c.setCustomerName(customer.getCustomerName());
-            c.setPhoneNumber(customer.getPhoneNumber());
-            c.setEmail(customer.getEmail());
-            c.setPassword(customer.getPassword());
-            c.setAddress(customer.getAddress());
-            c.setExpiryDate(customer.getExpiryDate());
-            c.setIsActive(customer.getIsActive());
-            return customerRepository.save(c);
-        }
-        return null;
-    }
-
-    @Override
-    public void deleteCustomer(Integer id) {
-        customerRepository.deleteById(id);
     }
 
     @Override
@@ -105,4 +72,23 @@ public class CustomerServiceImpl implements CustomerService {
         return pre == 0 ? (cur > 0 ? 100.0 : 0.0) : ((cur - pre) * 100.0 / pre);
     }
     @Override public Page<Customer> findAll(Pageable pageable) { return customerRepository.findAll(pageable); }
+
+    @Override
+    public Optional<Customer> updateStatus(Integer id, boolean isActive) {
+        return customerRepository.findById(id).map(c -> {
+            c.setIsActive(isActive);
+            return customerRepository.save(c);
+        });
+    }
+
+    @Override
+    public Optional<Customer> updateCustomer(Integer id, UpdateCustomerRequest req) {
+        return customerRepository.findById(id).map(c -> {
+            if (req.getName()    != null) c.setCustomerName(req.getName().trim());
+            if (req.getEmail()   != null) c.setEmail(req.getEmail().trim());
+            if (req.getPhone()   != null) c.setPhoneNumber(req.getPhone().trim());
+            if (req.getAddress() != null) c.setAddress(req.getAddress().trim());
+            return customerRepository.save(c);
+        });
+    }
 }

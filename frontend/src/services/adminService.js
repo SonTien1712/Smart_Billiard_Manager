@@ -18,6 +18,10 @@ export class AdminService {
     return apiClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}/status`, { isActive });
   }
 
+  async updateCustomer(id, payload) {
+    return await apiClient.patch(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}/update`, payload);
+  }
+
   async deleteCustomer(id) {
     return apiClient.delete(`${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${id}`);
   }
@@ -71,8 +75,11 @@ export class AdminService {
     const response = await apiClient.get(
       `${API_CONFIG.ENDPOINTS.ADMIN.CUSTOMERS}/${customerId}/clubs`
     );
-    return response.data;
+    // nếu backend bọc {data: [...] } thì ưu tiên lấy res.data, ngược lại lấy res
+    return (response && Array.isArray(response.data)) ? response.data : response;
   }
+
+
 }
 
 export const adminService = new AdminService();
