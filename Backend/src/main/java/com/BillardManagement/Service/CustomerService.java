@@ -1,4 +1,5 @@
 package com.BillardManagement.Service;
+import com.BillardManagement.DTO.Request.UpdateCustomerRequest;
 import com.BillardManagement.Entity.Customer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,12 +14,6 @@ public interface CustomerService {
 
     Optional<Customer> getCustomerById(Integer id);
 
-    Customer createCustomer(Customer customer);
-
-    Customer updateCustomer(Integer id, Customer customer);
-
-    void deleteCustomer(Integer id);
-
     boolean registerCustomer(String name, String email, String phone, String address, String rawPassword);
 
     long countAll();
@@ -27,4 +22,7 @@ public interface CustomerService {
     double growthRateInMonth(YearMonth ym);
     Page<Customer> findAll(Pageable pageable);
     long countJoinedBetween(Instant from, Instant to);
+
+    Optional<Customer> updateStatus(Integer id, boolean isActive);
+    Optional<Customer> updateCustomer(Integer id, UpdateCustomerRequest req);
 }

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback} from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -14,6 +15,7 @@ import { adminService } from '../../services/adminService';
 
 export function CustomerDetails({ customerId, onPageChange }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   
   // Mock customer data - in real app, fetch based on customerId
   // const [customer, setCustomer] = useState({
@@ -63,7 +65,7 @@ export function CustomerDetails({ customerId, onPageChange }) {
   }, [customerId]);
 
   const customer = useMemo(() => {
-    const c = customerRaw || {};
+    const c = (customerRaw && customerRaw.data) ? customerRaw.data : (customerRaw || {});
     return {
       id: c.id ?? c.customerId ?? customerId,
       name: c.name ?? c.fullName ?? c.customerName ?? 'N/A',
@@ -105,9 +107,31 @@ export function CustomerDetails({ customerId, onPageChange }) {
 
 
   const handleSave = async () => {
-    // TODO: call API update nếu backend có
-    setIsEditing(false);
+    try {
+      setSaving(true);
+      const payload = {
+        name: editData.name?.trim(),
+        email: editData.email?.trim(),
+        phone: editData.phone?.trim(),
+        address: editData.address?.trim(),
+      };
+      // loại field undefined/null để tránh ghi đè rỗng
+      Object.keys(payload).forEach(k => (payload[k] == null || payload[k] === '') && delete payload[k]);
+  
+      const updated = await adminService.updateCustomer(customer.id, payload);
+  
+      // cập nhật UI tại chỗ (optimistic) hoặc refetch
+      setEditData(updated);               // nếu apiClient trả object luôn
+      setIsEditing(false);
+      toast.success('Cập nhật thành công');
+    } catch (e) {
+      console.error(e);
+      toast.error('Cập nhật thất bại');
+    } finally {
+      setSaving(false);
+    }
   };
+
 
   const handleCancel = () => {
     setEditData(customer);
@@ -182,8 +206,8 @@ export function CustomerDetails({ customerId, onPageChange }) {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={isEditing ? editData.customerName : customer.customerName}
-                    onChange={(e) => setEditData({ ...editData, customerName: e.target.value })}
+                    value={isEditing ? editData.name : customer.name}
+                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                     disabled={!isEditing}
                   />
                 </div>
