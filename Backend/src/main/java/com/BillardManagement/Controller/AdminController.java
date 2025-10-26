@@ -1,8 +1,10 @@
 package com.BillardManagement.Controller;
 
 
+import com.BillardManagement.DTO.Request.CreateAdminRequest;
 import com.BillardManagement.DTO.Request.UpdateCustomerRequest;
 import com.BillardManagement.DTO.Request.UpdateStatusRequest;
+import com.BillardManagement.Entity.Admin;
 import com.BillardManagement.Entity.Billardclub;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Service.AdminService;
@@ -54,11 +56,7 @@ public class AdminController {
     }
 
     @GetMapping("/customers")
-    public Page<Customer> getCustomers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "dateJoined,desc") String sort)
-    {
+    public Page<Customer> getCustomers(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "dateJoined,desc") String sort) {
         // An toàn hóa field & direction
         String[] parts = sort.split(",");
         String prop = parts.length > 0 ? parts[0] : "dateJoined";
@@ -86,10 +84,7 @@ public class AdminController {
     }
 
     @PatchMapping("/customers/{id}/status")
-    public ResponseEntity<?> updateStatus(
-            @PathVariable Integer id,
-            @RequestBody UpdateStatusRequest req) {
-
+    public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody UpdateStatusRequest req) {
         if (req.getIsActive() == null) {
             return ResponseEntity.badRequest().body("isActive is required");
         }
@@ -99,13 +94,20 @@ public class AdminController {
     }
 
     @PatchMapping("/customers/{id}/update")
-    public ResponseEntity<?> updateCustomer(
-            @PathVariable Integer id,
-            @RequestBody UpdateCustomerRequest req) {
-
+    public ResponseEntity<?> updateCustomer(@PathVariable Integer id, @RequestBody UpdateCustomerRequest req) {
         return customerService.updateCustomer(id, req)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("message", "Customer not found")));
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<?> createAdmin(@RequestBody CreateAdminRequest req) {
+        try {
+            Admin created = adminService.createAdmin(req.getUsername(), req.getEmail(), req.getPassword());
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+        }
     }
 }
