@@ -19,18 +19,6 @@ public class AdminServiceImpl implements AdminService {
         this.adminRepo = adminRepo;
     }
 
-    // 1. Đăng nhập bằng username + password
-    @Override
-    public Optional<Admin> login(String username, String passwordHash) {
-        return adminRepo.findByEmailAndPasswordHash(username, passwordHash);
-    }
-
-    // 2. Tìm bằng email
-    @Override
-    public Optional<Admin> findByEmail(String email) {
-        return adminRepo.findByEmail(email);
-    }
-
     // 3. Lấy danh sách admin đang active
     @Override
     public List<Admin> getAllActiveAdmins() {
@@ -39,20 +27,17 @@ public class AdminServiceImpl implements AdminService {
 
     // 4. Tạo mới admin
     @Override
-    public Admin createAdmin(Admin admin) {
-        return adminRepo.save(admin);
+    public Admin createAdmin(String username, String email, String rawPassword){
+        if (adminRepo.existsByEmail(email)) throw new IllegalArgumentException("Email already exists");
+
+        Admin a = new Admin();
+        a.setUsername(username.trim());
+        a.setEmail(email.trim());
+        a.setPasswordHash(rawPassword);   // ✅ BẮT BUỘC
+        a.setIsActive(true);
+        a.setCreatedDate(java.time.Instant.now());
+        return adminRepo.save(a);
     }
 
-    // 5. Update admin
-    @Override
-    public Admin updateAdmin(Admin admin) {
-        return adminRepo.save(admin);
-    }
-
-    // 6. Xóa mềm admin (update IsActive = false)
-    @Override
-    public void deactivateAdmin(Integer id) {
-        adminRepo.deactivateAdmin(id);
-    }
 }
 

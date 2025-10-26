@@ -28,21 +28,18 @@ export class AdminService {
 
   // Admin Management
   async getAdmins(params) {
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.ADMIN.ADMINS, params);
-    return response.data;
+    return apiClient.get(API_CONFIG.ENDPOINTS.ADMIN.ADMINS, params);
   }
 
   async createAdmin(adminData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.ADMIN.ADMINS, adminData);
-    return response.data;
+    return apiClient.post(API_CONFIG.ENDPOINTS.ADMIN.CREATE, adminData);
   }
 
   async updateAdmin(id, adminData) {
-    const response = await apiClient.put(
+    return apiClient.put(
       `${API_CONFIG.ENDPOINTS.ADMIN.ADMINS}/${id}`,
       adminData
     );
-    return response.data;
   }
 
   async deleteAdmin(id) {

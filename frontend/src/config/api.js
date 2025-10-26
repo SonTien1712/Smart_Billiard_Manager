@@ -17,7 +17,8 @@ export const API_CONFIG = {
     ADMIN: {
       CUSTOMERS: '/admin/customers',
       ADMINS: '/admin/admins',
-      STATISTICS: '/admin/statistics'
+      STATISTICS: '/admin/statistics',
+      CREATE: '/admin/create'
     },
     // Customer endpoints
     CUSTOMER: {

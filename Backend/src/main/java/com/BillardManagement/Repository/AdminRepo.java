@@ -15,18 +15,12 @@ import java.util.Optional;
 @Repository
 public interface AdminRepo extends JpaRepository<Admin, Integer> {
 
-    // 1. Tìm Admin theo email + password
     Optional<Admin> findByEmailAndPasswordHash(String username, String passwordHash);
-
-    // 2. Tìm Admin theo email
     Optional<Admin> findByEmail(String email);
-
-    // 3. Lấy tất cả Admin đang active
+    boolean existsByEmail(String email);
     List<Admin> findAllByIsActiveTrue();
 
-    // 4. Tạo mới Admin => dùng save(admin)
 
-    // 5. Update Admin => dùng save(admin)
 
     // 6. Xóa mềm (update IsActive = false)
     @Modifying
