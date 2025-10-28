@@ -82,21 +82,18 @@ export class AuthService {
   }
 
   async forgotPassword(email) {
-    if (USE_MOCK_DATA) {
-      return MockService.forgotPassword(email);
-    }
-    
     await apiClient.post(
       API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD,
       { email }
     );
   }
 
+  async verifyResetToken(token) {
+    // BE trả {valid: boolean}
+    return apiClient.post(API_CONFIG.ENDPOINTS.AUTH.VERIFY_RESET_TOKEN, { token });
+  }
+
   async resetPassword(token, newPassword) {
-    if (USE_MOCK_DATA) {
-      return MockService.resetPassword(token, newPassword);
-    }
-    
     await apiClient.post(
       API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD,
       { token, newPassword }

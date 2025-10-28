@@ -6,37 +6,48 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '../ui/alert';
 import { ArrowLeft, Mail, Shield } from 'lucide-react';
 
+import { authService } from '../../services/authService';
+
 
 export function ForgotPassword({ onNavigate }) {
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
-  const [step, setStep] = useState<'email' | 'token'>('email');
+  const [step, setStep] = useState('email');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Mock API call
-    setTimeout(() => {
+    setMessage('');
+    try {
+      const res = await authService.forgotPassword(email.trim()); 
+      setMessage(res.message || 'Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.');
       setStep('token');
-      setMessage('A verification token has been sent to your email address.');
+    } catch (err) {
+      setMessage(err?.message || 'Gửi yêu cầu thất bại');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleTokenSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Mock token verification
-    setTimeout(() => {
-      setMessage('Password reset successful! You can now sign in with your new password.');
+    setMessage('');
+    try {
+      const { valid } = await authService.verifyResetToken(token.trim());
+      if (!valid) {
+        setMessage('Token không hợp lệ hoặc đã hết hạn');
+        return;
+      }
+      setMessage('Token hợp lệ. Vui lòng nhập mật khẩu mới.');
+      setStep('reset');
+    } catch (err) {
+      setMessage(err?.message || 'Xác thực token thất bại');
+    } finally {
       setIsLoading(false);
-      // In real app, would redirect to signin or password reset form
-      setTimeout(() => onNavigate('signin'), 2000);
-    }, 1000);
+    }
   };
 
   return (
