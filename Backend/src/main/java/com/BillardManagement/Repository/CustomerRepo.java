@@ -3,6 +3,7 @@ package com.BillardManagement.Repository;
 import com.BillardManagement.Entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public interface CustomerRepo extends JpaRepository<Customer, Integer> {
@@ -10,4 +11,7 @@ public interface CustomerRepo extends JpaRepository<Customer, Integer> {
     // Kiểm tra trùng số điện thoại
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsByEmail(String email);
+
+    long countByIsActiveTrue();
+    long countByDateJoinedBetween(Instant start, Instant end);
 }

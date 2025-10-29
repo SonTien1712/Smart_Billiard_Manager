@@ -9,7 +9,7 @@ import com.BillardManagement.DTO.Response.ProductDTO;
 import com.BillardManagement.Entity.Bill;
 import com.BillardManagement.Entity.Billiardtable;
 import com.BillardManagement.Repository.BillRepo;
-import com.BillardManagement.Repository.BilliardtableRepo;
+import com.BillardManagement.Repository.BilliardTableRepo;
 import com.BillardManagement.Repository.ProductRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:3000")
 public class StaffBillingController {
 
-    private final BilliardtableRepo tableRepo;
+    private final BilliardTableRepo tableRepo;
     private final BillRepo billRepo;
     private final ProductRepo productRepo;
     private final com.BillardManagement.Repository.BilldetailRepo billdetailRepo;

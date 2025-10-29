@@ -17,13 +17,15 @@ export const API_CONFIG = {
     ADMIN: {
       CUSTOMERS: '/admin/customers',
       ADMINS: '/admin/admins',
-      STATISTICS: '/admin/statistics'
+      STATISTICS: '/admin/statistics',
+      CREATE: '/admin/create'
     },
     // Customer endpoints
     CUSTOMER: {
       CLUBS: '/customer/clubs',
       CLUBS_BY_CUSTOMER: (customerId) => `/customer/clubs/customer/${customerId}`,
-      TABLES: '/customer/tables',
+      TABLES_BY_CUSTOMER: (customerId) => `/tables/customer/${customerId}`,
+      TABLES: '/tables',
       STAFF: '/customer/staff',
       SHIFTS: '/customer/shifts',
       PROMOTIONS: '/customer/promotions',

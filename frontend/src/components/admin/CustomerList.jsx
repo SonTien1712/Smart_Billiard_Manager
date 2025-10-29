@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useCallback  } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,28 +9,80 @@ import { PageType } from '../Dashboard';
 import { Search, MoreHorizontal, Eye, UserX, UserCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
+import { useApi } from '../../hooks/useApi';
+import { adminService } from '../../services/adminService';
 
 export function CustomerList({ onCustomerSelect, onPageChange }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [sort] = useState('dateJoined,desc');
 
-  // Mock customer data
-  const customers = [
-    { id: '1', name: 'John Smith', email: 'john@example.com', phone: '+1234567890', status: 'active', joinDate: '2024-01-15', clubs: 2 },
-    { id: '2', name: 'Jane Doe', email: 'jane@example.com', phone: '+1234567891', status: 'active', joinDate: '2024-01-10', clubs: 1 },
-    { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '+1234567892', status: 'inactive', joinDate: '2024-01-05', clubs: 3 },
-    { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', phone: '+1234567893', status: 'active', joinDate: '2023-12-28', clubs: 1 },
-    { id: '5', name: 'David Brown', email: 'david@example.com', phone: '+1234567894', status: 'active', joinDate: '2023-12-20', clubs: 2 },
-    { id: '6', name: 'Lisa Garcia', email: 'lisa@example.com', phone: '+1234567895', status: 'inactive', joinDate: '2023-12-15', clubs: 1 },
-  ];
-
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const fetchCustomers = useCallback(
+    () => adminService.getCustomers({ page, size, sort }),
+    [page, size, sort]
   );
 
-  const handleStatusToggle = (customerId, currentStatus) => {
-    // Mock status toggle - in real app, this would call an API
-    console.log(`Toggling customer ${customerId} from ${currentStatus}`);
+  const {
+    data: customerPage,
+    loading,
+    error,
+    execute: loadCustomers,
+  } = useApi(fetchCustomers);
+
+  useEffect(() => {
+    loadCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, size, sort]);
+
+  const rows = useMemo(() => {
+    const list = Array.isArray(customerPage?.content)
+      ? customerPage.content
+      : (Array.isArray(customerPage) ? customerPage : []);
+
+    return list
+      .map(c => ({
+        id: c.id ?? c.customerId ?? String(Math.random()),
+        name: c.name ?? c.fullName ?? c.customerName ?? 'N/A',
+        email: c.email ?? 'N/A',
+        phone: c.phone ?? c.phoneNumber ?? '',
+        status: (c.isActive ?? c.active ?? c.enabled) ? 'active' : 'inactive',
+        joinDate: c.dateJoined
+          ? new Date(c.dateJoined).toISOString().slice(0, 10)
+          : (c.joinDate ?? ''),
+        clubs: c.clubsCount ?? c.clubCount ?? 0,
+      }))
+      // Lọc client-side theo name/email (an toàn nếu backend chưa hỗ trợ q)
+      .filter(item => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        return item.name.toLowerCase().includes(q) || item.email.toLowerCase().includes(q);
+      });
+  }, [customerPage, searchQuery]);
+
+  const totalElements = customerPage?.totalElements ?? rows.length;
+  const totalPages = customerPage?.totalPages ?? 1;
+
+
+  // Mock customer data
+  // const customers = [
+  //   { id: '1', name: 'John Smith', email: 'john@example.com', phone: '+1234567890', status: 'active', joinDate: '2024-01-15', clubs: 2 },
+  //   { id: '2', name: 'Jane Doe', email: 'jane@example.com', phone: '+1234567891', status: 'active', joinDate: '2024-01-10', clubs: 1 },
+  //   { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '+1234567892', status: 'inactive', joinDate: '2024-01-05', clubs: 3 },
+  //   { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', phone: '+1234567893', status: 'active', joinDate: '2023-12-28', clubs: 1 },
+  //   { id: '5', name: 'David Brown', email: 'david@example.com', phone: '+1234567894', status: 'active', joinDate: '2023-12-20', clubs: 2 },
+  //   { id: '6', name: 'Lisa Garcia', email: 'lisa@example.com', phone: '+1234567895', status: 'inactive', joinDate: '2023-12-15', clubs: 1 },
+  // ];
+
+  // const filteredCustomers = customers.filter(customer =>
+  //   customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //   customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
+
+  const handleStatusToggle = async (customerId, currentStatus) => {
+    const nextActive = currentStatus !== 'active';
+    await adminService.updateCustomerStatus(customerId, nextActive);
+    await loadCustomers(); // refresh
   };
 
   return (
@@ -76,7 +128,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
+                {rows.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell>
                       <div className="space-y-1">
@@ -140,7 +192,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
             </Table>
           </div>
 
-          {filteredCustomers.length === 0 && (
+          {!loading && rows.length === 0 && (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No customers found matching your search.</p>
             </div>
@@ -155,7 +207,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
             <CardTitle className="text-base">Total Customers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{customers.length}</div>
+            <div className="text-2xl font-bold">{totalElements}</div>
           </CardContent>
         </Card>
         
@@ -165,7 +217,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {customers.filter(c => c.status === 'active').length}
+              {rows.filter(c => c.status === 'active').length}
             </div>
           </CardContent>
         </Card>
@@ -176,7 +228,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {customers.filter(c => c.status === 'inactive').length}
+              {rows.filter(c => c.status === 'inactive').length}
             </div>
           </CardContent>
         </Card>
