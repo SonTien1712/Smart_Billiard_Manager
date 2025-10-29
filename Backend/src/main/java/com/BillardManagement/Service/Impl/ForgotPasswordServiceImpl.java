@@ -52,7 +52,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         prt.setCreatedDate(Instant.now());
         prt.setExpiryDate(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES));
         tokenRepo.save(prt);
-        
+
         String body = """
                         <p>Xin chào %s,</p>
                         <p>Bạn vừa yêu cầu đặt lại mật khẩu. Token của bạn là:</p>

@@ -27,7 +27,6 @@ export function CustomerList() {
   const {
     data: customerPage,
     loading,
-    error,
     execute: loadCustomers,
   } = useApi(fetchCustomers);
 
