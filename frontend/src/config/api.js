@@ -9,6 +9,7 @@ export const API_CONFIG = {
       LOGOUT: '/auth/logout',
       REFRESH: '/auth/refresh',
       FORGOT_PASSWORD: '/auth/forgot-password',
+      VERIFY_RESET_TOKEN: '/auth/verify-reset-token',
       RESET_PASSWORD: '/auth/reset-password',
       PROFILE: '/auth/profile',
       GOOGLE_AUTH: '/auth/google'
