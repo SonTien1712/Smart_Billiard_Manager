@@ -82,7 +82,7 @@ export class AuthService {
   }
 
   async forgotPassword(email) {
-    await apiClient.post(
+    return await apiClient.post(
       API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD,
       { email }
     );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -37,9 +38,11 @@ import { Button } from '../ui/button';
 import { LogOut } from 'lucide-react';
 
 
-export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
+export function AppSidebar({ onNavigate }) {
   const { user, logout } = useAuth();
   const { state } = useSidebar();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const getInitials = (firstName, lastName, user) => {
     const base =
@@ -74,14 +77,14 @@ export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
           {
             title: 'Overview',
             items: [
-              { title: 'Dashboard', page: 'admin-dashboard', icon: LayoutDashboard },
+              { title: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
             ]
           },
           {
             title: 'Management',
             items: [
-              { title: 'Customers', page: 'customer-list', icon: Users },
-              { title: 'Create Admin', page: 'create-admin', icon: UserPlus },
+              { title: 'Customers', path: '/dashboard/admin/customers', icon: Users },
+              { title: 'Create Admin', path: '/dashboard/admin/create-admin', icon: UserPlus },
             ]
           }
         ];
@@ -91,29 +94,29 @@ export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
           {
             title: 'Overview',
             items: [
-              { title: 'Dashboard', page: 'customer-dashboard', icon: LayoutDashboard },
+              { title: 'Dashboard', path: '/dashboard/customer', icon: LayoutDashboard },
             ]
           },
           {
             title: 'Club Management',
             items: [
-              { title: 'Clubs', page: 'clubs', icon: Building },
-              { title: 'Tables', page: 'tables', icon: Table },
+              { title: 'Clubs', path: '/dashboard/customer/clubs', icon: Building },
+              { title: 'Tables', path: '/dashboard/customer/tables', icon: Table },
             ]
           },
           {
             title: 'Staff Management',
             items: [
-              { title: 'Staff', page: 'staff', icon: UserCheck },
-              { title: 'Work Shifts', page: 'shifts' , icon: Calendar },
-              { title: 'Staff Accounts', page: 'staff-accounts', icon: UserCog },
+              { title: 'Staff', path: '/dashboard/customer/staff', icon: UserCheck },
+              { title: 'Work Shifts', path: '/dashboard/customer/shifts', icon: Calendar },
+              { title: 'Staff Accounts', path: '/dashboard/customer/staff-accounts', icon: UserCog },
             ]
           },
           {
             title: 'Business',
             items: [
-              { title: 'Promotions', page: 'promotions', icon: Percent },
-              { title: 'Products', page: 'products', icon: Package },
+              { title: 'Promotions', path: '/dashboard/customer/promotions', icon: Percent },
+              { title: 'Products', path: '/dashboard/customer/products', icon: Package },
             ]
           }
         ];
@@ -123,15 +126,15 @@ export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
           {
             title: 'Overview',
             items: [
-              { title: 'Dashboard', page: 'staff-dashboard', icon: LayoutDashboard },
+              { title: 'Dashboard', path: '/dashboard/staff', icon: LayoutDashboard },
             ]
           },
           {
             title: 'Operations',
             items: [
-              { title: 'Bill Management', page: 'bills', icon: Receipt },
-              { title: 'Work & Attendance', page: 'work', icon: Clock },
-              { title: 'Payroll', page: 'payroll', icon: DollarSign },
+              { title: 'Bill Management', path: '/dashboard/staff/bills', icon: Receipt },
+              { title: 'Work & Attendance', path: '/dashboard/staff/work', icon: Clock },
+              { title: 'Payroll', path: '/dashboard/staff/payroll', icon: DollarSign },
             ]
           }
         ];
@@ -163,10 +166,10 @@ export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
-                  <SidebarMenuItem key={item.page}>
-                    <SidebarMenuButton 
-                      onClick={() => onPageChange(item.page)}
-                      isActive={currentPage === item.page}
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      onClick={() => navigate(item.path)}
+                      isActive={location.pathname === item.path}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -196,10 +199,10 @@ export function AppSidebar({ currentPage, onPageChange, onNavigate }) {
           </div>
         </div>
         <div className="px-2 pb-2 grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" onClick={() => onNavigate && onNavigate('profile')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
             <User className="h-4 w-4 mr-1" /> Profile
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => { logout(); onNavigate && onNavigate('signin'); }}>
+          <Button variant="destructive" size="sm" onClick={() => { logout(); navigate('/signin'); }}>
             <LogOut className="h-4 w-4 mr-1" /> Logout
           </Button>
         </div>

@@ -52,14 +52,14 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         prt.setCreatedDate(Instant.now());
         prt.setExpiryDate(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES));
         tokenRepo.save(prt);
-
-        String link = resetBaseUrl + "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+        
         String body = """
-            <p>Xin chào %s,</p>
-            <p>Bạn vừa yêu cầu đặt lại mật khẩu. Liên kết có hiệu lực trong %d phút:</p>
-            <p><a href="%s">%s</a></p>
-            <p>Nếu không phải bạn, vui lòng bỏ qua email này.</p>
-        """.formatted(Optional.ofNullable(user.getCustomerName()).orElse("bạn"), ttlMinutes, link, link);
+                        <p>Xin chào %s,</p>
+                        <p>Bạn vừa yêu cầu đặt lại mật khẩu. Token của bạn là:</p>
+                        <p><strong>%s</strong></p>
+                        <p>Token có hiệu lực trong %d phút.</p>
+                        <p>Nếu không phải bạn, vui lòng bỏ qua email này.</p>
+                      """.formatted(user.getCustomerName(), token, ttlMinutes);
 
         emailService.send(user.getEmail(), "Đặt lại mật khẩu", body);
     }

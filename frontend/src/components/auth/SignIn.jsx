@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -8,8 +9,8 @@ import { useAuth } from '../AuthProvider';
 import { Eye, EyeOff } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
-
-export function SignIn({ onNavigate }) {
+export function SignIn() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +26,7 @@ export function SignIn({ onNavigate }) {
 
     try {
       await login({ email, password });
-      onNavigate('dashboard');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -42,7 +43,7 @@ export function SignIn({ onNavigate }) {
       // For now, we'll simulate it
       const mockGoogleToken = 'mock-google-token';
       await loginWithGoogle({ googleToken: mockGoogleToken, role: 'CUSTOMER' });
-      onNavigate('dashboard');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to sign in with Google');
     } finally {
@@ -111,7 +112,7 @@ export function SignIn({ onNavigate }) {
                 type="button"
                 variant="link"
                 className="text-sm text-primary"
-                onClick={() => onNavigate('forgot-password')}
+                onClick={() => navigate('/forgot-password')}
               >
                 Forgot your password?
               </Button>
@@ -171,7 +172,7 @@ export function SignIn({ onNavigate }) {
                   type="button"
                   variant="link"
                   className="p-0 h-auto text-primary"
-                  onClick={() => onNavigate('signup')}
+                  onClick={() => navigate('/signup')}
                 >
                   Sign up
                 </Button>
