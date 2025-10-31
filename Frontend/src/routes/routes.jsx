@@ -16,6 +16,7 @@ import { CustomerDetails } from '../components/admin/CustomerDetails.jsx';
 import { CreateAdmin } from '../components/admin/CreateAdmin.jsx';
 
 // Customer Components
+// import { Premium } from '../components/auth/Premium.jsx';
 import { ClubManagement } from '../components/customer/ClubManagement.jsx';
 import { TableManagement } from '../components/customer/TableManagement.jsx';
 import { StaffManagement } from '../components/customer/StaffManagement.jsx';
@@ -87,6 +88,11 @@ const routes = [
   },
 
   // Customer routes
+  // {
+  //   path: '/premium',
+  //   component: Premium,
+  //   roles: ['CUSTOMER'],
+  // },
   {
     path: '/dashboard/customer',
     component: CustomerDashboard,
@@ -206,6 +212,12 @@ const isRouteAccessible = (route, user) => {
   return true;
 };
 
+const isSubscriptionActive = (expiry) => {
+  if (!expiry) return false; // chưa mua
+  return new Date(expiry).getTime() >= Date.now();
+};
+
+
 function LoadingSpinner() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -290,6 +302,9 @@ function RouteRenderer() {
   return (
     <Routes>
       {routes.map((route, index) => {
+        // if (user?.role === 'CUSTOMER') {
+        //   return isSubscriptionActive(user?.expiryDate) ? '/dashboard/customer' : '/premium';
+        // }
         // Handle redirect routes
         if (route.redirect) {
           const redirectPath = route.redirect(user);

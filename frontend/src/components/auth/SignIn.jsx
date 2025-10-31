@@ -19,7 +19,7 @@ export function SignIn() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e) =>  {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -28,7 +28,10 @@ export function SignIn() {
       await login({ email, password });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Invalid email or password');
+      console.log('Login error:', err);
+      const errorMessage = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.';
+      setError(errorMessage);
+      setForceUpdate(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 import { apiClient } from './api';
 import { API_CONFIG } from '../config/api';
-import { MockService } from './mockService';
+// import { MockService } from './mockService';
 
 const USE_MOCK_DATA = false; // Set to false when you have a real backend
 
@@ -22,6 +22,10 @@ export class AuthService {
     // Chuẩn hóa: nếu dùng axios thì response.data, còn không thì chính response là data
     const data = response?.data ?? response;
     
+    if (data?.success === false) {
+      throw new Error(data.message || 'Đăng nhập thất bại');
+    }
+
     if (data?.success) {
       apiClient.setToken(data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken || '');

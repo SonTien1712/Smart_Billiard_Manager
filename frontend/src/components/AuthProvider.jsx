@@ -65,8 +65,6 @@ export function AuthProvider({ children }) {
       setUser(normalizedUser);
       authService.setCurrentUser(normalizedUser);
 
-
-
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
