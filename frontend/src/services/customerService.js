@@ -5,257 +5,319 @@ import { MockService } from './mockService';
 const USE_MOCK_DATA = false; // Set to false when you have a real backend
 
 export class CustomerService {
-  // Club Management
-  async getClubsByCustomer(customerId) {
-  if (USE_MOCK_DATA) {
-    return MockService.getClubsByCustomer(customerId);
-  }
+    // Club Management
+    async getClubsByCustomer(customerId) {
+        if (USE_MOCK_DATA) {
+            return MockService.getClubsByCustomer(customerId);
+        }
 
-  try {
-    const endpoint = API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS_BY_CUSTOMER(customerId);
-    console.log('[API Club] Fetching from:', endpoint);
+        try {
+            const endpoint = API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS_BY_CUSTOMER(customerId);
+            console.log('[API Club] Fetching from:', endpoint);
 
-    const data = await apiClient.get(endpoint);
+            const data = await apiClient.get(endpoint);
 
-    console.log('[API Club] Raw data:', data);
-    let clubData;
+            console.log('[API Club] Raw data:', data);
+            let clubData;
 
-    if (Array.isArray(data)) {
-      clubData = data;
-    } else if (data && Array.isArray(data.data)) {
-      clubData = data.data;
-    } else if (data && Array.isArray(data.clubs)) {
-      clubData = data.clubs;
-    } else {
-      console.warn('[API Club] Unexpected response:', data);
-      clubData = [];
+            if (Array.isArray(data)) {
+                clubData = data;
+            } else if (data && Array.isArray(data.data)) {
+                clubData = data.data;
+            } else if (data && Array.isArray(data.clubs)) {
+                clubData = data.clubs;
+            } else {
+                console.warn('[API Club] Unexpected response:', data);
+                clubData = [];
+            }
+
+            console.log('[API Club] Final club data:', clubData);
+            return clubData;
+
+        } catch (error) {
+            const status = error.response?.status;
+            const errData = error.response?.data || error.message;
+
+            console.error('[API Club] FAILED:', error);
+            console.error('[API Club] Status:', status || 'Network/CORS');
+            console.error('[API Club] Error data:', errData);
+
+            return [];
+        }
     }
 
-    console.log('[API Club] Final club data:', clubData);
-    return clubData;
 
-  } catch (error) {
-    const status = error.response?.status;
-    const errData = error.response?.data || error.message;
+    async createClub(clubData) {
+        if (USE_MOCK_DATA) {
+            return MockService.createClub(clubData);
+        }
 
-    console.error('[API Club] FAILED:', error);
-    console.error('[API Club] Status:', status || 'Network/CORS');
-    console.error('[API Club] Error data:', errData);
-
-    return [];
-  }
-}
-
-
-  async createClub(clubData) {
-    if (USE_MOCK_DATA) {
-      return MockService.createClub(clubData);
+        const response = await apiClient.post(
+            API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS,
+            clubData
+        );
+        return response.data;
     }
 
-    const response = await apiClient.post(
-      API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS,
-      clubData
-    );
-    return response.data;
-  }
+    async updateClub(id, clubData) {
+        if (USE_MOCK_DATA) {
+            return MockService.updateClub(id, clubData);
+        }
 
-  async updateClub(id, clubData) {
-    if (USE_MOCK_DATA) {
-      return MockService.updateClub(id, clubData);
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS}/${id}`,
+            clubData
+        );
+        return response.data;
     }
 
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS}/${id}`,
-      clubData
-    );
-    return response.data;
-  }
+    async deleteClub(id) {
+        if (USE_MOCK_DATA) {
+            return MockService.deleteClub(id);
+        }
 
-  async deleteClub(id) {
-    if (USE_MOCK_DATA) {
-      return MockService.deleteClub(id);
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS}/${id}`);
     }
 
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.CLUBS}/${id}`);
-  }
+    // Table Management
+    async getTables(clubId, params) {
+        const query = { clubId, ...(params || {}) };
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.TABLES, query);
+        return response.data;
+    }
+    async getTablesByCustomerId(customerId) {
+        try {
+            const endpoint = `${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES_BY_CUSTOMER(customerId)}`;
+            console.log('[API Table] Fetching from:', endpoint);
 
-  // Table Management
-  async getTables(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.TABLES, query);
-    return response.data;
-  }
-  async getTablesByCustomerId(customerId) {
-  try {
-    const endpoint = `${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES_BY_CUSTOMER(customerId)}`;
-    console.log('[API Table] Fetching from:', endpoint);
+            const data = await apiClient.get(endpoint);
 
-    const data = await apiClient.get(endpoint);
+            console.log('[API Table] Raw data:', data);
+            let tableData;
 
-    console.log('[API Table] Raw data:', data);
-    let tableData;
+            if (Array.isArray(data)) {
+                tableData = data;
+            } else if (data && Array.isArray(data.data)) {
+                tableData = data.data;
+            } else {
+                console.warn('[API Table] Unexpected response:', data);
+                tableData = [];
+            }
 
-    if (Array.isArray(data)) {
-      tableData = data;
-    } else if (data && Array.isArray(data.data)) {
-      tableData = data.data;
-    } else {
-      console.warn('[API Table] Unexpected response:', data);
-      tableData = [];
+            console.log('[API Table] Final table data:', tableData);
+            return tableData;
+
+        } catch (error) {
+            const status = error.response?.status;
+            const errData = error.response?.data || error.message;
+
+            console.error('[API Table] FAILED:', error);
+            console.error('[API Table] Status:', status || 'Network/CORS');
+            console.error('[API Table] Error data:', errData);
+
+            return [];
+        }
     }
 
-    console.log('[API Table] Final table data:', tableData);
-    return tableData;
 
-  } catch (error) {
-    const status = error.response?.status;
-    const errData = error.response?.data || error.message;
+    async createTable(tableData) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.TABLES, tableData);
+        return response.data;
+    }
 
-    console.error('[API Table] FAILED:', error);
-    console.error('[API Table] Status:', status || 'Network/CORS');
-    console.error('[API Table] Error data:', errData);
+    async updateTable(id, tableData) {
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES}/${id}`,
+            tableData
+        );
+        return response.data;
+    }
 
-    return [];
-  }
-}
+    async deleteTable(id) {
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES}/${id}`);
+    }
 
 
-  async createTable(tableData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.TABLES, tableData);
-    return response.data;
-  }
 
-  async updateTable(id, tableData) {
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES}/${id}`,
-      tableData
-    );
-    return response.data;
-  }
+    // Staff Management
+    async getStaff(clubId, params) {
+        const query = { clubId, ...(params || {}) };
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, query);
+        return response.data;
+    }
 
-  async deleteTable(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES}/${id}`);
-  }
+    async createStaff(staffData) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, staffData);
+        return response.data;
+    }
 
-  // Staff Management
-  async getStaff(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, query);
-    return response.data;
-  }
+    async updateStaff(id, staffData) {
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF}/${id}`,
+            staffData
+        );
+        return response.data;
+    }
 
-  async createStaff(staffData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, staffData);
-    return response.data;
-  }
+    async deleteStaff(id) {
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF}/${id}`);
+    }
 
-  async updateStaff(id, staffData) {
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF}/${id}`,
-      staffData
-    );
-    return response.data;
-  }
+    // Staff Account Management
+    async getStaffAccounts(clubId, params) {
+        const query = { clubId, ...(params || {}) };
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS, query);
+        return response.data;
+    }
 
-  async deleteStaff(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF}/${id}`);
-  }
+    async createStaffAccount(accountData) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS, accountData);
+        return response.data;
+    }
 
-  // Staff Account Management
-  async getStaffAccounts(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS, query);
-    return response.data;
-  }
+    async updateStaffAccount(id, accountData) {
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS}/${id}`,
+            accountData
+        );
+        return response.data;
+    }
 
-  async createStaffAccount(accountData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS, accountData);
-    return response.data;
-  }
+    async deleteStaffAccount(id) {
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS}/${id}`);
+    }
 
-  async updateStaffAccount(id, accountData) {
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS}/${id}`,
-      accountData
-    );
-    return response.data;
-  }
+    // Shift Management
+    async getShifts(clubId, params) {
+        const query = { clubId, ...(params || {}) };
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, query);
+        return response.data;
+    }
 
-  async deleteStaffAccount(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_ACCOUNTS}/${id}`);
-  }
+    async createShift(shiftData) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, shiftData);
+        return response.data;
+    }
 
-  // Shift Management
-  async getShifts(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, query);
-    return response.data;
-  }
+    async updateShift(id, shiftData) {
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS}/${id}`,
+            shiftData
+        );
+        return response.data;
+    }
 
-  async createShift(shiftData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, shiftData);
-    return response.data;
-  }
+    async deleteShift(id) {
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS}/${id}`);
+    }
 
-  async updateShift(id, shiftData) {
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS}/${id}`,
-      shiftData
-    );
-    return response.data;
-  }
+    // ======================================================
+    // Promotion Management
+    // ======================================================
 
-  async deleteShift(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS}/${id}`);
-  }
+    /**
+     * *** HÀM MỚI ***
+     * Lấy tất cả promotions cho một clubId cụ thể.
+     * Endpoint này gọi tới GET /promotions/club/{clubId} của backend.
+     */
+    async getPromotionsByClub(clubId) {
+        if (USE_MOCK_DATA) {
+            // return MockService.getPromotions(clubId); // Bạn có thể thêm mock nếu muốn
+            return [];
+        }
 
-  // Promotion Management
-  async getPromotions(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS, query);
-    return response.data;
-  }
+        if (!clubId) {
+            console.error('[API Promotion] Club ID is required');
+            return [];
+        }
 
-  async createPromotion(promotionData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS, promotionData);
-    return response.data;
-  }
+        try {
+            // Giả định API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS là '/promotions'
+            const endpoint = `${API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS}/club/${clubId}`;
+            console.log('[API Promotion] Fetching from:', endpoint);
 
-  async updatePromotion(id, promotionData) {
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS}/${id}`,
-      promotionData
-    );
-    return response.data;
-  }
+            // Sử dụng 'data' trực tiếp vì apiClient đã unwrap response
+            const data = await apiClient.get(endpoint);
 
-  async deletePromotion(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS}/${id}`);
-  }
+            console.log('[API Promotion] Raw data:', data);
+            let promoData;
 
-  // Product Management
-  async getProducts(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS, query);
-    return response.data;
-  }
+            // Xử lý dữ liệu trả về linh hoạt giống như hàm getClubsByCustomer
+            if (Array.isArray(data)) {
+                promoData = data;
+            } else if (data && Array.isArray(data.data)) {
+                promoData = data.data;
+            } else {
+                console.warn('[API Promotion] Unexpected response:', data);
+                promoData = [];
+            }
 
-  async createProduct(productData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS, productData);
-    return response.data;
-  }
+            console.log('[API Promotion] Final promotion data:', promoData);
+            return promoData;
 
-  async updateProduct(id, productData) {
-    const response = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`,
-      productData
-    );
-    return response.data;
-  }
+        } catch (error) {
+            const status = error.response?.status;
+            const errData = error.response?.data || error.message;
 
-  async deleteProduct(id) {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`);
-  }
+            console.error('[API Promotion] FAILED:', error);
+            console.error('[API Promotion] Status:', status || 'Network/CORS');
+            console.error('[API Promotion] Error data:', errData);
+
+            return [];
+        }
+    }
+
+    // Hàm này của bạn dùng để lấy promotions với query params (ví dụ: ?clubId=1)
+    // Tôi giữ lại nó nếu bạn cần dùng ở chỗ khác
+    async getPromotions(clubId, params) {
+        const query = { clubId, ...(params || {}) };
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS, query);
+        return response.data;
+    }
+
+    // Hàm tạo mới. Hàm này đã ĐÚNG.
+    async createPromotion(promotionData) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS, promotionData);
+        return response.data;
+    }
+
+    // Hàm cập nhật. Hàm này đã ĐÚNG.
+    async updatePromotion(id, promotionData) {
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS}/${id}`,
+            promotionData
+        );
+        return response.data;
+    }
+
+    // Hàm xóa. Hàm này đã ĐÚNG.
+    async deletePromotion(id) {
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS}/${id}`);
+    }
+
+    // Product Management
+    async getProducts(clubId, params) {
+        const query = { clubId, ...(params || {}) };
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS, query);
+        return response.data;
+    }
+
+    async createProduct(productData) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS, productData);
+        return response.data;
+    }
+
+    async updateProduct(id, productData) {
+        const response = await apiClient.put(
+            `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`,
+            productData
+        );
+        return response.data;
+    }
+
+    async deleteProduct(id) {
+        await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`);
+    }
 }
 
 export const customerService = new CustomerService();
