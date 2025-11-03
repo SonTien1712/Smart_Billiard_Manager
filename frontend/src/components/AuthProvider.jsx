@@ -11,9 +11,19 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, []);
 
+  const refreshUser = async () => {
+    try {
+      const profile = await authService.getProfile();
+      setUser(profile);
+      authService.setCurrentUser(profile);
+    } catch (error) {
+      console.error('Refresh user failed:', error);
+    }
+  };
+
   const initializeAuth = async () => {
     try {
-      if (authService.isAuthenticated()) {
+      if (authService.isAuthenticated()) { 
         const currentUser = authService.getCurrentUser();
         if (currentUser) {
           setUser(currentUser);
@@ -65,6 +75,8 @@ export function AuthProvider({ children }) {
       setUser(normalizedUser);
       authService.setCurrentUser(normalizedUser);
 
+      return authResponse; // Return the response for SignIn component to use
+
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -79,7 +91,6 @@ export function AuthProvider({ children }) {
       const authResponse = await authService.register(userData);
       return authResponse;
     } catch (error) {
-      console.error('Registration failed:', error);
       return { success: false, message: 'Đăng ký thất bại' };
     } finally {
       setLoading(false);
@@ -143,6 +154,25 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const handlePayment = async (planId, price) => {
+    const amount = price.replace(/\D/g, '');  // Chuyển '499.000đ' thành '499000'
+    try {
+        const response = await fetch('http://localhost:8080/api/payment/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ amount, customerId: user.id, planId })
+        });
+        if (response.ok) {
+            const payUrl = await response.text();
+            window.location.href = payUrl;  // Redirect đến Momo
+        } else {
+            alert('Lỗi tạo thanh toán: ' + response.statusText);
+        }
+    } catch (error) {
+        alert('Lỗi: ' + error.message);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -153,11 +183,15 @@ export function AuthProvider({ children }) {
       logout,
       updateProfile,
       forgotPassword,
-      resetPassword
+      resetPassword,
+      handlePayment,
+      refreshUser   
     }}>
       {children}
     </AuthContext.Provider>
   );
+
+  
 }
 
 export function useAuth() {

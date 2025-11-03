@@ -25,4 +25,8 @@ public interface CustomerService {
 
     Optional<Customer> updateStatus(Integer id, boolean isActive);
     Optional<Customer> updateCustomer(Integer id, UpdateCustomerRequest req);
+
+    void updateExpireDate(Integer id, String planId);
+
+    Customer getCurrentUser();
 }
