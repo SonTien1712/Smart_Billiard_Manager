@@ -179,12 +179,13 @@ export class CustomerService {
   async getPromotions(clubId, params) {
     const query = { clubId, ...(params || {}) };
     const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS, query);
-    return response.data;
+    // backend returns { promotions, currentPage, totalItems, totalPages }
+    return response.promotions ?? response.data ?? response;
   }
 
   async createPromotion(promotionData) {
     const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS, promotionData);
-    return response.data;
+    return response; // controller returns DTO directly
   }
 
   async updatePromotion(id, promotionData) {
@@ -192,7 +193,7 @@ export class CustomerService {
       `${API_CONFIG.ENDPOINTS.CUSTOMER.PROMOTIONS}/${id}`,
       promotionData
     );
-    return response.data;
+    return response;
   }
 
   async deletePromotion(id) {

@@ -1,6 +1,6 @@
 package com.BillardManagement.DTO;
 
-import com.BillardManagement.Entity.DiscountType;
+import com.BillardManagement.Entity.PromotionType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import javax.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -30,13 +30,12 @@ public class PromotionDTO {
     @Pattern(regexp = "^[A-Z0-9_-]+$", message = "Mã khuyến mãi chỉ chứa chữ in hoa, số, gạch dưới và gạch ngang")
     private String promotionCode;
 
-    @NotNull(message = "Loại giảm giá không được để trống")
-    private DiscountType discountType;
+    @NotNull(message = "Loại khuyến mãi không được để trống")
+    private PromotionType promotionType;
 
-    @NotNull(message = "Giá trị giảm giá không được để trống")
-    @DecimalMin(value = "0.01", message = "Giá trị giảm giá phải lớn hơn 0")
-    @DecimalMax(value = "100.00", message = "Giá trị giảm giá không được vượt quá 100")
-    private BigDecimal discountValue;
+    @NotNull(message = "Giá trị khuyến mãi không được để trống")
+    @DecimalMin(value = "0.01", message = "Giá trị khuyến mãi phải lớn hơn 0")
+    private BigDecimal promotionValue;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
@@ -46,16 +45,7 @@ public class PromotionDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
     private Instant endDate;
 
-    private String applicableTableTypes;
-
-    @DecimalMin(value = "0.00", message = "Thời gian chơi tối thiểu không được âm")
-    private BigDecimal minPlayTime;
-
-    @DecimalMin(value = "0.00", message = "Số tiền tối thiểu không được âm")
-    private BigDecimal minAmount;
-
-    @DecimalMin(value = "0.00", message = "Giảm giá tối đa không được âm")
-    private BigDecimal maxDiscount;
+    // Removed legacy fields: applicableTableTypes, minPlayTime, minAmount, maxDiscount
 
     @Min(value = 0, message = "Giới hạn sử dụng không được âm")
     private Integer usageLimit;
@@ -68,8 +58,7 @@ public class PromotionDTO {
     @Size(max = 1000, message = "Mô tả không được vượt quá 1000 ký tự")
     private String description;
 
-    private Instant createdAt;
-    private Instant updatedAt;
+    // removed audit fields to match DB schema
 
     // Custom validation
     @AssertTrue(message = "Ngày kết thúc phải sau ngày bắt đầu")
@@ -80,15 +69,16 @@ public class PromotionDTO {
         return endDate.isAfter(startDate);
     }
 
-    @AssertTrue(message = "Giá trị giảm giá phần trăm không được vượt quá 100")
-    public boolean isDiscountValueValid() {
-        if (discountType == null || discountValue == null) {
+    @AssertTrue(message = "Giá trị khuyến mãi phần trăm không được vượt quá 100")
+    public boolean isPromotionValueValid() {
+        if (promotionType == null || promotionValue == null) {
             return true;
         }
-        if (discountType == DiscountType.PERCENTAGE) {
-            return discountValue.compareTo(BigDecimal.valueOf(100)) <= 0;
+        if (promotionType == PromotionType.PERCENTAGE) {
+            return promotionValue.compareTo(BigDecimal.valueOf(100)) <= 0;
         }
         return true;
     }
 }
+
 

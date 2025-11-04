@@ -11,6 +11,9 @@ import com.BillardManagement.Entity.Billiardtable;
 import com.BillardManagement.Repository.BillRepo;
 import com.BillardManagement.Repository.BilliardtableRepo;
 import com.BillardManagement.Repository.ProductRepo;
+import com.BillardManagement.Repository.PromotionRepository;
+import com.BillardManagement.Entity.Promotion;
+import com.BillardManagement.Entity.PromotionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +35,190 @@ public class StaffBillingController {
     private final BillRepo billRepo;
     private final ProductRepo productRepo;
     private final com.BillardManagement.Repository.BilldetailRepo billdetailRepo;
+    private final PromotionRepository promotionRepository;
 
+    /**
+     * Tính lại giảm giá xem trước cho bill nếu đang có promotion.
+     * - Tổng sản phẩm: ưu tiên tính lại từ Billdetail (tránh số liệu cũ)
+     * - Giờ bàn: nếu bill ở trạng thái Pending dùng TotalHours đã khóa, ngược lại tính từ StartTime → hiện tại
+     * - Lưu DiscountAmount và FinalAmount (trước thuế)
+     */
+    private void recomputePromotionPreviewIfAny(Bill b) {
+        if (b == null || b.getPromotionID() == null) return;
+        Promotion p = b.getPromotionID();
+        java.math.BigDecimal productTotal = recalcProductTotal(b.getId());
+        if (productTotal == null) productTotal = b.getTotalProductCost() == null ? java.math.BigDecimal.ZERO : b.getTotalProductCost();
+        java.math.BigDecimal tableCost = java.math.BigDecimal.ZERO;
+        if (b.getTableID() != null && b.getTableID().getHourlyRate() != null) {
+            // If bill is Pending, keep locked hours; else compute from start->now
+            java.math.BigDecimal hours;
+            if (b.getBillStatus() != null && b.getBillStatus().equalsIgnoreCase("Pending") && b.getTotalHours() != null) {
+                hours = b.getTotalHours();
+            } else if (b.getStartTime() != null) {
+                long minutes = java.time.Duration.between(b.getStartTime(), java.time.Instant.now()).toMinutes();
+                if (minutes < 0) minutes = 0;
+                long rem = minutes % 6;
+                long roundedMinutes = rem >= 3 ? minutes + (6 - rem) : minutes - rem;
+                hours = new java.math.BigDecimal(roundedMinutes)
+                        .divide(new java.math.BigDecimal(60), 2, java.math.RoundingMode.HALF_UP);
+            } else {
+                hours = java.math.BigDecimal.ZERO;
+            }
+            tableCost = hours.multiply(b.getTableID().getHourlyRate());
+        }
+        java.math.BigDecimal base = tableCost.add(productTotal);
+        java.math.BigDecimal discount = java.math.BigDecimal.ZERO;
+        if (p.getPromotionType() == PromotionType.PERCENTAGE) {
+            discount = base.multiply(p.getPromotionValue())
+                    .divide(new java.math.BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+        } else {
+            discount = p.getPromotionValue() == null ? java.math.BigDecimal.ZERO : p.getPromotionValue();
+            if (discount.compareTo(base) > 0) discount = base;
+        }
+        b.setDiscountAmount(discount);
+        java.math.BigDecimal finalPreview = base.subtract(discount);
+        if (finalPreview.signum() < 0) finalPreview = java.math.BigDecimal.ZERO;
+        b.setFinalAmount(finalPreview);
+    }
+
+    
+
+    // Finalize (freeze totals) without completing payment
+    /**
+     * Khóa bill (Pending): chốt giờ, tổng bàn, tổng sản phẩm và tính giảm giá xem trước.
+     * Không thanh toán, không trừ lượt promotion.
+     * Body có thể truyền taxPercent để tính trước FinalAmount gồm thuế.
+     */
+    @PatchMapping("/bills/{billId}/finalize")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<BillDetailDTO> finalizeBill(
+            @PathVariable("billId") Integer billId,
+            @RequestBody(required = false) java.util.Map<String, Object> payload
+    ) {
+        var opt = billRepo.findById(billId); // locked
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        Bill b = opt.get();
+        if (b.getEndTime() != null) return ResponseEntity.status(409).build(); // already closed
+
+        // Compute hours using current time and lock them into TotalHours
+        java.math.BigDecimal hours = java.math.BigDecimal.ZERO;
+        if (b.getStartTime() != null) {
+            long minutes = java.time.Duration.between(b.getStartTime(), java.time.Instant.now()).toMinutes();
+            if (minutes < 0) minutes = 0;
+            long rem = minutes % 6;
+            long roundedMinutes = rem >= 3 ? minutes + (6 - rem) : minutes - rem;
+            hours = new java.math.BigDecimal(roundedMinutes)
+                    .divide(new java.math.BigDecimal(60), 2, java.math.RoundingMode.HALF_UP);
+        }
+        b.setTotalHours(hours);
+
+        java.math.BigDecimal rate = java.math.BigDecimal.ZERO;
+        if (b.getTableID() != null && b.getTableID().getHourlyRate() != null) {
+            rate = b.getTableID().getHourlyRate();
+        }
+        java.math.BigDecimal tableCost = hours.multiply(rate);
+        b.setTotalTableCost(tableCost);
+
+        // Recalc product total from details, lock it
+        java.math.BigDecimal product = recalcProductTotal(b.getId());
+        if (product == null) product = java.math.BigDecimal.ZERO;
+        b.setTotalProductCost(product);
+
+        // Apply promotion preview (uses locked hours if status Pending)
+        b.setBillStatus("Pending");
+        recomputePromotionPreviewIfAny(b);
+
+        // Optional tax preview
+        java.math.BigDecimal taxAmount = java.math.BigDecimal.ZERO;
+        if (payload != null) {
+            Object tax = payload.get("taxPercent");
+            java.math.BigDecimal taxPercent = java.math.BigDecimal.ZERO;
+            if (tax instanceof Number) {
+                taxPercent = new java.math.BigDecimal(((Number) tax).toString());
+            } else if (tax instanceof String && !((String) tax).isBlank()) {
+                try { taxPercent = new java.math.BigDecimal((String) tax); } catch (Exception ignored) {}
+            }
+            if (taxPercent.signum() > 0) {
+                java.math.BigDecimal subtotal = b.getTotalTableCost().add(b.getTotalProductCost()).subtract(b.getDiscountAmount());
+                if (subtotal.signum() < 0) subtotal = java.math.BigDecimal.ZERO;
+                taxAmount = subtotal.multiply(taxPercent).divide(new java.math.BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+                b.setFinalAmount(subtotal.add(taxAmount));
+            }
+        }
+
+        billRepo.save(b);
+
+        var items = billdetailRepo.findWithProductByBill(billId).stream().map(d -> new BillItemDTO(
+                d.getId(),
+                d.getProductID() != null ? d.getProductID().getId() : null,
+                d.getProductID() != null ? d.getProductID().getProductName() : null,
+                d.getQuantity(),
+                d.getUnitPrice(),
+                d.getSubTotal()
+        )).collect(java.util.stream.Collectors.toList());
+
+        BillDetailDTO dto = new BillDetailDTO(
+                b.getId(),
+                b.getTableID() != null ? b.getTableID().getTableName() : "",
+                b.getBillStatus(),
+                b.getStartTime(),
+                b.getEndTime(),
+                b.getTotalHours(),
+                b.getTotalTableCost(),
+                b.getTotalProductCost(),
+                b.getDiscountAmount(),
+                b.getFinalAmount(),
+                items
+        );
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Mở khóa bill (Unfinalize): chuyển từ Pending về Unpaid để tiếp tục thêm món/tính giờ.
+     */
+    @PatchMapping("/bills/{billId}/unfinalize")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<BillDetailDTO> unfinalizeBill(
+            @PathVariable("billId") Integer billId
+    ) {
+        var opt = billRepo.findById(billId); // lock
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        Bill b = opt.get();
+        if (b.getEndTime() != null) return ResponseEntity.status(409).build();
+
+        b.setBillStatus("Unpaid");
+        // Không thay đổi các tổng đã khóa; UI sẽ hiển thị live từ thời gian thực khi không Pending
+        recomputePromotionPreviewIfAny(b);
+        billRepo.save(b);
+
+        var items = billdetailRepo.findWithProductByBill(billId).stream().map(d -> new BillItemDTO(
+                d.getId(),
+                d.getProductID() != null ? d.getProductID().getId() : null,
+                d.getProductID() != null ? d.getProductID().getProductName() : null,
+                d.getQuantity(),
+                d.getUnitPrice(),
+                d.getSubTotal()
+        )).collect(java.util.stream.Collectors.toList());
+
+        BillDetailDTO dto = new BillDetailDTO(
+                b.getId(),
+                b.getTableID() != null ? b.getTableID().getTableName() : "",
+                b.getBillStatus(),
+                b.getStartTime(),
+                b.getEndTime(),
+                b.getTotalHours(),
+                b.getTotalTableCost(),
+                b.getTotalProductCost(),
+                b.getDiscountAmount(),
+                b.getFinalAmount(),
+                items
+        );
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Danh sách bàn theo Club/Customer hoặc tất cả. Kèm trạng thái occupied theo bill đang chạy.
+     */
     @GetMapping("/tables")
     public ResponseEntity<List<TableDTO>> listTables(
             @RequestParam(value = "clubId", required = false) Integer clubId,
@@ -84,6 +270,9 @@ public class StaffBillingController {
     }
 
     // Open a table: create an active bill if none exists (race-safe)
+    /**
+     * Mở bàn: tạo bill Unpaid mới nếu chưa có bill đang chạy cho bàn này.
+     */
     @PostMapping("/tables/{tableId}/open")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<BillSummaryDTO> openTable(
@@ -128,6 +317,9 @@ public class StaffBillingController {
         return ResponseEntity.ok(new BillSummaryDTO(b.getId(), tableName, BigDecimal.ZERO, b.getBillStatus(), b.getCreatedDate()));
     }
 
+    /**
+     * Danh sách sản phẩm theo Club/Customer (chỉ sản phẩm đang active).
+     */
     @GetMapping("/products")
     public ResponseEntity<List<ProductDTO>> listProducts(
             @RequestParam(value = "clubId", required = false) Integer clubId,
@@ -144,6 +336,9 @@ public class StaffBillingController {
         return ResponseEntity.ok(dtos);
     }
 
+    /**
+     * Danh sách bill gần đây với các tiêu chí lọc (club/customer/status/employee).
+     */
     @GetMapping("/bills")
     public ResponseEntity<List<BillSummaryDTO>> listRecentBills(
             @RequestParam(value = "clubId", required = false) Integer clubId,
@@ -198,6 +393,9 @@ public class StaffBillingController {
     }
 
     // Get a full bill with items
+    /**
+     * Chi tiết bill gồm items và các tổng đang lưu trên bill (để hiển thị).
+     */
     @GetMapping("/bills/{billId}")
     public ResponseEntity<BillDetailDTO> getBillById(@PathVariable("billId") Integer billId) {
         var opt = billRepo.findViewById(billId);
@@ -230,6 +428,9 @@ public class StaffBillingController {
     }
 
     // --- Bill items draft management ---
+    /**
+     * Thêm item vào bill đang chạy. Lưu Billdetail, cập nhật tổng sản phẩm và giảm giá xem trước nếu có promotion.
+     */
     @PostMapping("/bills/{billId}/items")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<BillItemDTO> addBillItem(
@@ -240,6 +441,10 @@ public class StaffBillingController {
         var opt = billRepo.findById(billId);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         Bill b = opt.get();
+        if (b.getBillStatus() != null && b.getBillStatus().equalsIgnoreCase("Pending")) {
+            // Không cho chỉnh sửa khi bill đã khóa
+            return ResponseEntity.status(409).build();
+        }
         if (b.getEndTime() != null) return ResponseEntity.status(409).build();
         if (b.getEmployeeID() != null && employeeId != null && !b.getEmployeeID().getId().equals(employeeId)) {
             return ResponseEntity.status(403).build();
@@ -285,6 +490,8 @@ public class StaffBillingController {
         d.setSubTotal(p.getPrice().multiply(new java.math.BigDecimal(d.getQuantity())));
         d = billdetailRepo.save(d);
         b.setTotalProductCost(recalcProductTotal(billId));
+        // Recompute promotion preview discount if a promotion is applied
+        recomputePromotionPreviewIfAny(b);
         billRepo.save(b);
 
         return ResponseEntity.ok(new BillItemDTO(
@@ -297,6 +504,9 @@ public class StaffBillingController {
         ));
     }
 
+    /**
+     * Cập nhật số lượng item trong bill. Nếu qty=0 sẽ xóa item.
+     */
     @PutMapping("/bills/{billId}/items/{itemId}")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<BillItemDTO> updateBillItem(
@@ -308,6 +518,9 @@ public class StaffBillingController {
         var opt = billRepo.findById(billId);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         Bill b = opt.get();
+        if (b.getBillStatus() != null && b.getBillStatus().equalsIgnoreCase("Pending")) {
+            return ResponseEntity.status(409).build();
+        }
         if (b.getEndTime() != null) return ResponseEntity.status(409).build();
         if (b.getEmployeeID() != null && employeeId != null && !b.getEmployeeID().getId().equals(employeeId)) {
             return ResponseEntity.status(403).build();
@@ -326,6 +539,7 @@ public class StaffBillingController {
         if (qty <= 0) {
             billdetailRepo.delete(d);
             b.setTotalProductCost(recalcProductTotal(billId));
+            recomputePromotionPreviewIfAny(b);
             billRepo.save(b);
             return ResponseEntity.ok(new BillItemDTO(itemId, d.getProductID() != null ? d.getProductID().getId() : null, d.getProductID() != null ? d.getProductID().getProductName() : null, 0, d.getUnitPrice(), java.math.BigDecimal.ZERO));
         }
@@ -335,6 +549,7 @@ public class StaffBillingController {
         d.setSubTotal(price.multiply(new java.math.BigDecimal(qty)));
         d = billdetailRepo.save(d);
         b.setTotalProductCost(recalcProductTotal(billId));
+        recomputePromotionPreviewIfAny(b);
         billRepo.save(b);
 
         return ResponseEntity.ok(new BillItemDTO(
@@ -347,6 +562,9 @@ public class StaffBillingController {
         ));
     }
 
+    /**
+     * Xóa một item khỏi bill. Cập nhật lại tổng sản phẩm và giảm giá xem trước nếu có.
+     */
     @DeleteMapping("/bills/{billId}/items/{itemId}")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteBillItem(
@@ -357,6 +575,9 @@ public class StaffBillingController {
         var opt = billRepo.findById(billId);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         Bill b = opt.get();
+        if (b.getBillStatus() != null && b.getBillStatus().equalsIgnoreCase("Pending")) {
+            return ResponseEntity.status(409).build();
+        }
         if (b.getEndTime() != null) return ResponseEntity.status(409).build();
         if (b.getEmployeeID() != null && employeeId != null && !b.getEmployeeID().getId().equals(employeeId)) {
             return ResponseEntity.status(403).build();
@@ -367,17 +588,96 @@ public class StaffBillingController {
         if (!d.getBillID().getId().equals(billId)) return ResponseEntity.status(400).build();
         billdetailRepo.delete(d);
         b.setTotalProductCost(recalcProductTotal(billId));
+        recomputePromotionPreviewIfAny(b);
         billRepo.save(b);
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Tính lại tổng tiền sản phẩm của bill từ các Billdetail.
+     */
     private java.math.BigDecimal recalcProductTotal(Integer billId) {
         return billdetailRepo.findByBillID_Id(billId).stream()
                 .map(x -> x.getSubTotal() == null ? java.math.BigDecimal.ZERO : x.getSubTotal())
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }
 
+    // Apply a promotion code to an active bill
+    /**
+     * Áp dụng mã khuyến mãi cho bill: gắn PromotionID và tính giảm giá xem trước ngay.
+     * Không trừ lượt dùng cho tới khi thanh toán thành công.
+     */
+    @PostMapping("/bills/{billId}/apply-promotion")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<java.util.Map<String, Object>> applyPromotion(
+            @PathVariable("billId") Integer billId,
+            @RequestParam("code") String code
+    ) {
+        var bOpt = billRepo.findById(billId);
+        if (bOpt.isEmpty()) return ResponseEntity.notFound().build();
+        Bill b = bOpt.get();
+        Integer clubId = b.getClubID() != null ? b.getClubID().getId() : null;
+        if (clubId == null) return ResponseEntity.status(400).build();
+
+        var pOpt = promotionRepository.findValidPromotionByCodeAndClub(code, clubId, java.time.Instant.now());
+        if (pOpt.isEmpty()) return ResponseEntity.status(404).build();
+        Promotion p = pOpt.get();
+        if (p.getCustomer() != null && p.getCustomer().getId() != null) {
+            if (b.getCustomerID() == null || !p.getCustomer().getId().equals(b.getCustomerID().getId())) {
+                return ResponseEntity.status(403).build();
+            }
+        }
+
+        b.setPromotionID(p);
+
+        // Compute a live preview discount against current totals
+        // Prefer recalculating from bill details to reflect latest items
+        java.math.BigDecimal productTotal = recalcProductTotal(b.getId());
+        if (productTotal == null) productTotal = b.getTotalProductCost() == null ? java.math.BigDecimal.ZERO : b.getTotalProductCost();
+        java.math.BigDecimal tableCost = java.math.BigDecimal.ZERO;
+        if (b.getStartTime() != null && b.getTableID() != null && b.getTableID().getHourlyRate() != null) {
+            // Mirror rounding logic from checkout: round to nearest 6 minutes
+            long minutes = java.time.Duration.between(b.getStartTime(), java.time.Instant.now()).toMinutes();
+            if (minutes < 0) minutes = 0;
+            long rem = minutes % 6;
+            long roundedMinutes = rem >= 3 ? minutes + (6 - rem) : minutes - rem;
+            java.math.BigDecimal hours = new java.math.BigDecimal(roundedMinutes)
+                    .divide(new java.math.BigDecimal(60), 2, java.math.RoundingMode.HALF_UP);
+            tableCost = hours.multiply(b.getTableID().getHourlyRate());
+        }
+        java.math.BigDecimal base = tableCost.add(productTotal);
+        java.math.BigDecimal discount = java.math.BigDecimal.ZERO;
+        if (p.getPromotionType() == PromotionType.PERCENTAGE) {
+            discount = base.multiply(p.getPromotionValue())
+                    .divide(new java.math.BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+        } else {
+            discount = p.getPromotionValue() == null ? java.math.BigDecimal.ZERO : p.getPromotionValue();
+            if (discount.compareTo(base) > 0) discount = base;
+        }
+        b.setDiscountAmount(discount);
+        // Preview final amount without tax; UI applies tax as needed
+        java.math.BigDecimal finalPreview = base.subtract(discount);
+        if (finalPreview.signum() < 0) finalPreview = java.math.BigDecimal.ZERO;
+        b.setFinalAmount(finalPreview);
+
+        billRepo.save(b);
+
+        var resp = new java.util.HashMap<String, Object>();
+        resp.put("billId", b.getId());
+        resp.put("promotionId", p.getId());
+        resp.put("code", p.getPromotionCode());
+        resp.put("promotionType", p.getPromotionType() != null ? p.getPromotionType().name() : null);
+        resp.put("promotionValue", p.getPromotionValue());
+        resp.put("discount", discount);
+        resp.put("finalPreview", finalPreview);
+        return ResponseEntity.ok(resp);
+    }
+
     // Complete/checkout bill: close active session and compute costs
+    /**
+     * Hoàn tất/Thanh toán bill: chốt thời gian, tính toán tổng, áp promotion, tính thuế và set trạng thái Paid.
+     * Sau khi lưu thành công sẽ tăng UsedCount của promotion.
+     */
     @PatchMapping("/bills/{billId}/complete")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<BillSummaryDTO> completeBill(
@@ -429,7 +729,21 @@ public class StaffBillingController {
                 } else if (pt instanceof String && !((String) pt).isBlank()) {
                     try { product = new java.math.BigDecimal((String) pt); } catch (Exception ignored) {}
                 }
+            }
 
+            // If a promotion has been applied to this bill, compute discount from it
+            if (b.getPromotionID() != null) {
+                java.math.BigDecimal base = tableCost.add(product);
+                Promotion promo = b.getPromotionID();
+                if (promo.getPromotionType() == PromotionType.PERCENTAGE) {
+                    discount = base.multiply(promo.getPromotionValue())
+                            .divide(new java.math.BigDecimal(100), 2, java.math.RoundingMode.HALF_UP);
+                } else {
+                    discount = promo.getPromotionValue() == null ? java.math.BigDecimal.ZERO : promo.getPromotionValue();
+                    if (discount.compareTo(base) > 0) discount = base;
+                }
+            } else if (payload != null) {
+                // Backward-compatibility: accept manual discount if no promotion applied
                 Object disc = payload.get("discount");
                 if (disc instanceof Number) {
                     discount = new java.math.BigDecimal(((Number) disc).toString());
@@ -495,12 +809,23 @@ public class StaffBillingController {
 
             java.math.BigDecimal finalAmount = subtotal.add(taxAmount);
             if (finalAmount.signum() < 0) finalAmount = java.math.BigDecimal.ZERO;
+            // persist computed discount
+            b.setDiscountAmount(discount);
             b.setFinalAmount(finalAmount);
             // Persist the product total if it came from client-side checkout
             b.setTotalProductCost(product);
             b.setBillStatus("Paid");
 
             b = billRepo.save(b);
+
+            // increment promotion usage count after successful payment
+            if (b.getPromotionID() != null) {
+                try {
+                    Promotion p = b.getPromotionID();
+                    p.incrementUsageCount();
+                    promotionRepository.save(p);
+                } catch (Exception ignored) {}
+            }
         }
 
         String tableName = b.getTableID() != null ? b.getTableID().getTableName() : "";
@@ -509,6 +834,9 @@ public class StaffBillingController {
         return ResponseEntity.ok(new BillSummaryDTO(b.getId(), tableName, amount, b.getBillStatus(), when));
     }
 
+    /**
+     * Thống kê trong ngày cho dashboard (bill count, doanh thu, ...).
+     */
     @GetMapping("/stats/today")
     public ResponseEntity<DashboardStatsDTO> todayStats(
             @RequestParam(value = "clubId", required = false) Integer clubId
@@ -542,6 +870,9 @@ public class StaffBillingController {
     }
 
     // Cancel an active bill (e.g., opened wrong table).
+    /**
+     * Hủy bill đang chạy: xóa items, reset tổng và giải phóng bàn.
+     */
     @PatchMapping("/bills/{billId}/cancel")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> cancelBill(

@@ -9,7 +9,7 @@ import com.BillardManagement.Repository.PromotionRepository;
 import com.BillardManagement.Exception.ResourceNotFoundException;
 import com.BillardManagement.Exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import com.BillardManagement.Entity.DiscountType;
+import com.BillardManagement.Entity.PromotionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -72,11 +72,11 @@ public class PromotionService {
             }
             existing.setPromotionCode(updatedData.getPromotionCode());
         }
-        if (updatedData.getDiscountType() != null) {
-            existing.setDiscountType(updatedData.getDiscountType());
+        if (updatedData.getPromotionType() != null) {
+            existing.setPromotionType(updatedData.getPromotionType());
         }
-        if (updatedData.getDiscountValue() != null) {
-            existing.setDiscountValue(updatedData.getDiscountValue());
+        if (updatedData.getPromotionValue() != null) {
+            existing.setPromotionValue(updatedData.getPromotionValue());
         }
         if (updatedData.getStartDate() != null) {
             existing.setStartDate(updatedData.getStartDate());
@@ -84,18 +84,7 @@ public class PromotionService {
         if (updatedData.getEndDate() != null) {
             existing.setEndDate(updatedData.getEndDate());
         }
-        if (updatedData.getApplicableTableTypes() != null) {
-            existing.setApplicableTableTypes(updatedData.getApplicableTableTypes());
-        }
-        if (updatedData.getMinPlayTime() != null) {
-            existing.setMinPlayTime(updatedData.getMinPlayTime());
-        }
-        if (updatedData.getMinAmount() != null) {
-            existing.setMinAmount(updatedData.getMinAmount());
-        }
-        if (updatedData.getMaxDiscount() != null) {
-            existing.setMaxDiscount(updatedData.getMaxDiscount());
-        }
+        // legacy fields removed from schema
         if (updatedData.getUsageLimit() != null) {
             existing.setUsageLimit(updatedData.getUsageLimit());
         }
@@ -145,11 +134,12 @@ public class PromotionService {
             throw new BusinessException("Không tìm thấy club với ID: " + promotion.getClub().getId());
         }
 
-        // Validate customer if provided
-        if (promotion.getCustomer() != null && promotion.getCustomer().getId() != null) {
-            if (!customerRepository.existsById(promotion.getCustomer().getId())) {
-                throw new BusinessException("Không tìm thấy khách hàng với ID: " + promotion.getCustomer().getId());
-            }
+        // Validate customer is required by DB schema
+        if (promotion.getCustomer() == null || promotion.getCustomer().getId() == null) {
+            throw new BusinessException("Customer ID không được để trống");
+        }
+        if (!customerRepository.existsById(promotion.getCustomer().getId())) {
+            throw new BusinessException("Không tìm thấy khách hàng với ID: " + promotion.getCustomer().getId());
         }
 
         // Validate dates
@@ -159,16 +149,16 @@ public class PromotionService {
             }
         }
 
-        // Validate discount value
-        if (promotion.getDiscountType() != null && promotion.getDiscountValue() != null) {
-            if (promotion.getDiscountType() == DiscountType.PERCENTAGE) {
-                if (promotion.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0 ||
-                        promotion.getDiscountValue().compareTo(BigDecimal.valueOf(100)) > 0) {
-                    throw new BusinessException("Giá trị giảm giá phần trăm phải từ 0-100");
+        // Validate promotion value
+        if (promotion.getPromotionType() != null && promotion.getPromotionValue() != null) {
+            if (promotion.getPromotionType() == PromotionType.PERCENTAGE) {
+                if (promotion.getPromotionValue().compareTo(BigDecimal.ZERO) <= 0 ||
+                        promotion.getPromotionValue().compareTo(BigDecimal.valueOf(100)) > 0) {
+                    throw new BusinessException("Giá trị khuyến mãi phần trăm phải từ 0-100");
                 }
             } else {
-                if (promotion.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new BusinessException("Giá trị giảm giá phải lớn hơn 0");
+                if (promotion.getPromotionValue().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessException("Giá trị khuyến mãi phải lớn hơn 0");
                 }
             }
         }
@@ -190,3 +180,4 @@ public class PromotionService {
         return promotionRepository.findAll(pageable);
     }
 }
+

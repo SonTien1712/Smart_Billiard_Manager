@@ -26,7 +26,8 @@ export const API_CONFIG = {
       TABLES: '/customer/tables',
       STAFF: '/customer/staff',
       SHIFTS: '/customer/shifts',
-      PROMOTIONS: '/customer/promotions',
+      // Promotions are exposed globally under /api/promotions
+      PROMOTIONS: '/promotions',
       PRODUCTS: '/customer/products',
       STAFF_ACCOUNTS: '/customer/staff-accounts'
     },
