@@ -14,8 +14,12 @@ export function AuthProvider({ children }) {
   const refreshUser = async () => {
     try {
       const profile = await authService.getProfile();
+
+      console.log('Updated user:', profile);
       setUser(profile);
       authService.setCurrentUser(profile);
+
+      return profile;
     } catch (error) {
       console.error('Refresh user failed:', error);
     }

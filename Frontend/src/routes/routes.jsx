@@ -303,7 +303,9 @@ function RouteRenderer() {
     <Routes>
       {routes.map((route, index) => {
         if (user?.role === 'CUSTOMER') {
-          if (!isSubscriptionActive(user?.expiryDate)) {
+          const active = isSubscriptionActive(user?.expiryDate);
+          console.log('Customer subscription check:', active, 'expiryDate:', user?.expiryDate);
+          if (!active) {
             if (route.path !== '/premium') {
               return (
                 <Route
@@ -314,6 +316,7 @@ function RouteRenderer() {
               );
             }
           } else if (route.path === '/premium') {
+            console.log('Redirecting to /dashboard/customer');
             return (
               <Route
                 key={index}

@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthProvider';
 
@@ -44,14 +43,35 @@ const Premium = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  const { refreshUser } = useAuth();
+
+  const isSubscriptionActive = (expiry) => {
+    if (!expiry) return false;
+    return new Date(expiry).getTime() >= new Date().getTime();
+  };
+
   useEffect(() => {
-        // Check if returning from backend redirect (success or error)
-        const error = searchParams.get('error');
-        if (error) {
-            alert(decodeURIComponent(error));  // Show error message
-            navigate('/premium');  // Stay on premium
+    const handlePaymentReturn = async () => {
+      const success = searchParams.get('success');
+      const error = searchParams.get('error');
+      
+      if (success) {
+        // Refresh user data để cập nhật expiryDate
+        const updatedUser = await refreshUser();
+        // Force update state và check
+        if (updatedUser?.role === 'CUSTOMER' && isSubscriptionActive(updatedUser?.expiryDate)) {
+          setTimeout(() => {
+            navigate('/dashboard/customer');
+          }, 200);
         }
-    }, [searchParams, navigate]);
+      } else if (error) {
+        alert('cancelled payment');
+        navigate('/premium');  // Stay on premium
+      }
+    };
+
+    handlePaymentReturn();
+  }, [searchParams, navigate, refreshUser]);
 
   return (
     <section style={styles.page}>

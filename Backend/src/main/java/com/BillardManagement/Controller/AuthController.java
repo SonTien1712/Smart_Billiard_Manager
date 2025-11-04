@@ -133,12 +133,24 @@ public class AuthController {
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile() {
         try {
-            // For now, return a mock profile since different user types have different entities
-            // This should be improved to handle different user types (Admin, Customer, Staff)
-            return ResponseEntity.ok(Map.of(
-                "message", "Profile endpoint - implement based on user type",
-                "authenticated", true
-            ));
+            Customer currentUser = customerService.getCurrentUser();
+
+            // Trả về data customer với expiryDate
+            Map<String, Object> user = new HashMap<>();
+            user.put("id", currentUser.getId());
+            user.put("customerName", currentUser.getCustomerName());
+            user.put("phoneNumber", currentUser.getPhoneNumber());
+            user.put("email", currentUser.getEmail());
+            user.put("password", currentUser.getPassword());
+            user.put("address", currentUser.getAddress());
+            user.put("dateJoined", currentUser.getDateJoined());    // có thể null
+            user.put("expiryDate", currentUser.getExpiryDate());    // ví dụ: 2025-02-04
+            user.put("googleId", currentUser.getGoogleId());        // có thể null
+            user.put("isActive", currentUser.getIsActive());
+            user.put("role", "CUSTOMER"); // Hardcode cho Customer
+
+
+            return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }

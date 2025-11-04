@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState  } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Chart, ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart';
@@ -6,8 +6,11 @@ import { PageType } from '../Dashboard';
 import { Building, Table, Users, Calendar, Package, DollarSign, TrendingUp, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from 'recharts';
 
+import { useAuth } from '../AuthProvider';
+
 
 export function CustomerDashboard({ onPageChange }) {
+
   // Mock data
   const stats = {
     totalRevenue: 15420,

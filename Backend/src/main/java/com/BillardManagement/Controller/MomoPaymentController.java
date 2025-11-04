@@ -162,7 +162,7 @@ public class MomoPaymentController {
         }
 
         if ("0".equals(resultCode)) {
-            return new RedirectView("http://localhost:3000/dashboard");
+            return new RedirectView("http://localhost:3000/premium?success=true");
         } else {
             String encodedMessage = message != null ? java.net.URLEncoder.encode(message, StandardCharsets.UTF_8) : "Thanh toán thất bại";
             return new RedirectView("http://localhost:3000/premium?error=" + encodedMessage);

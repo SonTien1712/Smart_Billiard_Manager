@@ -7,13 +7,6 @@ const USE_MOCK_DATA = false; // Set to false when you have a real backend
 export class AuthService {
   
   async login(credentials) {
-    if (USE_MOCK_DATA) {
-      const authResponse = await MockService.login(credentials.email, credentials.password);
-      apiClient.setToken(authResponse.accessToken);
-      localStorage.setItem('refreshToken', authResponse.refreshToken);
-      return authResponse;
-    }
-    
     const response = await apiClient.post(
       API_CONFIG.ENDPOINTS.AUTH.LOGIN,
       credentials
@@ -34,13 +27,6 @@ export class AuthService {
     return data;
   }
   async register(userData) {
-    if (USE_MOCK_DATA) {
-      const authResponse = await MockService.register(userData);
-      apiClient.setToken(authResponse.accessToken);
-      localStorage.setItem('refreshToken', authResponse.refreshToken);
-      return authResponse;
-    }
-    
     const response = await apiClient.post(
       API_CONFIG.ENDPOINTS.AUTH.REGISTER,
       userData
@@ -51,13 +37,6 @@ export class AuthService {
   }
 
   async googleAuth(googleData) {
-    if (USE_MOCK_DATA) {
-      const authResponse = await MockService.googleAuth(googleData);
-      apiClient.setToken(authResponse.accessToken);
-      localStorage.setItem('refreshToken', authResponse.refreshToken);
-      return authResponse;
-    }
-    
     const response = await apiClient.post(
       API_CONFIG.ENDPOINTS.AUTH.GOOGLE_AUTH,
       googleData
@@ -73,11 +52,7 @@ export class AuthService {
 
   async logout() {
     try {
-      if (USE_MOCK_DATA) {
-        await MockService.logout();
-      } else {
-        await apiClient.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
-      }
+      await apiClient.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -105,29 +80,13 @@ export class AuthService {
   }
 
   async getProfile() {
-    if (USE_MOCK_DATA) {
-      const currentUser = this.getCurrentUser();
-      if (currentUser) {
-        return MockService.getProfile(currentUser.id);
-      }
-      throw new Error('No current user');
-    }
-    
     const response = await apiClient.get(
       API_CONFIG.ENDPOINTS.AUTH.PROFILE
     );
-    return response.data;
+    return response;
   }
 
   async updateProfile(userData) {
-    if (USE_MOCK_DATA) {
-      const currentUser = this.getCurrentUser();
-      if (currentUser) {
-        return MockService.updateProfile(currentUser.id, userData);
-      }
-      throw new Error('No current user');
-    }
-    
     const response = await apiClient.put(
       API_CONFIG.ENDPOINTS.AUTH.PROFILE,
       userData
