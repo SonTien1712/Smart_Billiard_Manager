@@ -8,6 +8,5 @@ import com.BillardManagement.BillardManagementApplication;
 class BackendApplicationTests {
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 }

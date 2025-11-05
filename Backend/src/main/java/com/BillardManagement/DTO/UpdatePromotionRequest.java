@@ -16,16 +16,12 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdatePromotionRequest {
-    @Size(min = 3, max = 255)
     private String promotionName;
 
-    @Size(min = 3, max = 50)
-    @Pattern(regexp = "^[A-Z0-9_-]+$")
     private String promotionCode;
 
     private DiscountType discountType;
 
-    @DecimalMin("0.01")
     private BigDecimal discountValue;
 
     private Instant startDate;
