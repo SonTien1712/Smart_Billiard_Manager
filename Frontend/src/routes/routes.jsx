@@ -4,19 +4,24 @@ import { useAuth } from '../components/AuthProvider';
 import { Toaster } from '../components/ui/sonner.jsx';
 import LoadingScreen from '../components/prelogin/LoadingScreen.jsx';
 
+
+
+import Landing from '../components/prelogin/Landing.jsx';
+
 // Import components directly instead of lazy loading to avoid the conversion error
 import { SignIn } from '../components/auth/SignIn.jsx';
-// Removed SignUp from pre-login flow per request
+import { SignUp } from '../components/auth/SignUp.jsx';
+import { ForgotPassword } from '../components/auth/ForgotPassword.jsx';
 import { ProfileUpdate } from '../components/auth/ProfileUpdate.jsx';
 import { Dashboard } from '../components/Dashboard.jsx';
-import Landing from '../components/prelogin/Landing.jsx';
 
 // Admin Components
 import { CustomerList } from '../components/admin/CustomerList.jsx';
 import { CustomerDetails } from '../components/admin/CustomerDetails.jsx';
 import { CreateAdmin } from '../components/admin/CreateAdmin.jsx';
 
-// Customer Components
+ // Customer Components
+ import { Premium } from '../components/auth/Premium.jsx';
 import { ClubManagement } from '../components/customer/ClubManagement.jsx';
 import { TableManagement } from '../components/customer/TableManagement.jsx';
 import { StaffManagement } from '../components/customer/StaffManagement.jsx';
@@ -46,6 +51,16 @@ const routes = [
   {
     path: '/signin',
     component: SignIn,
+    public: true,
+  },
+  {
+    path: '/signup',
+    component: SignUp,
+    public: true,
+  },
+  {
+    path: '/forgot-password',
+    component: ForgotPassword,
     public: true,
   },
   {
@@ -83,6 +98,11 @@ const routes = [
   },
 
   // Customer routes
+  {
+    path: '/premium',
+    component: Premium,
+    roles: ['CUSTOMER'],
+  },
   {
     path: '/dashboard/customer',
     component: CustomerDashboard,
@@ -146,10 +166,10 @@ const routes = [
     roles: ['STAFF'],
   },
 
-  // Default route - redirect to dashboard if logged in, otherwise landing
+  // Default route - redirect to dashboard if logged in, otherwise signin
   {
     path: '/',
-    redirect: (user) => user ? '/dashboard' : '/landing',
+    redirect: (user) => user ? '/dashboard' : '/signin',
   },
 ];
 
@@ -202,8 +222,18 @@ const isRouteAccessible = (route, user) => {
   return true;
 };
 
+const isSubscriptionActive = (expiry) => {
+  if (!expiry) return false; // chưa mua
+  return new Date(expiry).getTime() >= new Date().getTime();
+};
+
+
 function LoadingSpinner() {
-  return <LoadingScreen message="Đang tải ứng dụng..." />;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  );
 }
 
 function ErrorBoundary({ children }) {
@@ -282,6 +312,30 @@ function RouteRenderer() {
   return (
     <Routes>
       {routes.map((route, index) => {
+        if (user?.role === 'CUSTOMER') {
+          const active = isSubscriptionActive(user?.expiryDate);
+          console.log('Customer subscription check:', active, 'expiryDate:', user?.expiryDate);
+          if (!active) {
+            if (route.path !== '/premium') {
+              return (
+                <Route
+                  key={index}
+                  path={route.path}
+                  element={<Navigate to="/premium" replace />}
+                />
+              );
+            }
+          } else if (route.path === '/premium') {
+            console.log('Redirecting to /dashboard/customer');
+            return (
+              <Route
+                key={index}
+                path={route.path}
+                element={<Navigate to="/dashboard/customer" replace />}
+              />
+            );
+          }
+        }
         // Handle redirect routes
         if (route.redirect) {
           const redirectPath = route.redirect(user);

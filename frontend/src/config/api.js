@@ -9,6 +9,7 @@ export const API_CONFIG = {
       LOGOUT: '/auth/logout',
       REFRESH: '/auth/refresh',
       FORGOT_PASSWORD: '/auth/forgot-password',
+      VERIFY_RESET_TOKEN: '/auth/verify-reset-token',
       RESET_PASSWORD: '/auth/reset-password',
       PROFILE: '/auth/profile',
       GOOGLE_AUTH: '/auth/google'
@@ -17,13 +18,15 @@ export const API_CONFIG = {
     ADMIN: {
       CUSTOMERS: '/admin/customers',
       ADMINS: '/admin/admins',
-      STATISTICS: '/admin/statistics'
+      STATISTICS: '/admin/statistics',
+      CREATE: '/admin/create'
     },
     // Customer endpoints
     CUSTOMER: {
       CLUBS: '/customer/clubs',
       CLUBS_BY_CUSTOMER: (customerId) => `/customer/clubs/customer/${customerId}`,
-      TABLES: '/customer/tables',
+      TABLES_BY_CUSTOMER: (customerId) => `/tables/customer/${customerId}`,
+      TABLES: '/tables',
       STAFF: '/customer/staff',
       SHIFTS: '/customer/shifts',
       // Promotions are exposed globally under /api/promotions

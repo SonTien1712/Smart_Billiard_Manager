@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import {
   Card,
   CardContent,
@@ -40,43 +40,10 @@ import {
   Trash2,
   DollarSign
 } from "lucide-react"
+import { customerService } from '../../services/customerService';
+import { useApi } from '../../hooks/useApi';
 
 export function TableManagement({ onPageChange }) {
-  const [tables, setTables] = useState([
-    {
-      id: "1",
-      name: "Table 1",
-      type: "Pool",
-      hourlyRate: 25,
-      status: "available",
-      club: "Downtown Billiards Club"
-    },
-    {
-      id: "2",
-      name: "Table 2",
-      type: "Snooker",
-      hourlyRate: 30,
-      status: "occupied",
-      club: "Downtown Billiards Club"
-    },
-    {
-      id: "3",
-      name: "Table 3",
-      type: "Pool",
-      hourlyRate: 25,
-      status: "maintenance",
-      club: "Downtown Billiards Club"
-    },
-    {
-      id: "4",
-      name: "Table 4",
-      type: "Carom",
-      hourlyRate: 35,
-      status: "available",
-      club: "Uptown Pool Hall"
-    }
-  ])
-
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTable, setEditingTable] = useState(null)
   const [formData, setFormData] = useState({
@@ -87,42 +54,136 @@ export function TableManagement({ onPageChange }) {
     club: "Downtown Billiards Club"
   })
 
-  const handleEdit = table => {
-    setEditingTable(table)
-    setFormData(table)
-    setIsDialogOpen(true)
+  const customer = JSON.parse(localStorage.getItem("currentUser"));
+  const customerId = customer?.id;
+
+  // ✅ Tạo API function ổn định
+  const getTablesFunction = useCallback(() => {
+    return customerService.getTablesByCustomerId(customerId);
+  }, [customerId]);
+
+  // ✅ Gọi API bằng hook useApi
+  const {
+    data: tablesData,
+    loading: tablesLoading,
+    error: tablesError,
+    execute: fetchTables
+  } = useApi(getTablesFunction);
+
+  const tables = tablesData || [];
+
+  const {
+  data: clubsData,
+  loading: clubsLoading,
+  error: clubsError,
+  execute: fetchClubs
+} = useApi(() => customerService.getClubsByCustomer(customerId));
+
+useEffect(() => {
+  if (customerId) {
+    fetchClubs();
   }
+}, [ customerId]);
+
+const clubs = clubsData || [];
+
+  // ✅ Gọi API khi component mount
+  useEffect(() => {
+    if (customerId) {
+      fetchTables();
+    }
+  }, [fetchTables, customerId]);
+
+  const { execute: createTable, loading: createLoading } = useApi(
+    async (data) => customerService.createTable(data),
+    {
+      onSuccess: (newTable) => {
+        handleSuccess('Table created successfully');
+        setIsDialogOpen(false);
+        fetchTables();
+      }
+    }
+  );
+
+  const { execute: updateTable, loading: updateLoading } = useApi(
+    async (id, data) => customerService.updateTable(id, data),
+    {
+      onSuccess: () => {
+        handleSuccess('Table updated successfully');
+        setIsDialogOpen(false);
+        fetchTables();
+      }
+    }
+  );
+
+  const { execute: deleteTable, loading: deleteLoading } = useApi(
+    async (id) => customerService.deleteTable(id),
+    {
+      onSuccess: () => {
+        handleSuccess('Club deleted successfully');
+        fetchTables();
+      }
+    }
+  );
+  const handleEdit = (table) => {
+    setEditingTable(table);
+    setFormData({
+      name: table.tableName,
+      type: table.tableType,
+      hourlyRate: table.hourlyRate,
+      status: table.tableStatus,
+      club: table.clubId
+    });
+    setIsDialogOpen(true);
+  };
 
   const handleAdd = () => {
     setEditingTable(null)
     setFormData({
       name: "",
       type: "Pool",
-      hourlyRate: 25,
+      hourlyRate: 0,
       status: "available",
-      club: "Downtown Billiards Club"
+      club: ""
     })
     setIsDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingTable) {
-      setTables(
-        tables.map(table =>
-          table.id === editingTable.id
-            ? { ...formData, id: editingTable.id }
-            : table
-        )
-      )
-    } else {
-      setTables([...tables, { ...formData, id: Date.now().toString() }])
-    }
-    setIsDialogOpen(false)
-  }
+  const handleSave = async () => {
+  const newTable = {
+    tableName: formData.name,
+    tableType: formData.type,
+    hourlyRate: formData.hourlyRate,
+    tableStatus: formData.status,
+    clubId: formData.club
+  };
 
-  const handleDelete = id => {
-    setTables(tables.filter(table => table.id !== id))
+  try {
+    if (editingTable) {
+      await customerService.updateTable(editingTable.id, newTable);
+      
+    } else {
+      await customerService.createTable(newTable);
+      
+    }
+
+    setIsDialogOpen(false);
+    fetchTables(); // reload danh sách
+  } catch (error) {
+    
   }
+};
+
+  const handleDelete = async (id) => {
+  if (window.confirm("Are you sure you want to delete this table?")) {
+    try {
+      await customerService.deleteTable(id);
+      fetchTables(); // reload danh sách
+    } catch (error) {
+      console.error(error);
+    }
+  }
+};
 
   const getStatusColor = status => {
     switch (status) {
@@ -173,22 +234,22 @@ export function TableManagement({ onPageChange }) {
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <TableIcon className="h-4 w-4 text-primary" />
-                      <span className="font-medium">{table.name}</span>
+                      <span className="font-medium">{table.tableName}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{table.type}</Badge>
+                    <Badge variant="outline">{table.tableType}</Badge>
                   </TableCell>
-                  <TableCell className="text-sm">{table.club}</TableCell>
+                  <TableCell className="text-sm">{table.clubName}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-1">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>${table.hourlyRate}/hr</span>
+                      <span>{table.hourlyRate}/hr</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusColor(table.status)}>
-                      {table.status}
+                    <Badge variant={getStatusColor(table.tableStatus)}>
+                      {table.tableStatus}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -258,6 +319,25 @@ export function TableManagement({ onPageChange }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="club">Club</Label>
+              <Select
+                value={formData.club}
+                onValueChange={(value) => setFormData({ ...formData, club: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a club" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clubs.map((club) => (
+                    <SelectItem key={club.id} value={club.id}>
+                      {club.clubName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
               <Input

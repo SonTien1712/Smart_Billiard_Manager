@@ -1,6 +1,6 @@
 import { apiClient } from './api';
 import { API_CONFIG } from '../config/api';
-import { MockService } from './mockService';
+// import { MockService } from './mockService';
 
 const USE_MOCK_DATA = false; // Set to false when you have a real backend
 
@@ -85,6 +85,40 @@ export class CustomerService {
     const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.TABLES, query);
     return response.data;
   }
+  async getTablesByCustomerId(customerId) {
+  try {
+    const endpoint = `${API_CONFIG.ENDPOINTS.CUSTOMER.TABLES_BY_CUSTOMER(customerId)}`;
+    console.log('[API Table] Fetching from:', endpoint);
+
+    const data = await apiClient.get(endpoint);
+
+    console.log('[API Table] Raw data:', data);
+    let tableData;
+
+    if (Array.isArray(data)) {
+      tableData = data;
+    } else if (data && Array.isArray(data.data)) {
+      tableData = data.data;
+    } else {
+      console.warn('[API Table] Unexpected response:', data);
+      tableData = [];
+    }
+
+    console.log('[API Table] Final table data:', tableData);
+    return tableData;
+
+  } catch (error) {
+    const status = error.response?.status;
+    const errData = error.response?.data || error.message;
+
+    console.error('[API Table] FAILED:', error);
+    console.error('[API Table] Status:', status || 'Network/CORS');
+    console.error('[API Table] Error data:', errData);
+
+    return [];
+  }
+}
+
 
   async createTable(tableData) {
     const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.TABLES, tableData);

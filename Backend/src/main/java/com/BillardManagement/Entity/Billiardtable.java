@@ -36,4 +36,10 @@ public class Billiardtable {
     @ColumnDefault("'Available'")
     @Column(name = "TableStatus", length = 50)
     private String tableStatus;
+
+    // Thêm getter để lấy CustomerID thông qua Club
+    @Transient
+    public Integer getCustomerID() {
+        return clubID != null ? clubID.getCustomerID() : null;
+    }
 }

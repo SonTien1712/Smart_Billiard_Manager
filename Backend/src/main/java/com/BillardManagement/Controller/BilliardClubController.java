@@ -49,4 +49,5 @@ public class BilliardClubController {
     public void deleteClub(@PathVariable Integer id) {
         clubService.deleteClub(id);
     }
+
 }

@@ -4,10 +4,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
-import { PageType } from '../Dashboard';
 import { ArrowLeft, Eye, EyeOff, UserPlus } from 'lucide-react';
 
-
+import { useApi } from '../../hooks/useApi';
+import { adminService } from '../../services/adminService';
 
 export function CreateAdmin({ onPageChange }) {
   const [formData, setFormData] = useState({
@@ -18,9 +18,23 @@ export function CreateAdmin({ onPageChange }) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const { loading: isLoading, execute } = useApi(
+    adminService.createAdmin,
+    {
+      onSuccess: () => {
+        setSuccess('Tạo admin thành công!');
+        setError('');
+        setFormData({ username: '', email: '', password: '', confirmPassword: '' });
+      },
+      onError: (err) => {
+        setSuccess('');
+        setError(err?.message || 'Tạo admin thất bại');
+      }
+    }
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -32,39 +46,25 @@ export function CreateAdmin({ onPageChange }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
     setSuccess('');
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters long');
-      setIsLoading(false);
       return;
     }
 
-    try {
-      // Mock API call
-      setTimeout(() => {
-        setSuccess('Admin account created successfully!');
-        setFormData({
-          username: '',
-          email: '',
-          password: '',
-          confirmPassword: ''
-        });
-        setIsLoading(false);
-      }, 1000);
-    } catch (err) {
-      setError('Failed to create admin account');
-      setIsLoading(false);
-    }
+    await execute({
+      username: formData.username.trim(),
+      email: formData.email.trim(),
+      password: formData.password
+    });
   };
 
   return (
