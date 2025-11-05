@@ -257,6 +257,138 @@ export class CustomerService {
   async deleteProduct(id) {
     await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`);
   }
+
+    // Product Management
+    async getProducts(clubId, params) {
+        try {
+            const query = { clubId, ...(params || {}) };
+            console.log('[API Product] Fetching products with query:', query);
+
+            const response = await apiClient.get(
+                API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS,
+                query
+            );
+
+            console.log('[API Product] Raw response:', response);
+
+            // Handle different response formats
+            let productData;
+            if (Array.isArray(response)) {
+                productData = response;
+            } else if (response && Array.isArray(response.data)) {
+                productData = response.data;
+            } else if (response && Array.isArray(response.products)) {
+                productData = response.products;
+            } else {
+                console.warn('[API Product] Unexpected response:', response);
+                productData = [];
+            }
+
+            console.log('[API Product] Final product data:', productData);
+            return productData;
+        } catch (error) {
+            console.error('[API Product] Failed to fetch:', error);
+            return [];
+        }
+    }
+
+    async getProductById(id, clubId) {
+        try {
+            const endpoint = `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`;
+            console.log('[API Product] Fetching product by ID:', id);
+
+            const response = await apiClient.get(endpoint, { clubId });
+            return response.data || response;
+        } catch (error) {
+            console.error('[API Product] Failed to fetch by ID:', error);
+            throw error;
+        }
+    }
+
+    async createProduct(productData) {
+        try {
+            console.log('[API Product] Creating product:', productData);
+
+            const response = await apiClient.post(
+                API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS,
+                productData
+            );
+
+            return response.data || response;
+        } catch (error) {
+            console.error('[API Product] Failed to create:', error);
+            throw error;
+        }
+    }
+
+    async updateProduct(id, productData) {
+        try {
+            console.log('[API Product] Updating product:', id, productData);
+
+            const response = await apiClient.put(
+                `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`,
+                productData
+            );
+
+            return response.data || response;
+        } catch (error) {
+            console.error('[API Product] Failed to update:', error);
+            throw error;
+        }
+    }
+
+    async deleteProduct(id) {
+        try {
+            console.log('[API Product] Deleting product:', id);
+
+            await apiClient.delete(
+                `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}`
+            );
+        } catch (error) {
+            console.error('[API Product] Failed to delete:', error);
+            throw error;
+        }
+    }
+
+    async toggleProductStatus(id) {
+        try {
+            console.log('[API Product] Toggling product status:', id);
+
+            const response = await apiClient.patch(
+                `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/${id}/toggle-status`
+            );
+
+            return response.data || response;
+        } catch (error) {
+            console.error('[API Product] Failed to toggle status:', error);
+            throw error;
+        }
+    }
+
+    async searchProducts(clubId, keyword) {
+        try {
+            console.log('[API Product] Searching products:', { clubId, keyword });
+
+            const response = await apiClient.get(
+                `${API_CONFIG.ENDPOINTS.CUSTOMER.PRODUCTS}/search`,
+                { clubId, keyword }
+            );
+
+            let productData;
+            if (Array.isArray(response)) {
+                productData = response;
+            } else if (response && Array.isArray(response.data)) {
+                productData = response.data;
+            } else {
+                productData = [];
+            }
+
+            return productData;
+        } catch (error) {
+            console.error('[API Product] Failed to search:', error);
+            return [];
+        }
+    }
 }
 
 export const customerService = new CustomerService();

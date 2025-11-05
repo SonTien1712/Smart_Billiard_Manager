@@ -1,23 +1,21 @@
 package com.BillardManagement.Service;
 
 import com.BillardManagement.DTO.Request.ProductRequestDTO;
-import com.BillardManagement.DTO.Response.ProductResponseDTO; // Import DTO đã sửa
+import com.BillardManagement.DTO.Response.ProductResponseDTO;
 import com.BillardManagement.Entity.Billardclub;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Entity.Product;
 import com.BillardManagement.Exception.BusinessException;
 import com.BillardManagement.Exception.ResourceNotFoundException;
-// import com.billardmanagement.mapper.ProductMapper; // <-- XÓA BỎ
 import com.BillardManagement.Repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal; // Import thêm
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 @Service
 @RequiredArgsConstructor
@@ -27,19 +25,17 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final BillardclubRepo clubRepository;
     private final CustomerRepo customerRepository;
-    // private final ProductMapper productMapper; // <-- XÓA BỎ
 
     @Transactional(readOnly = true)
     public List<ProductResponseDTO> getAllProductsByClub(Integer clubId, Boolean activeOnly) {
         log.info("Fetching products for club: {}, activeOnly: {}", clubId, activeOnly);
 
         List<Product> products = activeOnly != null && activeOnly
-                ? productRepository.findByClubIdAndIsActiveTrue(clubId) // từ File 5
-                : productRepository.findByClubId(clubId); // từ File 5
+                ? productRepository.findByClubIdAndIsActiveTrue(clubId)
+                : productRepository.findByClubId(clubId);
 
         return products.stream()
-                // .map(productMapper::toResponseDTO) // <-- THAY THẾ
-                .map(ProductResponseDTO::fromEntity) // <-- BẰNG DÒNG NÀY
+                .map(ProductResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
@@ -47,57 +43,45 @@ public class ProductService {
     public ProductResponseDTO getProductById(Integer id, Integer clubId) {
         log.info("Fetching product with id: {} for club: {}", id, clubId);
 
-        Product product = productRepository.findByIdAndClubId(id, clubId) // từ File 5
-                .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+        Product product = productRepository.findByIdAndClubId(id, clubId)
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + id + " for club: " + clubId));
 
-        // return productMapper.toResponseDTO(product); // <-- THAY THẾ
-        return ProductResponseDTO.fromEntity(product); // <-- BẰNG DÒNG NÀY
+        return ProductResponseDTO.fromEntity(product);
     }
 
     @Transactional
     public ProductResponseDTO createProduct(ProductRequestDTO request, Integer customerId) {
         log.info("Creating new product: {} for club: {}", request.getName(), request.getClubId());
 
+        // Validate customer
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Customer not found with id: " + customerId));
 
         if (!customer.getIsActive()) {
-            throw new BusinessException("Customer account is inactive"); // từ File 7
+            throw new BusinessException("Customer account is inactive");
         }
 
+        // Validate club
         Billardclub club = clubRepository.findById(request.getClubId())
-                .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Club not found with id: " + request.getClubId()));
 
-        if (!club.getCustomer().getId().equals(customerId)) {
-            throw new BusinessException("Club does not belong to this customer"); // từ File 7
+        if (!club.getCustomerID().equals(customerId)) {
+            throw new BusinessException("Club does not belong to this customer");
         }
 
         if (!club.getIsActive()) {
-            throw new BusinessException("Club is inactive"); // từ File 7
+            throw new BusinessException("Club is inactive");
         }
 
-        // Product product = productMapper.toEntity(request, customer, club); // <-- THAY THẾ
-        // Logic từ ProductMapper.toEntity (File 4) được đưa vào đây
-        Product product = Product.builder()
-                .productName(request.getName())
-                .price(request.getPrice())
-                .costPrice(request.getCostPrice() != null ? request.getCostPrice() : BigDecimal.ZERO)
-                .category(request.getCategory())
-                .productDescription(request.getDescription())
-                .productUrl(request.getProductUrl())
-                .isActive(request.getActive() != null ? request.getActive() : true)
-                .customer(customer)
-                .club(club)
-                .build();
-
+        // Build product entity
+        Product product = buildProductEntity(request, customer, club);
         Product savedProduct = productRepository.save(product);
 
         log.info("Product created successfully with id: {}", savedProduct.getId());
-        // return productMapper.toResponseDTO(savedProduct); // <-- THAY THẾ
-        return ProductResponseDTO.fromEntity(savedProduct); // <-- BẰNG DÒNG NÀY
+        return ProductResponseDTO.fromEntity(savedProduct);
     }
 
     @Transactional
@@ -105,41 +89,32 @@ public class ProductService {
         log.info("Updating product with id: {}", id);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + id));
 
+        // Verify ownership
         if (!product.getCustomer().getId().equals(customerId)) {
-            throw new BusinessException("You don't have permission to update this product"); // từ File 7
+            throw new BusinessException("You don't have permission to update this product");
         }
 
+        // Update club if changed
         if (!product.getClub().getId().equals(request.getClubId())) {
             Billardclub newClub = clubRepository.findById(request.getClubId())
-                    .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+                    .orElseThrow(() -> new ResourceNotFoundException(
                             "Club not found with id: " + request.getClubId()));
 
-            if (!newClub.getCustomer().getId().equals(customerId)) {
-                throw new BusinessException("New club does not belong to this customer"); // từ File 7
+            if (!newClub.getCustomerID().equals(customerId)) {
+                throw new BusinessException("New club does not belong to this customer");
             }
             product.setClub(newClub);
         }
 
-        // productMapper.updateEntity(product, request); // <-- THAY THẾ
-        // Logic từ ProductMapper.updateEntity (File 4) được đưa vào đây
-        product.setProductName(request.getName());
-        product.setPrice(request.getPrice());
-        product.setCostPrice(request.getCostPrice() != null ? request.getCostPrice() : BigDecimal.ZERO);
-        product.setCategory(request.getCategory());
-        product.setProductDescription(request.getDescription());
-        product.setProductUrl(request.getProductUrl());
-        if (request.getActive() != null) {
-            product.setIsActive(request.getActive());
-        }
-
+        // Update product fields
+        updateProductFields(product, request);
         Product updatedProduct = productRepository.save(product);
 
         log.info("Product updated successfully with id: {}", updatedProduct.getId());
-        // return productMapper.toResponseDTO(updatedProduct); // <-- THAY THẾ
-        return ProductResponseDTO.fromEntity(updatedProduct); // <-- BẰNG DÒNG NÀY
+        return ProductResponseDTO.fromEntity(updatedProduct);
     }
 
     @Transactional
@@ -147,11 +122,11 @@ public class ProductService {
         log.info("Deleting product with id: {}", id);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + id));
 
         if (!product.getCustomer().getId().equals(customerId)) {
-            throw new BusinessException("You don't have permission to delete this product"); // từ File 7
+            throw new BusinessException("You don't have permission to delete this product");
         }
 
         productRepository.delete(product);
@@ -163,29 +138,65 @@ public class ProductService {
         log.info("Toggling status for product with id: {}", id);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + id));
 
         if (!product.getCustomer().getId().equals(customerId)) {
-            throw new BusinessException("You don't have permission to modify this product"); // từ File 7
+            throw new BusinessException("You don't have permission to modify this product");
         }
 
         product.setIsActive(!product.getIsActive());
         Product updatedProduct = productRepository.save(product);
 
         log.info("Product status toggled successfully with id: {}", updatedProduct.getId());
-        // return productMapper.toResponseDTO(updatedProduct); // <-- THAY THẾ
-        return ProductResponseDTO.fromEntity(updatedProduct); // <-- BẰNG DÒNG NÀY
+        return ProductResponseDTO.fromEntity(updatedProduct);
     }
 
     @Transactional(readOnly = true)
     public List<ProductResponseDTO> searchProducts(Integer clubId, String keyword) {
         log.info("Searching products for club: {} with keyword: {}", clubId, keyword);
 
-        List<Product> products = productRepository.searchProducts(clubId, keyword); // từ File 5
+        List<Product> products = productRepository.searchProducts(clubId, keyword);
         return products.stream()
-                // .map(productMapper::toResponseDTO) // <-- THAY THẾ
-                .map(ProductResponseDTO::fromEntity) // <-- BẰNG DÒNG NÀY
+                .map(ProductResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-}}
+
+    // ============================================
+    // PRIVATE HELPER METHODS
+    // ============================================
+
+    /**
+     * Helper method để build Product entity từ request DTO
+     * Thay thế ProductMapper.toEntity()
+     */
+    private Product buildProductEntity(ProductRequestDTO request, Customer customer, Billardclub club) {
+        return Product.builder()
+                .productName(request.getName())
+                .price(request.getPrice())
+                .costPrice(request.getCostPrice() != null ? request.getCostPrice() : BigDecimal.ZERO)
+                .category(request.getCategory())
+                .productDescription(request.getDescription())
+                .productUrl(request.getProductUrl())
+                .isActive(request.getActive() != null ? request.getActive() : true)
+                .customer(customer)
+                .club(club)
+                .build();
+    }
+
+    /**
+     * Helper method để update Product entity từ request DTO
+     * Thay thế ProductMapper.updateEntity()
+     */
+    private void updateProductFields(Product product, ProductRequestDTO request) {
+        product.setProductName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setCostPrice(request.getCostPrice() != null ? request.getCostPrice() : BigDecimal.ZERO);
+        product.setCategory(request.getCategory());
+        product.setProductDescription(request.getDescription());
+        product.setProductUrl(request.getProductUrl());
+        if (request.getActive() != null) {
+            product.setIsActive(request.getActive());
+        }
+    }
+}
