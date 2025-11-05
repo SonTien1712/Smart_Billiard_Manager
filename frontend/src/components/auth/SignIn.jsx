@@ -9,6 +9,11 @@ import { useAuth } from '../AuthProvider';
 import { Eye, EyeOff } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
+const isSubscriptionActive = (expiry) => {
+  if (!expiry) return false; // chưa mua
+  return new Date(expiry).getTime() >= new Date().getTime();
+};
+
 export function SignIn() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -19,16 +24,23 @@ export function SignIn() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e) =>  {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      await login({ email, password });
-      navigate('/dashboard');
+      const result = await login({ email, password });
+      // Check if customer subscription is active
+      if (result.user.role === 'CUSTOMER' && !isSubscriptionActive(result.user.expiryDate)) {
+        navigate('/premium');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
-      setError(err.message || 'Invalid email or password');
+      console.log('Login error:', err);
+      const errorMessage = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -42,8 +54,13 @@ export function SignIn() {
       // In a real implementation, you would get the Google token from Google OAuth flow
       // For now, we'll simulate it
       const mockGoogleToken = 'mock-google-token';
-      await loginWithGoogle({ googleToken: mockGoogleToken, role: 'CUSTOMER' });
-      navigate('/dashboard');
+      const result = await loginWithGoogle({ googleToken: mockGoogleToken, role: 'CUSTOMER' });
+      // Check if customer subscription is active
+      if (result.user.role === 'CUSTOMER' && !isSubscriptionActive(result.user.expiryDate)) {
+        navigate('/premium');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Failed to sign in with Google');
     } finally {

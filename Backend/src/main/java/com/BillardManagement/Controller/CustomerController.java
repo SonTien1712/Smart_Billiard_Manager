@@ -21,6 +21,7 @@ public class CustomerController {
     @Autowired
     private CustomerService customerService;
 
+    @Autowired
     private BilliardClubService billiardClubService;
 
     // Lấy tất cả khách hàng

@@ -1,18 +1,25 @@
 package com.BillardManagement.Controller;
 
 import com.BillardManagement.DTO.Request.LoginRequest;
+import com.BillardManagement.DTO.Request.RefreshTokenRequest;
 import com.BillardManagement.DTO.Request.RegisterRequest;
 import com.BillardManagement.DTO.Response.LoginResponse;
 import com.BillardManagement.DTO.Response.LogoutResponse;
+import com.BillardManagement.DTO.Response.RefreshTokenResponse;
 import com.BillardManagement.DTO.Response.RegisterResponse;
+import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Service.AuthService;
 import com.BillardManagement.Service.CustomerService;
 import com.BillardManagement.Service.ForgotPasswordService;
+import com.BillardManagement.Util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,6 +30,7 @@ public class AuthController {
     private final AuthService authService;
     private final CustomerService customerService;
     private final ForgotPasswordService forgotPasswordService;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
@@ -91,5 +99,59 @@ public class AuthController {
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
         }
     }
-}
 
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        try {
+            String refreshToken = request.getRefreshToken();
+            if (refreshToken == null || !jwtUtil.isTokenValid(refreshToken)) {
+                return ResponseEntity.status(401).body(new RefreshTokenResponse(false, "Invalid refresh token", null, null));
+            }
+
+            // Extract claims from refresh token and generate new tokens
+            var claims = jwtUtil.extractClaims(refreshToken);
+            String username = claims.getSubject();
+            String role = (String) claims.get("role");
+
+            Map<String, Object> newClaims = new HashMap<>();
+            newClaims.put("sub", username);
+            newClaims.put("role", role);
+            // Copy other claims if needed
+            newClaims.put("userId", claims.get("userId"));
+            if (claims.get("employeeId") != null) newClaims.put("employeeId", claims.get("employeeId"));
+            if (claims.get("clubId") != null) newClaims.put("clubId", claims.get("clubId"));
+
+            String newAccessToken = jwtUtil.generateAccessToken(newClaims);
+            String newRefreshToken = jwtUtil.generateRefreshToken(newClaims);
+
+            return ResponseEntity.ok(new RefreshTokenResponse(true, "Token refreshed successfully", newAccessToken, newRefreshToken));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(new RefreshTokenResponse(false, "Token refresh failed", null, null));
+        }
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile() {
+        try {
+            Customer currentUser = customerService.getCurrentUser();
+
+            // Trả về data customer với expiryDate
+            Map<String, Object> user = new HashMap<>();
+            user.put("id", currentUser.getId());
+            user.put("customerName", currentUser.getCustomerName());
+            user.put("phoneNumber", currentUser.getPhoneNumber());
+            user.put("email", currentUser.getEmail());
+            user.put("password", currentUser.getPassword());
+            user.put("address", currentUser.getAddress());
+            user.put("dateJoined", currentUser.getDateJoined());
+            user.put("expiryDate", currentUser.getExpiryDate());
+            user.put("googleId", currentUser.getGoogleId());
+            user.put("isActive", currentUser.getIsActive());
+            user.put("role", "CUSTOMER");
+
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+    }
+}
