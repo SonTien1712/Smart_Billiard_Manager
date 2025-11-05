@@ -39,6 +39,32 @@ export class StaffService {
     return this.normalize(response);
   }
 
+  async applyPromotion(id, { code, employeeId } = {}) {
+    const query = new URLSearchParams({ ...(code ? { code } : {}) , ...(employeeId ? { employeeId } : {}) }).toString();
+    const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/apply-promotion${query ? `?${query}` : ''}`);
+    return this.normalize(response);
+  }
+
+
+  async finalizeBill(id, opts) {
+    const body = {};
+    if (opts && typeof opts.taxPercent !== 'undefined') body.taxPercent = opts.taxPercent;
+    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/finalize`, body);
+    return this.normalize(response);
+  }
+
+  async unfinalizeBill(id) {
+    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/unfinalize`);
+    return this.normalize(response);
+  }
+
+  async finalizeBill(id, opts) {
+    const body = {};
+    if (opts && typeof opts.taxPercent !== 'undefined') body.taxPercent = opts.taxPercent;
+    const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/finalize`, body);
+    return this.normalize(response);
+  }
+
   async cancelBill(id, opts) {
     const query = new URLSearchParams(opts && opts.employeeId ? { employeeId: opts.employeeId } : {}).toString();
     const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/cancel${query ? `?${query}` : ''}`);

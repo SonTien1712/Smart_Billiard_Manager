@@ -17,12 +17,9 @@ public class Passwordresettoken {
     @Column(name = "TokenID", nullable = false)
     private Integer id;
 
-    @Lob
-    @Column(name = "UserType", nullable = false)
-    private String userType;
-
-    @Column(name = "UserID", nullable = false)
-    private Integer userID;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "UserID", nullable = false)
+    private Customer userID;
 
     @Column(name = "Token", nullable = false)
     private String token;

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Input } from '../ui/input';
 import { PageType } from '../Dashboard';
 import { Receipt, Plus, Play, Calculator, CreditCard, Clock } from 'lucide-react';
 import { formatVND } from '../../utils/currency';
@@ -43,7 +44,9 @@ export function BillManagement({ onPageChange }) {
 
   const [recentBills, setRecentBills] = useState([]);
   const [billDetail, setBillDetail] = useState(null);
+  const [promoPreview, setPromoPreview] = useState(null);
       const [detailOpen, setDetailOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
 
       const clubId = useMemo(() => user?.clubId || user?.club?.id || user?.employeeClubId || user?.employee?.clubId, [user]);
 
@@ -55,6 +58,7 @@ export function BillManagement({ onPageChange }) {
               return;
             }
             const detail = await staffService.getBillById(activeBillId);
+            setBillDetail(detail || null);
             const items = Array.isArray(detail?.items) ? detail.items : [];
             const mapped = items.map(it => ({
               id: it.productId,
@@ -193,6 +197,23 @@ export function BillManagement({ onPageChange }) {
     }
   };
 
+  // finalize flow removed per new requirement
+
+  const handleApplyPromotion = async () => {
+    try {
+      if (!activeBillId || !promoCode) return;
+      const resp = await staffService.applyPromotion(activeBillId, { code: promoCode, employeeId: user?.employeeId });
+      // Use backend preview immediately
+      setPromoPreview(resp || null);
+      const detail = await staffService.getBillById(activeBillId);
+      setBillDetail(detail);
+      alert('Áp dụng mã khuyến mãi thành công.');
+    } catch (e) {
+      console.error('Apply promotion failed', e);
+      alert('Áp dụng mã khuyến mãi thất bại.');
+    }
+  };
+
       const addToOrder = async (product) => {
         // Persist to backend so order survives navigation
         if (activeBillId) {
@@ -200,6 +221,7 @@ export function BillManagement({ onPageChange }) {
             const res = await staffService.addBillItem(activeBillId, { productId: product.id, quantity: 1, employeeId: user?.employeeId });
             // Refresh from server to ensure consistency
             const detail = await staffService.getBillById(activeBillId);
+            setBillDetail(detail || null);
             const items = Array.isArray(detail?.items) ? detail.items : [];
             const mapped = items.map(it => ({
               id: it.productId,
@@ -235,6 +257,7 @@ export function BillManagement({ onPageChange }) {
               await staffService.updateBillItem(activeBillId, found.detailId, { quantity: nextQty, employeeId: user?.employeeId });
             }
             const detail = await staffService.getBillById(activeBillId);
+            setBillDetail(detail || null);
             const items = Array.isArray(detail?.items) ? detail.items : [];
             const mapped = items.map(it => ({
               id: it.productId,
@@ -576,20 +599,54 @@ export function BillManagement({ onPageChange }) {
                           <p className="text-sm text-muted-foreground">No products ordered</p>
                         )}
                       </div>
+                      <div className="mt-4 p-4 border rounded-lg">
+                        <h4 className="font-medium mb-2">Promotion</h4>
+                        <div className="flex items-center space-x-2">
+                          <Input placeholder="Enter promotion code" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
+                          <Button variant="outline" onClick={handleApplyPromotion} disabled={!activeBillId || !promoCode}>Apply</Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Áp dụng mã cho bill hiện tại.</p>
+                      </div>
                     </div>
                   </div>
 
                   {(() => {
-                    const start = selectedTable.startedAt ? new Date(selectedTable.startedAt) : null;
-                    let diffMin = 0;
-                    if (start) diffMin = Math.max(0, Math.round((Date.now() - start.getTime()) / 60000));
-                    const rem = diffMin % 6;
-                    const rounded = rem >= 3 ? diffMin + (6 - rem) : diffMin - rem;
-                    const hours = rounded / 60;
-                    const tableSubtotal = (selectedTable.hourlyRate || 0) * hours;
-                    const productsSubtotal = calculateTotal();
-                    const tax = (tableSubtotal + productsSubtotal) * 0.1;
-                    const total = tableSubtotal + productsSubtotal + tax;
+                    const isPending = (billDetail?.status || '').toLowerCase() === 'pending';
+                    let tableSubtotal;
+                    let productsSubtotal;
+                    if (isPending) {
+                      tableSubtotal = Number(billDetail?.totalTableCost || 0);
+                      productsSubtotal = Number(billDetail?.totalProductCost || 0);
+                    } else {
+                      const start = selectedTable.startedAt ? new Date(selectedTable.startedAt) : null;
+                      let diffMin = 0;
+                      if (start) diffMin = Math.max(0, Math.round((Date.now() - start.getTime()) / 60000));
+                      const rem = diffMin % 6;
+                      const rounded = rem >= 3 ? diffMin + (6 - rem) : diffMin - rem;
+                      const hours = rounded / 60;
+                      tableSubtotal = (selectedTable.hourlyRate || 0) * hours;
+                      productsSubtotal = calculateTotal();
+                    }
+                    let discount = 0;
+                    const baseSubtotal = tableSubtotal + productsSubtotal;
+                    if (promoPreview && typeof promoPreview.discount !== 'undefined') {
+                      const d = Number(promoPreview.discount);
+                      discount = Number.isFinite(d) && d > 0 ? d : 0;
+                    } else if (promoPreview && (promoPreview.promotionType || promoPreview.promotionValue)) {
+                      const type = String(promoPreview.promotionType || '').toUpperCase();
+                      const val = Number(promoPreview.promotionValue || 0);
+                      if (type.includes('PERCENT')) {
+                        discount = Math.max(0, Math.floor((baseSubtotal * val) / 100));
+                      } else {
+                        discount = Math.min(baseSubtotal, Math.max(0, val));
+                      }
+                    } else {
+                      const d = Number(billDetail?.discount || 0);
+                      discount = Number.isFinite(d) && d > 0 ? d : 0;
+                    }
+                    const preTaxSubtotal = Math.max(0, tableSubtotal + productsSubtotal - discount);
+                    const tax = preTaxSubtotal * 0.1;
+                    const total = preTaxSubtotal + tax;
                     return (
                       <div className="p-4 bg-muted/50 rounded-lg">
                         <div className="space-y-2">
@@ -600,6 +657,10 @@ export function BillManagement({ onPageChange }) {
                           <div className="flex justify-between">
                             <span>Products:</span>
                             <span>{formatVND(productsSubtotal)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Promotion Discount:</span>
+                            <span>{discount > 0 ? `-${formatVND(discount)}` : formatVND(0)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Tax (10%):</span>
@@ -618,6 +679,7 @@ export function BillManagement({ onPageChange }) {
                     <Button variant="outline" onClick={() => setActiveTab('order')}>
                       Back to Order
                     </Button>
+                    {/* finalize/unfinalize removed */}
                     <Button variant="destructive" onClick={handleCancelBill} disabled={!activeBillId}>
                       Cancel Bill
                     </Button>
@@ -635,3 +697,4 @@ export function BillManagement({ onPageChange }) {
     </div>
   );
 }
+

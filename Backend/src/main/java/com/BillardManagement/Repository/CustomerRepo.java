@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.util.Optional;
 
 public interface CustomerRepo extends JpaRepository<Customer, Integer> {
+    Optional<Customer> findByEmailIgnoreCase(String email);
+    Optional<Customer> findByEmail(String email);
     Optional<Customer> findByEmailAndPassword(String email, String password);
     // Kiểm tra trùng số điện thoại
     boolean existsByPhoneNumber(String phoneNumber);

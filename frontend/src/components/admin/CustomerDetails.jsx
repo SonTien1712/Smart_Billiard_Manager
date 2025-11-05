@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback} from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -7,13 +8,14 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Switch } from '../ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { PageType } from '../Dashboard';
 import { ArrowLeft, Edit, Save, X, Building, Table, Users } from 'lucide-react';
 
 import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
 
-export function CustomerDetails({ customerId, onPageChange }) {
+export function CustomerDetails() {
+  const navigate = useNavigate();
+  const { customerId } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -153,7 +155,7 @@ export function CustomerDetails({ customerId, onPageChange }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onPageChange('customer-list')}
+            onClick={() => navigate('/dashboard/admin/customers')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Customers

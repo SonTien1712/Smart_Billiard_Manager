@@ -1,126 +1,105 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from './ui/sidebar';
 import { AppSidebar } from './layout/AppSidebar';
 import { Header } from './layout/Header';
 import { useAuth } from './AuthProvider';
 
-// Role-specific dashboard components
-import { AdminDashboard } from './dashboards/AdminDashboard';
-import { CustomerDashboard } from './dashboards/CustomerDashboard';
-import { StaffDashboard } from './dashboards/StaffDashboard';
-
-// Page components
-import { CustomerList } from './admin/CustomerList';
-import { CustomerDetails } from './admin/CustomerDetails';
-import { CreateAdmin } from './admin/CreateAdmin';
-
-import { ClubManagement } from './customer/ClubManagement';
-import { TableManagement } from './customer/TableManagement';
-import { StaffManagement } from './customer/StaffManagement';
-import { ShiftManagement } from './customer/ShiftManagement';
-import { StaffAccountManagement } from './customer/StaffAccountManagement';
-import { PromotionManagement } from './customer/PromotionManagement';
-import { ProductManagement } from './customer/ProductManagement';
-
-import { BillManagement } from './staff/BillManagement';
-import { WorkAndAttendance } from './staff/WorkAndAttendance';
-import { Payroll } from './staff/Payroll';
-
 /**
- * @typedef {'admin-dashboard' | 'customer-list' | 'customer-details' | 'create-admin' | 
+ * @typedef {'admin-dashboard' | 'customer-list' | 'customer-details' | 'create-admin' |
  *           'customer-dashboard' | 'clubs' | 'tables' | 'staff' | 'shifts' | 'staff-accounts' | 'promotions' | 'products' |
  *           'staff-dashboard' | 'bills' | 'work' | 'payroll'} PageType
  */
 
 /**
- * Dashboard component that manages the main application interface
- * @param {Object} props
- * @param {function('signin' | 'signup' | 'forgot-password' | 'profile' | 'dashboard'): void} props.onNavigate - Navigation callback
+ * Dashboard component that provides the main layout and navigation
+ * Now uses React Router for nested routing instead of state-based navigation
  */
 export const PageType = null;
 
-export function Dashboard({ onNavigate }) {
+export function Dashboard() {
   const { user } = useAuth();
-  const [currentPage, setCurrentPage] = useState(() => {
-    switch (user?.role) {
-      case 'ADMIN': return 'admin-dashboard';
-      case 'CUSTOMER': return 'customer-dashboard';
-      case 'STAFF': return 'staff-dashboard';
-      default: return 'admin-dashboard';
-    }
-  });
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   /**
-   * Handle page navigation
-   * @param {PageType} page
+   * Handle navigation for external routes (signin, signup, etc.)
+   * @param {string} page - Target page/route
+   */
+  const handleNavigate = (page) => {
+    switch (page) {
+      case 'signin':
+        navigate('/signin');
+        break;
+      case 'signup':
+        navigate('/signup');
+        break;
+      case 'forgot-password':
+        navigate('/forgot-password');
+        break;
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'dashboard':
+        // Navigate to appropriate dashboard based on role
+        const rolePath = user?.role?.toLowerCase();
+        navigate(`/dashboard/${rolePath}`);
+        break;
+      default:
+        navigate('/dashboard');
+    }
+  };
+
+  /**
+   * Handle page change for internal routing
+   * @param {string} page - Target page within dashboard
    */
   const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
+    const role = user?.role?.toLowerCase();
 
-  /**
-   * Handle customer selection
-   * @param {string} customerId
-   */
-  const handleCustomerSelect = (customerId) => {
-    setSelectedCustomerId(customerId);
-    setCurrentPage('customer-details');
-  };
-
-  const renderContent = () => {
-    switch (currentPage) {
+    // Map old page types to new route paths
+    const routeMap = {
       // Admin pages
-      case 'admin-dashboard':
-        return <AdminDashboard onPageChange={handlePageChange} />;
-      case 'customer-list':
-        return <CustomerList onCustomerSelect={handleCustomerSelect} onPageChange={handlePageChange} />;
-      case 'customer-details':
-        return <CustomerDetails customerId={selectedCustomerId} onPageChange={handlePageChange} />;
-      case 'create-admin':
-        return <CreateAdmin onPageChange={handlePageChange} />;
+      'admin-dashboard': `/dashboard/admin`,
+      'customer-list': `/dashboard/admin/customers`,
+      'customer-details': `/dashboard/admin/customers/${location.pathname.split('/').pop()}`, // Keep customer ID
+      'create-admin': `/dashboard/admin/create-admin`,
 
       // Customer pages
-      case 'customer-dashboard':
-        return <CustomerDashboard onPageChange={handlePageChange} />;
-      case 'clubs':
-        return <ClubManagement onPageChange={handlePageChange} />;
-      case 'tables':
-        return <TableManagement onPageChange={handlePageChange} />;
-      case 'staff':
-        return <StaffManagement onPageChange={handlePageChange} />;
-      case 'shifts':
-        return <ShiftManagement onPageChange={handlePageChange} />;
-      case 'staff-accounts':
-        return <StaffAccountManagement onPageChange={handlePageChange} />;
-      case 'promotions':
-        return <PromotionManagement onPageChange={handlePageChange} />;
-      case 'products':
-        return <ProductManagement onPageChange={handlePageChange} />;
+      'customer-dashboard': `/dashboard/customer`,
+      'clubs': `/dashboard/customer/clubs`,
+      'tables': `/dashboard/customer/tables`,
+      'staff': `/dashboard/customer/staff`,
+      'shifts': `/dashboard/customer/shifts`,
+      'staff-accounts': `/dashboard/customer/staff-accounts`,
+      'promotions': `/dashboard/customer/promotions`,
+      'products': `/dashboard/customer/products`,
 
       // Staff pages
-      case 'staff-dashboard':
-        return <StaffDashboard onPageChange={handlePageChange} />;
-      case 'bills':
-        return <BillManagement onPageChange={handlePageChange} />;
-      case 'work':
-        return <WorkAndAttendance />;
-      case 'payroll':
-        return <Payroll />;
+      'staff-dashboard': `/dashboard/staff`,
+      'bills': `/dashboard/staff/bills`,
+      'work': `/dashboard/staff/work`,
+      'payroll': `/dashboard/staff/payroll`,
+    };
 
-      default:
-        return <div>Page not found</div>;
+    const route = routeMap[page];
+    if (route) {
+      navigate(route);
+    } else {
+      // Default fallback
+      navigate(`/dashboard/${role}`);
     }
   };
 
   return (
     <SidebarProvider>
-      <AppSidebar currentPage={currentPage} onPageChange={handlePageChange} onNavigate={onNavigate} />
+      <AppSidebar />
       <SidebarInset>
         <Header />
         <main className="flex-1 overflow-y-auto felt-bg p-4 md:p-6">
           <div className="mx-auto max-w-7xl">
-            {renderContent()}
+            {/* Outlet renders the matched child route component */}
+            <Outlet />
           </div>
         </main>
       </SidebarInset>

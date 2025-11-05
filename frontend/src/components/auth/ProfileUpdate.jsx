@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,7 +10,8 @@ import { useAuth } from '../AuthProvider';
 import { ArrowLeft, Upload, User } from 'lucide-react';
 
 
-export function ProfileUpdate({ onNavigate }) {
+export function ProfileUpdate() {
+  const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -61,7 +63,7 @@ export function ProfileUpdate({ onNavigate }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => navigate('/dashboard')}
               className="p-0 h-auto"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -154,7 +156,7 @@ export function ProfileUpdate({ onNavigate }) {
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => navigate('/dashboard')}
             >
               Cancel
             </Button>

@@ -7,4 +7,5 @@ import com.BillardManagement.DTO.Response.LoginResponse;
 public interface AuthService {
     LoginResponse login(LoginRequest request);
 
+
 }

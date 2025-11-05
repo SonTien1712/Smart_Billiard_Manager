@@ -98,8 +98,8 @@
  * @property {string} clubId
  * @property {string} title
  * @property {string} description
- * @property {'PERCENTAGE' | 'FIXED_AMOUNT'} discountType
- * @property {number} discountValue
+ * @property {'PERCENTAGE' | 'FIXED_AMOUNT'} promotionType
+ * @property {number} promotionValue
  * @property {string} startDate
  * @property {string} endDate
  * @property {boolean} isActive
@@ -202,3 +202,4 @@
 
 // Export empty object to make this a module
 export {};
+

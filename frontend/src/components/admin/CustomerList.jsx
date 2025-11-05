@@ -1,18 +1,19 @@
 import React, { useState, useMemo, useEffect, useCallback  } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { Switch } from '../ui/switch';
-import { PageType } from '../Dashboard';
 import { Search, MoreHorizontal, Eye, UserX, UserCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
 
-export function CustomerList({ onCustomerSelect, onPageChange }) {
+export function CustomerList() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -26,7 +27,6 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
   const {
     data: customerPage,
     loading,
-    error,
     execute: loadCustomers,
   } = useApi(fetchCustomers);
 
@@ -92,7 +92,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
           <h1 className="text-3xl font-semibold">Customer Management</h1>
           <p className="text-muted-foreground">Manage customer accounts and access</p>
         </div>
-        <Button onClick={() => onPageChange('admin-dashboard')}>
+        <Button onClick={() => navigate('/dashboard/admin')}>
           Back to Dashboard
         </Button>
       </div>
@@ -164,7 +164,7 @@ export function CustomerList({ onCustomerSelect, onPageChange }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onCustomerSelect(customer.id)}>
+                          <DropdownMenuItem onClick={() => navigate(`/dashboard/admin/customers/${customer.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>

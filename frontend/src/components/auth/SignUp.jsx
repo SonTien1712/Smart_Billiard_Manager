@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -9,7 +10,8 @@ import { Separator } from '../ui/separator';
 import { useAuth } from '../AuthProvider';
 
 
-export function SignUp({ onNavigate }) {
+export function SignUp() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -63,7 +65,7 @@ export function SignUp({ onNavigate }) {
     if (result?.success) {
       // chỉ thông báo
       window.alert(result.message || 'Đăng ký thành công');
-      onNavigate('signin');
+      navigate('/signin');
     } else {
       window.alert(result?.message || 'Đăng ký thất bại');
     }
@@ -80,7 +82,7 @@ export function SignUp({ onNavigate }) {
 
     try {
       await loginWithGoogle();
-      onNavigate('dashboard');
+      navigate('/dashboard');
     } catch (err) {
       setError('Failed to sign up with Google');
     } finally {
@@ -265,7 +267,7 @@ export function SignUp({ onNavigate }) {
                   type="button"
                   variant="link"
                   className="p-0 h-auto text-primary"
-                  onClick={() => onNavigate('signin')}
+                  onClick={() => navigate('/signin')}
                 >
                   Sign in
                 </Button>

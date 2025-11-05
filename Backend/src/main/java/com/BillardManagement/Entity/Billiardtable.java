@@ -19,6 +19,11 @@ public class Billiardtable {
     @Column(name = "TableID", nullable = false)
     private Integer id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "ClubID", nullable = false)
+    private Billardclub clubID;
+
     @Column(name = "TableName", nullable = false, length = 50)
     private String tableName;
 
@@ -31,11 +36,6 @@ public class Billiardtable {
     @ColumnDefault("'Available'")
     @Column(name = "TableStatus", length = 50)
     private String tableStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "ClubID", nullable = false)
-    private Billardclub clubID;
 
     // Thêm getter để lấy CustomerID thông qua Club
     @Transient

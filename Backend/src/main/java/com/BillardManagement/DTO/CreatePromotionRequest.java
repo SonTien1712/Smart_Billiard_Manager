@@ -1,6 +1,6 @@
 package com.BillardManagement.DTO;
 
-import com.BillardManagement.Entity.DiscountType;
+import com.BillardManagement.Entity.PromotionType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,30 +17,36 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreatePromotionRequest {
+    @NotNull
     private Integer clubId;
 
+    @NotNull(message = "Customer ID không được để trống")
     private Integer customerId;
 
-
+    @NotNull
+    @Size(min = 3, max = 255)
     private String promotionName;
 
+    @NotNull
+    @Size(min = 3, max = 50)
+    @Pattern(regexp = "^[A-Z0-9_-]+$")
     private String promotionCode;
 
+    @NotNull
+    private PromotionType promotionType;
 
-    private DiscountType discountType;
+    @NotNull
+    @DecimalMin("0.01")
+    private BigDecimal promotionValue;
 
-
-    private BigDecimal discountValue;
-
+    @NotNull
     private Instant startDate;
 
-
+    @NotNull
     private Instant endDate;
 
-    private String applicableTableTypes;
-    private BigDecimal minPlayTime;
-    private BigDecimal minAmount;
-    private BigDecimal maxDiscount;
+    // Removed legacy fields: applicableTableTypes, minPlayTime, minAmount, maxDiscount
     private Integer usageLimit;
     private String description;
 }
+

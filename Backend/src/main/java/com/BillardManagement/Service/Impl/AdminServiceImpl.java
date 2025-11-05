@@ -14,7 +14,7 @@ public class AdminServiceImpl implements AdminService {
 
     private final AdminRepo adminRepo;
 
-    @Autowired
+    
     public AdminServiceImpl(AdminRepo adminRepo) {
         this.adminRepo = adminRepo;
     }

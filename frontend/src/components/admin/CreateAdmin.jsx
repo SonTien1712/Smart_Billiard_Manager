@@ -4,7 +4,6 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
-import { PageType } from '../Dashboard';
 import { ArrowLeft, Eye, EyeOff, UserPlus } from 'lucide-react';
 
 import { useApi } from '../../hooks/useApi';

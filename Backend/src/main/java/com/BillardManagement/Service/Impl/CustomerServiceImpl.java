@@ -2,11 +2,14 @@ package com.BillardManagement.Service.Impl;
 
 import com.BillardManagement.DTO.Request.UpdateCustomerRequest;
 import com.BillardManagement.Entity.Customer;
+import com.BillardManagement.Exception.ResourceNotFoundException;
 import com.BillardManagement.Repository.CustomerRepo;
 import com.BillardManagement.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -90,5 +93,33 @@ public class CustomerServiceImpl implements CustomerService {
             if (req.getAddress() != null) c.setAddress(req.getAddress().trim());
             return customerRepository.save(c);
         });
+    }
+
+    @Override
+    public void updateExpireDate(Integer id, String planId) {
+        Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+        int monthsToAdd = planId.equals("1") ? 3 : 12;  // Gói 1: 3 tháng, Gói 2: 12 tháng
+        LocalDate currentExpire = customer.getExpiryDate();
+        LocalDate newExpire = (currentExpire != null && currentExpire.isAfter(LocalDate.now()))
+                ? currentExpire.plusMonths(monthsToAdd)
+                : LocalDate.now().plusMonths(monthsToAdd);
+        customer.setExpiryDate(newExpire);
+        customerRepository.save(customer);
+    }
+
+    @Override
+    public Customer getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user");
+        }
+
+        String email = authentication.getName();
+        if (email == null || email.isEmpty()) {
+            throw new RuntimeException("Invalid user email");
+        }
+
+        return customerRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }
