@@ -12,7 +12,8 @@ import java.util.Optional;
 @Repository
 public interface BilliardtableRepo extends JpaRepository<Billiardtable, Integer> {
     List<Billiardtable> findByClubID_Id(Integer clubId);
-    List<Billiardtable> findByCustomerID_Id(Integer customerId);
+    // Filter tables by the owning customer via club relation
+    List<Billiardtable> findByClubID_CustomerID(Integer customerId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Billiardtable> findLockedById(Integer id);

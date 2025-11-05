@@ -7,7 +7,6 @@ import LoadingScreen from '../components/prelogin/LoadingScreen.jsx';
 // Import components directly instead of lazy loading to avoid the conversion error
 import { SignIn } from '../components/auth/SignIn.jsx';
 // Removed SignUp from pre-login flow per request
-import { ForgotPassword } from '../components/auth/ForgotPassword.jsx';
 import { ProfileUpdate } from '../components/auth/ProfileUpdate.jsx';
 import { Dashboard } from '../components/Dashboard.jsx';
 import Landing from '../components/prelogin/Landing.jsx';
@@ -47,11 +46,6 @@ const routes = [
   {
     path: '/signin',
     component: SignIn,
-    public: true,
-  },
-  {
-    path: '/forgot-password',
-    component: ForgotPassword,
     public: true,
   },
   {

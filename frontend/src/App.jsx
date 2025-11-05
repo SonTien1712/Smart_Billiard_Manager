@@ -3,7 +3,6 @@ import { Dashboard } from './components/Dashboard.jsx';
 import { AuthProvider, useAuth } from './components/AuthProvider.jsx';
 import { SignIn } from './components/auth/SignIn.jsx';
 import { SignUp } from './components/auth/SignUp.jsx';
-import { ForgotPassword } from './components/auth/ForgotPassword.jsx';
 import { ProfileUpdate } from './components/auth/ProfileUpdate.jsx';
 import { Toaster } from './components/ui/sonner.jsx';
 
@@ -36,8 +35,6 @@ function App() {
       return <SignIn onNavigate={handlePageChange} />;
     case 'signup':
       return <SignUp onNavigate={handlePageChange} />;
-    case 'forgot-password':
-      return <ForgotPassword onNavigate={handlePageChange} />;
     case 'profile':
       return <ProfileUpdate onNavigate={handlePageChange} />;
     default:

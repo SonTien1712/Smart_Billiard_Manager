@@ -8,7 +8,6 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -25,15 +24,9 @@ public class Billiardtable {
     @JoinColumn(name = "ClubID", nullable = false)
     private Billardclub clubID;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "CustomerID", nullable = false)
-    private Customer customerID;
-
     @Column(name = "TableName", nullable = false, length = 50)
     private String tableName;
 
-    // Use a short VARCHAR for type instead of LOB; aligns with DB enum
     @Column(name = "TableType", nullable = false, length = 20)
     private String tableType;
 
@@ -43,18 +36,4 @@ public class Billiardtable {
     @ColumnDefault("'Available'")
     @Column(name = "TableStatus", length = 50)
     private String tableStatus;
-
-    @Column(name = "Location", length = 100)
-    private String location;
-
-    @Column(name = "PurchaseDate")
-    private LocalDate purchaseDate;
-
-    @Column(name = "LastMaintenanceDate")
-    private LocalDate lastMaintenanceDate;
-
-    @ColumnDefault("'Good'")
-    @Column(name = "TableCondition", length = 50)
-    private String tableCondition;
-
 }

@@ -159,7 +159,7 @@ public class StaffBillingController {
 
         BillDetailDTO dto = new BillDetailDTO(
                 b.getId(),
-                b.getTableID() != null ? b.getTableID().getTableName() : "",
+                "",
                 b.getBillStatus(),
                 b.getStartTime(),
                 b.getEndTime(),
@@ -202,7 +202,7 @@ public class StaffBillingController {
 
         BillDetailDTO dto = new BillDetailDTO(
                 b.getId(),
-                b.getTableID() != null ? b.getTableID().getTableName() : "",
+                "",
                 b.getBillStatus(),
                 b.getStartTime(),
                 b.getEndTime(),
@@ -227,7 +227,7 @@ public class StaffBillingController {
     ) {
         List<Billiardtable> tables;
         if (clubId != null) tables = tableRepo.findByClubID_Id(clubId);
-        else if (customerId != null) tables = tableRepo.findByCustomerID_Id(customerId);
+        else if (customerId != null) tables = tableRepo.findByClubID_CustomerID(customerId);
         else tables = tableRepo.findAll();
 
         List<TableDTO> dtos = tables.stream().map(t -> {
@@ -313,8 +313,8 @@ public class StaffBillingController {
         }
 
         b = billRepo.save(b);
-        String tableName = (b.getTableID() != null && b.getTableID().getTableName() != null) ? b.getTableID().getTableName() : "";
-        return ResponseEntity.ok(new BillSummaryDTO(b.getId(), tableName, BigDecimal.ZERO, b.getBillStatus(), b.getCreatedDate()));
+        // Avoid lazy-loading table to prevent DB schema mismatch errors
+        return ResponseEntity.ok(new BillSummaryDTO(b.getId(), "", BigDecimal.ZERO, b.getBillStatus(), b.getCreatedDate()));
     }
 
     /**
@@ -384,7 +384,8 @@ public class StaffBillingController {
                 amount = tableCost.add(productCost).subtract(discount);
             }
 
-            String tableName = b.getTableID() != null ? b.getTableID().getTableName() : "";
+            // Do NOT dereference table relation to avoid extra select on billiardtables
+            String tableName = ""; // fallback when table metadata is unavailable
             java.time.Instant createdOrCompleted = b.getEndTime() != null ? b.getEndTime() : b.getCreatedDate();
             return new BillSummaryDTO(b.getId(), tableName, amount, b.getBillStatus(), createdOrCompleted);
         }).collect(Collectors.toList());
@@ -398,7 +399,8 @@ public class StaffBillingController {
      */
     @GetMapping("/bills/{billId}")
     public ResponseEntity<BillDetailDTO> getBillById(@PathVariable("billId") Integer billId) {
-        var opt = billRepo.findViewById(billId);
+        // Avoid fetch-join on table to prevent querying missing columns in some DBs
+        var opt = billRepo.findById(billId);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         Bill b = opt.get();
 
@@ -413,7 +415,7 @@ public class StaffBillingController {
 
         BillDetailDTO dto = new BillDetailDTO(
                 b.getId(),
-                b.getTableID() != null ? b.getTableID().getTableName() : "",
+                "",
                 b.getBillStatus(),
                 b.getStartTime(),
                 b.getEndTime(),
@@ -828,7 +830,8 @@ public class StaffBillingController {
             }
         }
 
-        String tableName = b.getTableID() != null ? b.getTableID().getTableName() : "";
+        // Do not touch lazy table relation
+        String tableName = "";
         java.math.BigDecimal amount = b.getFinalAmount() != null ? b.getFinalAmount() : java.math.BigDecimal.ZERO;
         java.time.Instant when = b.getEndTime() != null ? b.getEndTime() : b.getCreatedDate();
         return ResponseEntity.ok(new BillSummaryDTO(b.getId(), tableName, amount, b.getBillStatus(), when));

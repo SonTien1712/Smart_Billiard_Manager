@@ -51,9 +51,9 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(false, "Sai mật khẩu admin", null, null);
         }
 
-        Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(username, password);
+        Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(identifier, password);
         if (empOpt.isPresent()) {
-            return loginEmployee(username, password);
+            return loginEmployee(identifier, password);
         }
 
         Optional<Customer> customerOpt = customerRepo.findByEmailAndPassword(identifier, password);
@@ -75,9 +75,9 @@ public class AuthServiceImpl implements AuthService {
         Billardclub club = acc.getClubID();
 
         EmployeeUserView user = EmployeeUserView.builder()
-                .accountId(acc.getId() != null ? acc.getId().longValue() : null)
-                .employeeId(emp != null ? (long) emp.getId() : null)
-                .clubId(club != null ? (long) club.getId() : null)
+                .accountId(acc.getId() != null ? acc.getId() : null)
+                .employeeId(emp != null ? emp.getId() : null)
+                .clubId(club != null ? club.getId() : null)
                 .username(acc.getUsername())
                 .fullName(emp != null ? emp.getEmployeeName() : acc.getUsername())
                 .email(acc.getUsername())

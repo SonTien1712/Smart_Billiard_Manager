@@ -32,26 +32,6 @@ export function SignIn({ onNavigate }) {
     }
   };
 
-<<<<<<< Updated upstream
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    setError('');
-
-    try {
-      // In a real implementation, you would get the Google token from Google OAuth flow
-      // For now, we'll simulate it
-      const mockGoogleToken = 'mock-google-token';
-      await loginWithGoogle({ googleToken: mockGoogleToken, role: 'CUSTOMER' });
-      onNavigate('dashboard');
-    } catch (err) {
-      setError(err.message || 'Failed to sign in with Google');
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
-
-=======
->>>>>>> Stashed changes
   return (
     <div className="dark min-h-screen relative px-4 py-8 overflow-hidden">
       {/* Background image overlay */}
@@ -96,16 +76,6 @@ export function SignIn({ onNavigate }) {
                 />
               </div>
 
-<<<<<<< Updated upstream
-            <div className="text-center">
-              <Button
-                type="button"
-                variant="link"
-                className="text-sm text-primary"
-                onClick={() => onNavigate('forgot-password')}
-              >
-                Forgot your password?
-=======
               <div className="space-y-2">
                 <Label htmlFor="password">Mật khẩu</Label>
                 <div className="relative">
@@ -135,29 +105,14 @@ export function SignIn({ onNavigate }) {
 
               <Button type="submit" className="w-full" disabled={isLoading} style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}>
                 {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
->>>>>>> Stashed changes
               </Button>
 
-              <div className="text-center">
-                <Button
-                  type="button"
-                  variant="link"
-<<<<<<< Updated upstream
-                  className="p-0 h-auto text-primary"
-                  onClick={() => onNavigate('signup')}
-=======
-                  className="text-sm text-primary"
-                  onClick={() => navigate('/forgot-password')}
->>>>>>> Stashed changes
-                >
-                  Quên mật khẩu?
-                </Button>
-              </div>
+              {/* Link quên mật khẩu đã bỏ theo yêu cầu */}
             </form>
           <div className="text-xs text-muted-foreground text-center mt-2" />
         </CardContent>
         <CardFooter className="justify-center">
-          <Button type="button" variant="link" className="text-muted-foreground" onClick={() => navigate('/landing')}>
+          <Button type="button" variant="link" className="text-muted-foreground" onClick={() => onNavigate('landing')}>
             ← Quay lại trang chủ
           </Button>
         </CardFooter>
