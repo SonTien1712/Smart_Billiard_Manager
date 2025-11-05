@@ -56,4 +56,7 @@ public interface BilliardTableRepo extends JpaRepository<Billiardtable, Integer>
     // Lock để tránh race condition
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Billiardtable> findLockedById(Integer id);
+
+    // Filter tables by the owning customer via club relation
+    List<Billiardtable> findByClubID_CustomerID(Integer customerId);
 }
