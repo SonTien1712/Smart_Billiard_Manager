@@ -143,18 +143,15 @@ public class AuthController {
             user.put("email", currentUser.getEmail());
             user.put("password", currentUser.getPassword());
             user.put("address", currentUser.getAddress());
-            user.put("dateJoined", currentUser.getDateJoined());    // có thể null
-            user.put("expiryDate", currentUser.getExpiryDate());    // ví dụ: 2025-02-04
-            user.put("googleId", currentUser.getGoogleId());        // có thể null
+            user.put("dateJoined", currentUser.getDateJoined());
+            user.put("expiryDate", currentUser.getExpiryDate());
+            user.put("googleId", currentUser.getGoogleId());
             user.put("isActive", currentUser.getIsActive());
-            user.put("role", "CUSTOMER"); // Hardcode cho Customer
-
+            user.put("role", "CUSTOMER");
 
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
     }
-
 }
-
