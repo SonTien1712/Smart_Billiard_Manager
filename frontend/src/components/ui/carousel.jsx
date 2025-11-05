@@ -19,13 +19,13 @@ import { Button } from "./button";
   plugins? ;
   orientation?: "horizontal" | "vertical";
   setApi?: (api ) => void;
-};
+}
 
 
   carouselRef >[0];
   api >[1];
-  scrollPrev: () => void;
-  scrollNext: () => void;
+  () => void;
+  () => void;
   canScrollPrev ;
   canScrollNext ;
 } & CarouselProps;
@@ -57,7 +57,7 @@ function Carousel({
       axis === "horizontal" ? "x" : "y",
     },
     plugins,
-  );
+  )
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
 
