@@ -1,6 +1,6 @@
 package com.BillardManagement.DTO.Response;
 
-import com.BillardManagement.Entity.DiscountType;
+import com.BillardManagement.Entity.PromotionType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.BillardManagement.DTO.PromotionDTO;
 import lombok.AllArgsConstructor;
@@ -22,9 +22,9 @@ public class PromotionView {
 
     private String name;
 
-    private String discountType; // "percentage" or "fixed"
+    private String promotionType; // "percentage" or "fixed"
 
-    private BigDecimal discountValue;
+    private BigDecimal promotionValue;
 
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
     private Instant startDate;
@@ -42,8 +42,8 @@ public class PromotionView {
                 .id(dto.getPromotionId())
                 .code(dto.getPromotionCode())
                 .name(dto.getPromotionName())
-                .discountType(mapDiscountType(dto.getDiscountType()))
-                .discountValue(dto.getDiscountValue())
+                .promotionType(mapPromotionType(dto.getPromotionType()))
+                .promotionValue(dto.getPromotionValue())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
                 .status(dto.getIsActive() != null && dto.getIsActive() ? "active" : "inactive")
@@ -51,9 +51,12 @@ public class PromotionView {
                 .build();
     }
 
-    // Helper method để map DiscountType enum sang string
-    private static String mapDiscountType(DiscountType type) {
+    // Helper method để map PromotionType enum sang string
+    private static String mapPromotionType(PromotionType type) {
         if (type == null) return "percentage";
-        return type == DiscountType.PERCENTAGE ? "percentage" : "fixed";
+        return type == PromotionType.PERCENTAGE ? "percentage" : "fixed";
     }
 }
+
+
+

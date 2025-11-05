@@ -1,0 +1,371 @@
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { 
+  LayoutDashboard, LogOut, TableProperties, BarChart3, 
+  Users, Clock, Play, Square, AlertCircle, Calendar
+} from 'lucide-react';
+import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { motion } from 'motion/react';
+import AnimatedLogo from './AnimatedLogo';
+
+interface FloorplanProps {
+  user: {
+    role: string;
+    email: string;
+    name: string;
+  } | null;
+  onNavigate: (page: string) => void;
+  onLogout: () => void;
+}
+
+type TableStatus = 'available' | 'playing' | 'overdue' | 'reserved';
+
+interface Table {
+  id: number;
+  number: string;
+  status: TableStatus;
+  startTime: string | null;
+  customer: string | null;
+  revenue: number;
+  duration?: string;
+  reservedTime?: string;
+}
+
+export default function Floorplan({ user, onNavigate, onLogout }: FloorplanProps) {
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  
+  const tables: Table[] = [
+    { id: 1, number: 'Bàn 1', status: 'available', startTime: null, customer: null, revenue: 0 },
+    { id: 2, number: 'Bàn 2', status: 'playing', startTime: '14:30', customer: 'Nguyễn Văn A', revenue: 120000, duration: '2h 15m' },
+    { id: 3, number: 'Bàn 3', status: 'playing', startTime: '15:00', customer: 'Trần Thị B', revenue: 90000, duration: '1h 45m' },
+    { id: 4, number: 'Bàn 4', status: 'available', startTime: null, customer: null, revenue: 0 },
+    { id: 5, number: 'Bàn 5', status: 'overdue', startTime: '10:00', customer: 'Lê Văn C', revenue: 350000, duration: '6h 45m' },
+    { id: 6, number: 'Bàn 6', status: 'playing', startTime: '16:00', customer: 'Phạm Thị D', revenue: 50000, duration: '1h 00m' },
+    { id: 7, number: 'Bàn 7', status: 'reserved', startTime: null, customer: 'Hoàng Văn E', revenue: 0, reservedTime: '18:00' },
+    { id: 8, number: 'Bàn 8', status: 'playing', startTime: '14:00', customer: 'Vũ Thị F', revenue: 150000, duration: '3h 00m' },
+    { id: 9, number: 'Bàn 9', status: 'available', startTime: null, customer: null, revenue: 0 },
+    { id: 10, number: 'Bàn 10', status: 'playing', startTime: '15:30', customer: 'Đỗ Văn G', revenue: 80000, duration: '1h 30m' },
+    { id: 11, number: 'Bàn 11', status: 'available', startTime: null, customer: null, revenue: 0 },
+    { id: 12, number: 'Bàn 12', status: 'reserved', startTime: null, customer: 'Mai Thị H', revenue: 0, reservedTime: '19:00' },
+    { id: 13, number: 'Bàn 13', status: 'playing', startTime: '16:30', customer: 'Bùi Văn I', revenue: 40000, duration: '0h 45m' },
+    { id: 14, number: 'Bàn 14', status: 'available', startTime: null, customer: null, revenue: 0 },
+    { id: 15, number: 'Bàn 15', status: 'playing', startTime: '13:00', customer: 'Đinh Thị K', revenue: 200000, duration: '4h 00m' }
+  ];
+
+  const getStatusColor = (status: TableStatus): string => {
+    switch (status) {
+      case 'available': return '#10B981'; // green
+      case 'playing': return '#F59E0B'; // yellow/gold
+      case 'overdue': return '#EF4444'; // red
+      case 'reserved': return '#8B5CF6'; // purple
+      default: return '#6B7280';
+    }
+  };
+
+  const getStatusLabel = (status: TableStatus): string => {
+    switch (status) {
+      case 'available': return 'Trống';
+      case 'playing': return 'Đang chơi';
+      case 'overdue': return 'Quá giờ';
+      case 'reserved': return 'Đã đặt';
+      default: return 'Không rõ';
+    }
+  };
+
+  const statusStats = {
+    available: tables.filter(t => t.status === 'available').length,
+    playing: tables.filter(t => t.status === 'playing').length,
+    overdue: tables.filter(t => t.status === 'overdue').length,
+    reserved: tables.filter(t => t.status === 'reserved').length
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      minimumFractionDigits: 0
+    }).format(value);
+  };
+
+  const handleStartTable = (table: Table) => {
+    console.log('Start table:', table);
+  };
+
+  const handleEndTable = (table: Table) => {
+    console.log('End table:', table);
+  };
+
+  return (
+    <div className="dark min-h-screen billiard-texture">
+      {/* Sidebar */}
+      <div className="fixed left-0 top-0 h-full w-64 border-r border-border/50 p-6 flex flex-col" style={{ backgroundColor: 'var(--sidebar)' }}>
+        <div className="mb-8">
+          <AnimatedLogo size="sm" />
+        </div>
+
+        <nav className="flex-1 space-y-2">
+          <button 
+            onClick={() => onNavigate('dashboard')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-foreground"
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span>Tổng quan</span>
+          </button>
+          <button 
+            onClick={() => onNavigate('floorplan')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
+            style={{ backgroundColor: 'var(--billiard-green)', color: 'var(--gold-accent)' }}
+          >
+            <TableProperties className="w-5 h-5" />
+            <span>Sơ đồ bàn</span>
+          </button>
+          <button 
+            onClick={() => onNavigate('reports')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-foreground"
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span>Báo cáo</span>
+          </button>
+        </nav>
+
+        <div className="border-t border-border/50 pt-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--billiard-green)' }}>
+              <Users className="w-5 h-5" style={{ color: 'var(--gold-accent)' }} />
+            </div>
+            <div>
+              <p className="text-sm">{user?.name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={onLogout}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Đăng xuất
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="ml-64 p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl mb-2">Sơ đồ bàn chơi</h1>
+          <p className="text-muted-foreground">Quản lý và theo dõi trạng thái bàn realtime</p>
+        </div>
+
+        {/* Status Legend */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="smooth-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center" 
+                     style={{ backgroundColor: getStatusColor('available') + '20' }}>
+                  <Square className="w-6 h-6" style={{ color: getStatusColor('available'), fill: getStatusColor('available') }} />
+                </div>
+                <div>
+                  <p className="text-2xl">{statusStats.available}</p>
+                  <p className="text-sm text-muted-foreground">Bàn trống</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="smooth-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center" 
+                     style={{ backgroundColor: getStatusColor('playing') + '20' }}>
+                  <Play className="w-6 h-6" style={{ color: getStatusColor('playing'), fill: getStatusColor('playing') }} />
+                </div>
+                <div>
+                  <p className="text-2xl">{statusStats.playing}</p>
+                  <p className="text-sm text-muted-foreground">Đang chơi</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="smooth-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center" 
+                     style={{ backgroundColor: getStatusColor('overdue') + '20' }}>
+                  <AlertCircle className="w-6 h-6" style={{ color: getStatusColor('overdue'), fill: getStatusColor('overdue') }} />
+                </div>
+                <div>
+                  <p className="text-2xl">{statusStats.overdue}</p>
+                  <p className="text-sm text-muted-foreground">Quá giờ</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="smooth-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center" 
+                     style={{ backgroundColor: getStatusColor('reserved') + '20' }}>
+                  <Calendar className="w-6 h-6" style={{ color: getStatusColor('reserved'), fill: getStatusColor('reserved') }} />
+                </div>
+                <div>
+                  <p className="text-2xl">{statusStats.reserved}</p>
+                  <p className="text-sm text-muted-foreground">Đã đặt</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tables Grid */}
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {tables.map((table, index) => (
+            <motion.div
+              key={table.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: index * 0.03 }}
+            >
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Card 
+                    className="smooth-shadow cursor-pointer hover:scale-105 transition-transform duration-200 relative overflow-hidden"
+                    style={{ borderColor: getStatusColor(table.status), borderWidth: '2px' }}
+                    onClick={() => setSelectedTable(table)}
+                  >
+                    {/* Color indicator stripe */}
+                    <div 
+                      className="absolute top-0 left-0 right-0 h-2"
+                      style={{ backgroundColor: getStatusColor(table.status) }}
+                    />
+                    
+                    <CardContent className="pt-8 pb-4 px-4">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center"
+                             style={{ backgroundColor: getStatusColor(table.status) + '20' }}>
+                          <TableProperties className="w-8 h-8" style={{ color: getStatusColor(table.status) }} />
+                        </div>
+                        <h3 className="mb-1">{table.number}</h3>
+                        <Badge 
+                          variant="outline"
+                          style={{ 
+                            borderColor: getStatusColor(table.status),
+                            color: getStatusColor(table.status)
+                          }}
+                        >
+                          {getStatusLabel(table.status)}
+                        </Badge>
+                        
+                        {table.status === 'playing' || table.status === 'overdue' ? (
+                          <div className="mt-3 text-sm space-y-1">
+                            <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              <span>{table.duration}</span>
+                            </div>
+                            <p style={{ color: 'var(--gold-accent)' }}>{formatCurrency(table.revenue)}</p>
+                          </div>
+                        ) : table.status === 'reserved' ? (
+                          <div className="mt-3 text-sm text-muted-foreground">
+                            <Calendar className="w-3 h-3 inline mr-1" />
+                            {table.reservedTime}
+                          </div>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{table.number}</DialogTitle>
+                    <DialogDescription>
+                      Trạng thái: <span style={{ color: getStatusColor(table.status) }}>{getStatusLabel(table.status)}</span>
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4">
+                    {table.status === 'playing' || table.status === 'overdue' ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Khách hàng</Label>
+                            <p>{table.customer}</p>
+                          </div>
+                          <div>
+                            <Label>Giờ bắt đầu</Label>
+                            <p>{table.startTime}</p>
+                          </div>
+                          <div>
+                            <Label>Thời gian chơi</Label>
+                            <p>{table.duration}</p>
+                          </div>
+                          <div>
+                            <Label>Tạm tính</Label>
+                            <p style={{ color: 'var(--gold-accent)' }}>{formatCurrency(table.revenue)}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          className="w-full"
+                          onClick={() => handleEndTable(table)}
+                          style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}
+                        >
+                          Kết thúc & Thanh toán
+                        </Button>
+                      </>
+                    ) : table.status === 'reserved' ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Khách hàng</Label>
+                            <p>{table.customer}</p>
+                          </div>
+                          <div>
+                            <Label>Giờ đặt</Label>
+                            <p>{table.reservedTime}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            className="flex-1"
+                            onClick={() => handleStartTable(table)}
+                            style={{ backgroundColor: 'var(--billiard-green)', color: 'var(--gold-accent)' }}
+                          >
+                            Check-in
+                          </Button>
+                          <Button variant="outline" className="flex-1">
+                            Hủy đặt bàn
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="customer-name">Tên khách hàng</Label>
+                          <Input id="customer-name" placeholder="Nhập tên khách hàng" />
+                        </div>
+                        <Button 
+                          className="w-full"
+                          onClick={() => handleStartTable(table)}
+                          style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}
+                        >
+                          Bắt đầu chơi
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

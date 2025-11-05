@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,22 +9,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { PageType } from '../Dashboard';
 import { Percent, Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
+import { customerService } from '../../services/customerService';
+import { useAuth } from '../AuthProvider';
 
 
 export function PromotionManagement({ onPageChange }) {
-  const [promotions, setPromotions] = useState([
-    { id: '1', code: 'HAPPY20', name: 'Happy Hour 20%', discountType: 'percentage', discountValue: 20, startDate: '2024-01-01', endDate: '2024-03-31', status: 'active', usageCount: 45 },
-    { id: '2', code: 'STUDENT15', name: 'Student Discount', discountType: 'percentage', discountValue: 15, startDate: '2024-01-01', endDate: '2024-12-31', status: 'active', usageCount: 23 },
-    { id: '3', code: 'WEEKEND10', name: 'Weekend Special', discountType: 'fixed', discountValue: 10, startDate: '2024-01-01', endDate: '2024-06-30', status: 'inactive', usageCount: 12 },
-  ]);
+  const { user } = useAuth();
+  const directClubId = useMemo(() => user?.clubId || user?.club?.id || user?.customerClubId, [user]);
+  const [effectiveClubId, setEffectiveClubId] = useState(null);
+
+  const [promotions, setPromotions] = useState([]);
+  const [clubs, setClubs] = useState([]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingPromotion, setEditingPromotion] = useState(null);
   const [formData, setFormData] = useState({
     code: '',
     name: '',
-    discountType: 'percentage',
-    discountValue: 10,
+    promotionType: 'percentage',
+    promotionValue: 10,
     startDate: '',
     endDate: '',
     status: 'active'
@@ -38,28 +41,139 @@ export function PromotionManagement({ onPageChange }) {
 
   const handleAdd = () => {
     setEditingPromotion(null);
-    setFormData({ code: '', name: '', discountType: 'percentage', discountValue: 10, startDate: '', endDate: '', status: 'active' });
+    setFormData({ code: '', name: '', promotionType: 'percentage', promotionValue: 10, startDate: '', endDate: '', status: 'active' });
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (editingPromotion) {
-      setPromotions(promotions.map(promo => promo.id === editingPromotion.id ? { ...formData, id: editingPromotion.id, usageCount: promo.usageCount } : promo));
-    } else {
-      setPromotions([...promotions, { ...formData, id: Date.now().toString(), usageCount: 0 }]);
+  // Resolve effective clubId: prefer directClubId, else fetch by customer id and take first
+  useEffect(() => {
+    const resolveClub = async () => {
+      const custId = user?.customerId || user?.id;
+      try {
+        let list = [];
+        if (custId) {
+          list = await customerService.getClubsByCustomer(custId);
+        }
+        const normalized = (Array.isArray(list) ? list : []).map(c => ({
+          id: c.id ?? c.clubId ?? c.ClubID ?? null,
+          name: c.clubName ?? c.name ?? `Club #${c.id ?? c.clubId}`,
+        })).filter(x => x.id);
+        if (normalized.length > 0) {
+          setClubs(normalized);
+          setEffectiveClubId(String(normalized[0].id));
+          return;
+        }
+        if (directClubId) {
+          setClubs([{ id: directClubId, name: `Club #${directClubId}` }]);
+          setEffectiveClubId(String(directClubId));
+        }
+      } catch (_) {
+        if (directClubId) {
+          setClubs([{ id: directClubId, name: `Club #${directClubId}` }]);
+          setEffectiveClubId(String(directClubId));
+        }
+      }
+    };
+    resolveClub();
+  }, [directClubId, user]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (!effectiveClubId) return;
+        const list = await customerService.getPromotions(Number(effectiveClubId), { page: 0, size: 50, sortBy: 'id', sortDir: 'desc' });
+        const mapped = (Array.isArray(list) ? list : []).map(p => ({
+          id: p.promotionId ?? p.id,
+          code: p.promotionCode,
+          name: p.promotionName,
+          promotionType: (() => { const t = ((p.promotionType||'')+ '').toLowerCase(); return t.includes('fixed') ? 'fixed' : 'percentage'; })(),
+          promotionValue: Number(p.promotionValue || 0),
+          startDate: p.startDate ? new Date(p.startDate).toISOString().slice(0,10) : '',
+          endDate: p.endDate ? new Date(p.endDate).toISOString().slice(0,10) : '',
+          status: p.isActive ? 'active' : 'inactive',
+          usageCount: Number(p.usedCount || 0)
+        }));
+        setPromotions(mapped);
+      } catch (e) {
+        console.error('Load promotions failed', e);
+        setPromotions([]);
+      }
+    };
+    load();
+  }, [effectiveClubId]);
+
+  const handleSave = async () => {
+    try {
+      if (!effectiveClubId) {
+        alert('Chưa xác định được Club. Vui lòng kiểm tra tài khoản.');
+        return;
+      }
+
+      const payload = {
+        customerId: (user?.customerId ?? user?.id),
+        clubId: Number(effectiveClubId),
+        promotionName: formData.name,
+        promotionCode: formData.code,
+        promotionType: formData.promotionType === 'percentage' ? 'PERCENTAGE' : 'FIXED_AMOUNT',
+        promotionValue: Number(formData.promotionValue || 0),
+        startDate: formData.startDate ? new Date(formData.startDate + 'T00:00:00Z').toISOString() : null,
+        endDate: formData.endDate ? new Date(formData.endDate + 'T00:00:00Z').toISOString() : null,
+        usageLimit: 0,
+        description: ''
+      };
+
+      if (editingPromotion && editingPromotion.id) {
+        const res = await customerService.updatePromotion(editingPromotion.id, payload);
+        const p = res || {};
+        const updated = {
+          id: p.promotionId ?? editingPromotion.id,
+          code: p.promotionCode ?? formData.code,
+          name: p.promotionName ?? formData.name,
+          promotionType: (() => { const t = ((p.promotionType||payload.promotionType)||'')+''; return t.toLowerCase().includes('fixed') ? 'fixed' : 'percentage'; })(),
+          promotionValue: Number(((p.promotionValue ?? formData.promotionValue) ?? 0)),
+          startDate: (p.startDate ? new Date(p.startDate) : new Date(formData.startDate)).toISOString().slice(0,10),
+          endDate: (p.endDate ? new Date(p.endDate) : new Date(formData.endDate)).toISOString().slice(0,10),
+          status: (p.isActive ?? true) ? 'active' : 'inactive',
+          usageCount: Number(p.usedCount ?? 0)
+        };
+        setPromotions(promotions.map(x => x.id === editingPromotion.id ? updated : x));
+      } else {
+        const p = await customerService.createPromotion(payload);
+        const created = {
+          id: p.promotionId ?? p.id ?? Date.now().toString(),
+          code: p.promotionCode ?? payload.promotionCode,
+          name: p.promotionName ?? payload.promotionName,
+          promotionType: (() => { const t = ((p.promotionType||payload.promotionType)||'')+''; return t.toLowerCase().includes('fixed') ? 'fixed' : 'percentage'; })(),
+          promotionValue: Number(((p.promotionValue ?? payload.promotionValue) ?? 0)),
+          startDate: (p.startDate ? new Date(p.startDate) : new Date(formData.startDate)).toISOString().slice(0,10),
+          endDate: (p.endDate ? new Date(p.endDate) : new Date(formData.endDate)).toISOString().slice(0,10),
+          status: (p.isActive ?? true) ? 'active' : 'inactive',
+          usageCount: Number(p.usedCount ?? 0)
+        };
+        setPromotions([...promotions, created]);
+      }
+      setIsDialogOpen(false);
+    } catch (e) {
+      console.error('Save promotion failed', e);
+      alert('Lưu khuyến mãi thất bại');
     }
-    setIsDialogOpen(false);
   };
 
-  const handleDelete = (id) => {
-    setPromotions(promotions.filter(promo => promo.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await customerService.deletePromotion(id);
+      setPromotions(promotions.filter(promo => promo.id !== id));
+    } catch (e) {
+      console.error('Delete promotion failed', e);
+      alert('Xóa khuyến mãi thất bại');
+    }
   };
 
   const getStatusColor = (status) => {
     return status === 'active' ? 'default' : 'secondary';
   };
 
-  const formatDiscount = (type, value) => {
+  const formatPromotion = (type, value) => {
     return type === 'percentage' ? `${value}%` : `$${value}`;
   };
 
@@ -68,18 +182,33 @@ export function PromotionManagement({ onPageChange }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold">Promotion Management</h1>
-          <p className="text-muted-foreground">Manage discount codes and promotions</p>
+          <p className="text-muted-foreground">Manage promotion codes and offers</p>
         </div>
-        <Button onClick={handleAdd}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Promotion
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="min-w-[220px]">
+            <Label htmlFor="club-select">Club</Label>
+            <Select value={effectiveClubId ?? ''} onValueChange={(v) => setEffectiveClubId(v)}>
+              <SelectTrigger id="club-select">
+                <SelectValue placeholder="Select a club" />
+              </SelectTrigger>
+              <SelectContent>
+                {clubs.map(c => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleAdd}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Promotion
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Active Promotions</CardTitle>
-          <CardDescription>Manage discount codes and promotional offers</CardDescription>
+          <CardDescription>Manage promotion codes and promotional offers</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -87,7 +216,7 @@ export function PromotionManagement({ onPageChange }) {
               <TableRow>
                 <TableHead>Promotion</TableHead>
                 <TableHead>Code</TableHead>
-                <TableHead>Discount</TableHead>
+                <TableHead>Promotion</TableHead>
                 <TableHead>Valid Period</TableHead>
                 <TableHead>Usage</TableHead>
                 <TableHead>Status</TableHead>
@@ -113,13 +242,13 @@ export function PromotionManagement({ onPageChange }) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-1">
-                      {promotion.discountType === 'percentage' ? (
+                      {promotion.promotionType === 'percentage' ? (
                         <Percent className="h-4 w-4 text-green-600" />
                       ) : (
                         <DollarSign className="h-4 w-4 text-green-600" />
                       )}
                       <span className="font-medium text-green-600">
-                        {formatDiscount(promotion.discountType, promotion.discountValue)}
+                        {formatPromotion(promotion.promotionType, promotion.promotionValue)}
                       </span>
                     </div>
                   </TableCell>
@@ -164,7 +293,7 @@ export function PromotionManagement({ onPageChange }) {
           <DialogHeader>
             <DialogTitle>{editingPromotion ? 'Edit Promotion' : 'Create New Promotion'}</DialogTitle>
             <DialogDescription>
-              {editingPromotion ? 'Update promotion details' : 'Create a new discount promotion'}
+              {editingPromotion ? 'Update promotion details' : 'Create a new promotion'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -191,10 +320,10 @@ export function PromotionManagement({ onPageChange }) {
             
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="discountType">Discount Type</Label>
-                <Select value={formData.discountType} onValueChange={(value) => setFormData({ ...formData, discountType: value })}>
+                <Label htmlFor="promotionType">Promotion Type</Label>
+                <Select value={formData.promotionType} onValueChange={(value) => setFormData({ ...formData, promotionType: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select discount type" />
+                    <SelectValue placeholder="Select Promotion Type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
@@ -203,15 +332,18 @@ export function PromotionManagement({ onPageChange }) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="discountValue">
-                  Discount Value {formData.discountType === 'percentage' ? '(%)' : '($)'}
+                <Label htmlFor="promotionValue">
+                  Promotion Value {formData.promotionType === 'percentage' ? '(%)' : '($)'}
                 </Label>
                 <Input
-                  id="discountValue"
+                  id="promotionValue"
                   type="number"
-                  value={formData.discountValue}
-                  onChange={(e) => setFormData({ ...formData, discountValue: parseInt(e.target.value) })}
-                  placeholder="Enter discount value"
+                  value={formData.promotionValue === '' ? '' : String(formData.promotionValue)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFormData({ ...formData, promotionValue: v === '' ? '' : Number(v) });
+                  }}
+                  placeholder="Enter Promotion Value"
                 />
               </div>
             </div>
@@ -297,3 +429,9 @@ export function PromotionManagement({ onPageChange }) {
     </div>
   );
 }
+
+
+
+
+
+

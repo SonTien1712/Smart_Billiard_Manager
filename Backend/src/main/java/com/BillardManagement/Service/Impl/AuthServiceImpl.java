@@ -96,9 +96,9 @@ public class AuthServiceImpl implements AuthService {
         Billardclub club = acc.getClubID();
 
         EmployeeUserView user = EmployeeUserView.builder()
-                .accountId(acc.getId() != null ? acc.getId().longValue() : null)
-                .employeeId(emp != null ? (long) emp.getId() : null)
-                .clubId(club != null ? (long) club.getId() : null)
+                .accountId(acc.getId() != null ? acc.getId() : null)
+                .employeeId(emp != null ? emp.getId() : null)
+                .clubId(club != null ? club.getId() : null)
                 .username(acc.getUsername())
                 .fullName(emp != null ? emp.getEmployeeName() : acc.getUsername())
                 .email(acc.getUsername())

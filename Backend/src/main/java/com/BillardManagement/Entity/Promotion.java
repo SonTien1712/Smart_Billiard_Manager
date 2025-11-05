@@ -1,6 +1,7 @@
 package com.BillardManagement.Entity;
 
 import jakarta.persistence.*;
+import com.BillardManagement.Entity.converter.PromotionTypeConverter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -40,12 +41,12 @@ public class Promotion {
     @Column(name = "PromotionCode", length = 50, unique = true)
     private String promotionCode;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = PromotionTypeConverter.class)
     @Column(name = "DiscountType", nullable = false, length = 20)
-    private DiscountType discountType;
+    private PromotionType promotionType;
 
     @Column(name = "DiscountValue", nullable = false, precision = 10, scale = 2)
-    private BigDecimal discountValue;
+    private BigDecimal promotionValue;
 
     @Column(name = "StartDate", nullable = false)
     private Instant startDate;
@@ -53,20 +54,7 @@ public class Promotion {
     @Column(name = "EndDate", nullable = false)
     private Instant endDate;
 
-    @Column(name = "ApplicableTableTypes", length = 500)
-    private String applicableTableTypes;
-
-    @ColumnDefault("0.00")
-    @Column(name = "MinPlayTime", precision = 4, scale = 2)
-    private BigDecimal minPlayTime = BigDecimal.ZERO;
-
-    @ColumnDefault("0.00")
-    @Column(name = "MinAmount", precision = 10, scale = 2)
-    private BigDecimal minAmount = BigDecimal.ZERO;
-
-    @ColumnDefault("0.00")
-    @Column(name = "MaxDiscount", precision = 10, scale = 2)
-    private BigDecimal maxDiscount = BigDecimal.ZERO;
+    // Removed legacy constraints/filters: applicable table types, min/max requirements
 
     @ColumnDefault("0")
     @Column(name = "UsageLimit")
@@ -83,13 +71,7 @@ public class Promotion {
     @Column(name = "Description", columnDefinition = "TEXT")
     private String description;
 
-    @CreationTimestamp
-    @Column(name = "CreatedAt", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "UpdatedAt", nullable = false)
-    private Instant updatedAt;
+    // Removed audit columns (CreatedAt, UpdatedAt) to match current DB schema
 
     // Business logic methods
     public boolean isValid() {
@@ -111,4 +93,6 @@ public class Promotion {
         }
     }
 }
+
+
 

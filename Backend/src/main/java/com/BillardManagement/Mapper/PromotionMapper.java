@@ -25,20 +25,16 @@ public class PromotionMapper {
         dto.setCustomerId(promotion.getCustomer() != null ? promotion.getCustomer().getId() : null);
         dto.setPromotionName(promotion.getPromotionName());
         dto.setPromotionCode(promotion.getPromotionCode());
-        dto.setDiscountType(promotion.getDiscountType());
-        dto.setDiscountValue(promotion.getDiscountValue());
+        dto.setPromotionType(promotion.getPromotionType());
+        dto.setPromotionValue(promotion.getPromotionValue());
         dto.setStartDate(promotion.getStartDate());
         dto.setEndDate(promotion.getEndDate());
-        dto.setApplicableTableTypes(promotion.getApplicableTableTypes());
-        dto.setMinPlayTime(promotion.getMinPlayTime());
-        dto.setMinAmount(promotion.getMinAmount());
-        dto.setMaxDiscount(promotion.getMaxDiscount());
+        // legacy fields removed from schema
         dto.setUsageLimit(promotion.getUsageLimit());
         dto.setUsedCount(promotion.getUsedCount());
         dto.setIsActive(promotion.getIsActive());
         dto.setDescription(promotion.getDescription());
-        dto.setCreatedAt(promotion.getCreatedAt());
-        dto.setUpdatedAt(promotion.getUpdatedAt());
+        // audit fields removed
 
         return dto;
     }
@@ -69,14 +65,11 @@ public class PromotionMapper {
 
         promotion.setPromotionName(request.getPromotionName());
         promotion.setPromotionCode(request.getPromotionCode());
-        promotion.setDiscountType(request.getDiscountType());
-        promotion.setDiscountValue(request.getDiscountValue());
+        promotion.setPromotionType(request.getPromotionType());
+        promotion.setPromotionValue(request.getPromotionValue());
         promotion.setStartDate(request.getStartDate());
         promotion.setEndDate(request.getEndDate());
-        promotion.setApplicableTableTypes(request.getApplicableTableTypes());
-        promotion.setMinPlayTime(request.getMinPlayTime());
-        promotion.setMinAmount(request.getMinAmount());
-        promotion.setMaxDiscount(request.getMaxDiscount());
+        // legacy fields removed from schema
         promotion.setUsageLimit(request.getUsageLimit());
         promotion.setDescription(request.getDescription());
 
@@ -94,14 +87,11 @@ public class PromotionMapper {
         Promotion promotion = new Promotion();
         promotion.setPromotionName(request.getPromotionName());
         promotion.setPromotionCode(request.getPromotionCode());
-        promotion.setDiscountType(request.getDiscountType());
-        promotion.setDiscountValue(request.getDiscountValue());
+        promotion.setPromotionType(request.getPromotionType());
+        promotion.setPromotionValue(request.getPromotionValue());
         promotion.setStartDate(request.getStartDate());
         promotion.setEndDate(request.getEndDate());
-        promotion.setApplicableTableTypes(request.getApplicableTableTypes());
-        promotion.setMinPlayTime(request.getMinPlayTime());
-        promotion.setMinAmount(request.getMinAmount());
-        promotion.setMaxDiscount(request.getMaxDiscount());
+        // legacy fields removed from schema
         promotion.setUsageLimit(request.getUsageLimit());
         promotion.setIsActive(request.getIsActive());
         promotion.setDescription(request.getDescription());
@@ -123,11 +113,11 @@ public class PromotionMapper {
         if (dto.getPromotionCode() != null) {
             entity.setPromotionCode(dto.getPromotionCode());
         }
-        if (dto.getDiscountType() != null) {
-            entity.setDiscountType(dto.getDiscountType());
+        if (dto.getPromotionType() != null) {
+            entity.setPromotionType(dto.getPromotionType());
         }
-        if (dto.getDiscountValue() != null) {
-            entity.setDiscountValue(dto.getDiscountValue());
+        if (dto.getPromotionValue() != null) {
+            entity.setPromotionValue(dto.getPromotionValue());
         }
         if (dto.getStartDate() != null) {
             entity.setStartDate(dto.getStartDate());
@@ -135,18 +125,7 @@ public class PromotionMapper {
         if (dto.getEndDate() != null) {
             entity.setEndDate(dto.getEndDate());
         }
-        if (dto.getApplicableTableTypes() != null) {
-            entity.setApplicableTableTypes(dto.getApplicableTableTypes());
-        }
-        if (dto.getMinPlayTime() != null) {
-            entity.setMinPlayTime(dto.getMinPlayTime());
-        }
-        if (dto.getMinAmount() != null) {
-            entity.setMinAmount(dto.getMinAmount());
-        }
-        if (dto.getMaxDiscount() != null) {
-            entity.setMaxDiscount(dto.getMaxDiscount());
-        }
+        // legacy fields removed from schema
         if (dto.getUsageLimit() != null) {
             entity.setUsageLimit(dto.getUsageLimit());
         }
@@ -161,3 +140,4 @@ public class PromotionMapper {
         }
     }
 }
+

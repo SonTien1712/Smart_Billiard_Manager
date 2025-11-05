@@ -39,8 +39,13 @@ public interface BillRepo extends JpaRepository<Bill, Integer> {
     @Query("select b from Bill b where b.tableID.id = :tableId and b.endTime is null")
     Optional<Bill> lockActiveBillByTable(@Param("tableId") Integer tableId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    // Regular read; no lock so that read-only connections can execute
     Optional<Bill> findById(Integer id);
+
+    // Explicit lock method for callers that truly need FOR UPDATE
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select b from Bill b where b.id = :id")
+    Optional<Bill> lockById(@Param("id") Integer id);
 
     // Read-only view without lock, with table join to safely read table name
     @Query("select b from Bill b left join fetch b.tableID where b.id = :id")
