@@ -8,9 +8,7 @@ import com.BillardManagement.Entity.Product;
 import com.BillardManagement.Exception.BusinessException;
 import com.BillardManagement.Exception.ResourceNotFoundException;
 // import com.billardmanagement.mapper.ProductMapper; // <-- XÓA BỎ
-import com.BillardManagement.Repository.BilliardClubRepo;
-import com.BillardManagement.Repository.CustomerRepo;
-import com.BillardManagement.Repository.ProductRepo;
+import com.BillardManagement.Repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,13 +18,14 @@ import java.math.BigDecimal; // Import thêm
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ProductService {
 
-    private final ProductRepo productRepository;
-    private final BilliardClubRepo clubRepository;
+    private final ProductRepository productRepository;
+    private final BillardclubRepo clubRepository;
     private final CustomerRepo customerRepository;
     // private final ProductMapper productMapper; // <-- XÓA BỎ
 
@@ -35,7 +34,7 @@ public class ProductService {
         log.info("Fetching products for club: {}, activeOnly: {}", clubId, activeOnly);
 
         List<Product> products = activeOnly != null && activeOnly
-                ? productRepository.findByClubID_IdAndIsActiveTrueOrderByProductNameAsc(clubId) // từ File 5
+                ? productRepository.findByClubIdAndIsActiveTrue(clubId) // từ File 5
                 : productRepository.findByClubId(clubId); // từ File 5
 
         return products.stream()
@@ -68,7 +67,7 @@ public class ProductService {
             throw new BusinessException("Customer account is inactive"); // từ File 7
         }
 
-        BillardClub club = clubRepository.findById(request.getClubId())
+        Billardclub club = clubRepository.findById(request.getClubId())
                 .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
                         "Club not found with id: " + request.getClubId()));
 
@@ -114,7 +113,7 @@ public class ProductService {
         }
 
         if (!product.getClub().getId().equals(request.getClubId())) {
-            BillardClub newClub = clubRepository.findById(request.getClubId())
+            Billardclub newClub = clubRepository.findById(request.getClubId())
                     .orElseThrow(() -> new ResourceNotFoundException( // từ File 6
                             "Club not found with id: " + request.getClubId()));
 
@@ -189,4 +188,4 @@ public class ProductService {
                 .map(ProductResponseDTO::fromEntity) // <-- BẰNG DÒNG NÀY
                 .collect(Collectors.toList());
     }
-}
+}}
