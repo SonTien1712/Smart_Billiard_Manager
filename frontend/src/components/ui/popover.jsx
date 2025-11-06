@@ -36,7 +36,7 @@ function PopoverContent({
         {...props}
       />
     </PopoverPrimitive.Portal>
-  );
+  )
 }
 
 function PopoverAnchor({

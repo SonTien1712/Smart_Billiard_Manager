@@ -57,7 +57,7 @@ function Slider({
         />
       ))}
     </SliderPrimitive.Root>
-  );
+  )
 }
 
 export { Slider };

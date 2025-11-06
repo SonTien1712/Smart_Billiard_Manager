@@ -85,21 +85,7 @@ paths:
               $ref: "#/components/schemas/CreateStaff"
       responses:
         "201": { description: Created }
-  /shops/{shopId}/usage:
-    get:
-      summary: View usage & token consumption (Owner/Admin)
-      parameters:
-        - in: path
-          name: shopId
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UsageSnapshot"
+
   /shops/{shopId}/upgrade:
     post:
       summary: Start upgrade to Premium (Owner)

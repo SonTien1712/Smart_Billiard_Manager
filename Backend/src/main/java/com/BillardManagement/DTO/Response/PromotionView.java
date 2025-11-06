@@ -18,6 +18,8 @@ import java.time.Instant;
 public class PromotionView {
     private Integer id;
 
+//    private Integer clubId;
+
     private String code;
 
     private String name;

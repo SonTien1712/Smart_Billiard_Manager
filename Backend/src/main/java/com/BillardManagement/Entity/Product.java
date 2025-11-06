@@ -1,8 +1,7 @@
 package com.BillardManagement.Entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -12,9 +11,13 @@ import java.time.Instant;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "products")
 public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ProductID", nullable = false)
@@ -23,12 +26,12 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "ClubID", nullable = false)
-    private Billardclub clubID;
+    private Billardclub club;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "CustomerID", nullable = false)
-    private Customer customerID;
+    private Customer customer;
 
     @Column(name = "ProductName", nullable = false)
     private String productName;
@@ -58,4 +61,16 @@ public class Product {
     @Column(name = "CreatedDate")
     private Instant createdDate;
 
+    @PrePersist
+    protected void onCreate() {
+        if (createdDate == null) {
+            createdDate = Instant.now();
+        }
+        if (isActive == null) {
+            isActive = true;
+        }
+        if (costPrice == null) {
+            costPrice = BigDecimal.ZERO;
+        }
+    }
 }

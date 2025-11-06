@@ -1,5 +1,6 @@
 package com.BillardManagement.Entity;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.deser.impl.CreatorCandidate;
 import jakarta.persistence.*;
@@ -36,5 +37,6 @@ public class Billardclub {
     @ColumnDefault("1")
     @Column(name = "isActive")
     private Boolean isActive;
+
 
 }
