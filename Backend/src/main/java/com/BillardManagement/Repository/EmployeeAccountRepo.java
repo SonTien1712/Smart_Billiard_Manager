@@ -19,6 +19,7 @@ public interface EmployeeAccountRepo extends JpaRepository<Employeeaccount, Inte
         ea.username,
         e.employeeName,
         e.email,
+        e.phoneNumber,
         'STAFF'
     )
     from Employeeaccount ea
@@ -52,6 +53,7 @@ public interface EmployeeAccountRepo extends JpaRepository<Employeeaccount, Inte
         ea.username,
         e.employeeName,
         e.email,
+        e.phoneNumber,
         'STAFF'
     )
     from Employeeaccount ea

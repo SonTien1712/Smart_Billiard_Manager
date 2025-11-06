@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -59,5 +60,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         // if (src.getPhone() != null)        target.setPhone(src.getPhone());
         // if (src.getAddress() != null)      target.setAddress(src.getAddress());
         // if (src.getStatus() != null)       target.setStatus(src.getStatus());
+    }
+
+    @Override
+    public Employee updateProfile(String email, String name, String phone) {
+        Optional<Employee> employOpt = employeeRepository.findByEmail(email);
+        if (employOpt.isEmpty()) {
+            throw new IllegalArgumentException("Employee not found");
+        }
+        Employee employee = employOpt.get();
+        employee.setEmail(email);
+        employee.setEmployeeName(name);
+        employee.setPhoneNumber(phone);
+        return employeeRepository.save(employee);
     }
 }

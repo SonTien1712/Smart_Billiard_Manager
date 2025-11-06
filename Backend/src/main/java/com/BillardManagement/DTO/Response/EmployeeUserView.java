@@ -11,5 +11,6 @@ public class EmployeeUserView {
     private String username;     // tên đăng nhập
     private String fullName;     // tên nhân viên
     private String email;        // email nhân viên
+    private String phoneNumber;  // số điện thoại nhân viên
     private String role;         // vai trò: "STAFF"
 }

@@ -39,5 +39,20 @@ public class AdminServiceImpl implements AdminService {
         return adminRepo.save(a);
     }
 
+    // 5. Cập nhật profile admin
+    @Override
+    public Admin UpdateProfile(String email, String name, String phone) {
+        Optional<Admin> adminOpt = adminRepo.findByEmail(email);
+        if (adminOpt.isEmpty()) {
+            throw new IllegalArgumentException("Admin not found");
+        }
+
+        Admin admin = adminOpt.get();
+        admin.setEmail(email);
+        admin.setUsername(name);
+
+        return adminRepo.save(admin);
+    }
+
 }
 

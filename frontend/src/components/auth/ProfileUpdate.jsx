@@ -16,7 +16,8 @@ export function ProfileUpdate() {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || ''
+    phone: user?.phone || '',
+    role: user?.role || ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -35,14 +36,11 @@ export function ProfileUpdate() {
     setMessage('');
 
     try {
-      // Mock API call
-      setTimeout(() => {
-        updateProfile(formData);
-        setMessage('Profile updated successfully!');
-        setIsLoading(false);
-      }, 1000);
+      await updateProfile(formData);  // Gửi formData (bao gồm role) đến backend
+      setMessage('Profile updated successfully!');
     } catch (err) {
       setMessage('Failed to update profile');
+    } finally {
       setIsLoading(false);
     }
   };

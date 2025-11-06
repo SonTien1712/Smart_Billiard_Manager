@@ -11,4 +11,5 @@ public interface AdminService {
 
     Admin createAdmin(String username, String email, String rawPassword);
 
+    Admin UpdateProfile(String email, String name, String phone);
 }

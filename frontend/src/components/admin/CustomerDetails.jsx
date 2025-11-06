@@ -18,18 +18,6 @@ export function CustomerDetails() {
   const { customerId } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  
-  // Mock customer data - in real app, fetch based on customerId
-  // const [customer, setCustomer] = useState({
-  //   id: customerId || '1',
-  //   name: 'John Smith',
-  //   email: 'john@example.com',
-  //   phone: '+1234567890',
-  //   address: '123 Main St, New York, NY 10001',
-  //   status: 'active',
-  //   joinDate: '2024-01-15',
-  //   lastLogin: '2024-01-20 10:30 AM'
-  // });
 
   const fetchCustomer = useCallback(
     () => adminService.getCustomerById(customerId),
@@ -40,11 +28,6 @@ export function CustomerDetails() {
     () => adminService.getCustomerClubs(customerId),
     [customerId]
   );
-
-  // const customerClubs = [
-  //   { id: '1', name: 'Downtown Billiards Club', address: '456 Downtown Ave', tables: 8, status: 'active' },
-  //   { id: '2', name: 'Uptown Pool Hall', address: '789 Uptown Blvd', tables: 12, status: 'active' }
-  // ];
 
   const {
     data: customerRaw,
@@ -97,13 +80,6 @@ export function CustomerDetails() {
     }));
   }, [clubsRaw]);
 
-  const customerStats = {
-    totalRevenue: 12450,
-    totalTables: 20,
-    totalStaff: 15,
-    monthlyRevenue: 2100
-  };
-
   const [editData, setEditData] = useState(customer);
   useEffect(() => setEditData(customer), [customer]);
 
@@ -124,6 +100,7 @@ export function CustomerDetails() {
   
       // cập nhật UI tại chỗ (optimistic) hoặc refetch
       setEditData(updated);               // nếu apiClient trả object luôn
+      await loadCustomer();
       setIsEditing(false);
       toast.success('Cập nhật thành công');
     } catch (e) {
@@ -191,7 +168,6 @@ export function CustomerDetails() {
         <TabsList>
           <TabsTrigger value="details">Customer Details</TabsTrigger>
           <TabsTrigger value="clubs">Clubs</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -305,54 +281,6 @@ export function CustomerDetails() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <Building className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${customerStats.totalRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">All time revenue</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Tables</CardTitle>
-                <Table className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{customerStats.totalTables}</div>
-                <p className="text-xs text-muted-foreground">Across all clubs</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Staff</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{customerStats.totalStaff}</div>
-                <p className="text-xs text-muted-foreground">Employees managed</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-                <Building className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${customerStats.monthlyRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
