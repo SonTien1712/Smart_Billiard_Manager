@@ -122,4 +122,18 @@ public class CustomerServiceImpl implements CustomerService {
         return customerRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    @Override
+    public Customer updateProfile(String email, String name, String phone) {
+        Optional<Customer> customerOpt = customerRepository.findByEmail(email);
+        if (customerOpt.isEmpty()) {
+            throw new IllegalArgumentException("Customer not found");
+        }
+        Customer customer = customerOpt.get();
+        customer.setEmail(email);
+        customer.setCustomerName(name);
+        customer.setPhoneNumber(phone);
+
+        return customerRepository.save(customer);
+    }
 }

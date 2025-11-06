@@ -89,7 +89,7 @@ export class AuthService {
       API_CONFIG.ENDPOINTS.AUTH.PROFILE,
       userData
     );
-    return response.data;
+    return response;
   }
 
   isAuthenticated() {
