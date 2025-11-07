@@ -10,4 +10,6 @@ public interface EmployeeService {
     Employee create(Employee employee);
     Employee update(Long id, Employee employee);
     void delete(Long id);
+
+    Employee updateProfile(String email, String name, String phone);
 }

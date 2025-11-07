@@ -13,4 +13,5 @@ public interface EmployeeRepo extends JpaRepository<Employee, Long> {
 
     @Query("SELECT e FROM Employee e WHERE e.customerID.id = :customerId")
     List<Employee> findByCustomerId(@Param("customerId") Long customerId);
+    Optional<Employee> findByEmail(String email);
 }

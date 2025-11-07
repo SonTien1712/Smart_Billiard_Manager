@@ -44,21 +44,27 @@ export function AppSidebar({ onNavigate }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const getInitials = (firstName, lastName, user) => {
-    const base =
-      [firstName, lastName].filter(Boolean).join(' ').trim() ||
-      user?.username ||
-      user?.email ||
-      'U';
+  const getInitials = (user) => {
+    let base = '';
+    if (user?.fullName) base = user.fullName;
+    else if (user?.customerName) base = user.customerName;
+    else if (user?.name) base = user.name;
+    else if (user?.username) base = user.username;
+    else if (user?.email) base = user.email;
+    else base = 'U';
     const parts = base.trim().split(/\s+/);
     const a = parts[0]?.[0] || 'U';
     const b = parts[1]?.[0] || '';
     return `${a}${b}`.toUpperCase();
   };
 
-  const getFullName = (firstName, lastName, user) => {
-    const name = [firstName, lastName].filter(Boolean).join(' ').trim();
-    return name || user?.username || user?.email || 'Guest';
+  const getFullName = (user) => {
+    if (user?.fullName) return user.fullName;
+    if (user?.customerName) return user.customerName;
+    if (user?.name) return user.name;
+    if (user?.username) return user.username;
+    if (user?.email) return user.email;
+    return 'Guest';
   };
 
   const getRoleDisplayName = (role) => {
@@ -184,14 +190,14 @@ export function AppSidebar({ onNavigate }) {
       <SidebarFooter>
         <div className="flex items-center gap-2 px-2 py-1">
           <Avatar className="h-8 w-8 rounded-lg">
-            <AvatarImage src={user?.avatar} alt={user ? getFullName(user?.firstName, user?.lastName, user) : ''} />
+            <AvatarImage src={user?.avatar} alt={user ? getFullName(user) : ''} />
             <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
-              {user ? getInitials(user?.firstName, user?.lastName, user) : <User className="h-4 w-4" />}
+              {user ? getInitials(user) : <User className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold text-sidebar-foreground">
-              {user ? getFullName(user?.firstName, user?.lastName, user) : 'Guest'}
+              {user ? getFullName(user) : 'Guest'}
             </span>
             <span className="truncate text-xs text-sidebar-foreground/70">
               {user?.role && getRoleDisplayName(user.role)}

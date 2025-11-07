@@ -33,7 +33,7 @@
  * @property {string} password
  * @property {string} firstName
  * @property {string} lastName
- * @property {'CUSTOMER' | 'STAFF'} role
+ * @property {'CUSTOMER'} role
  */
 
 /**
