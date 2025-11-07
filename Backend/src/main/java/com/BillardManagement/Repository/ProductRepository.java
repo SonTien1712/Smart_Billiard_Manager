@@ -18,7 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     List<Product> findByCustomerId(Integer customerId);
 
-    List<Product> findByClubIdAndCategory(Integer clubId, String category);
+   
 
     @Query("SELECT p FROM Product p WHERE p.club.id = :clubId AND p.isActive = true AND " +
             "(LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
