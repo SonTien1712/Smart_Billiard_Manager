@@ -55,6 +55,9 @@ public class Employee {
     @Column(name = "HourlyRate", precision = 10, scale = 2)
     private BigDecimal hourlyRate;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal salary;
+
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "DateHired")
     private Instant dateHired;
