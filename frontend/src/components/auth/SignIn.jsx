@@ -38,8 +38,8 @@ export function SignIn() {
         navigate('/dashboard');
       }
     } catch (err) {
-      console.log('Login error:', err);
-      const errorMessage = err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.';
+      alert('Login failed: ' + err.message);
+      const errorMessage = err.message || 'Failed to sign in';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
