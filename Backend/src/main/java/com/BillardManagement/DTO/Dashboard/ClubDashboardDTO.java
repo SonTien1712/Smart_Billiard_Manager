@@ -14,7 +14,5 @@ public class ClubDashboardDTO {
     private List<MonthlyRevenueDTO> revenueByMonth;
     private List<MonthlySalaryDTO> salaryByMonth;
     private List<TopProductStatDTO> topProducts;
-
-    // getters/setters, constructor
+    // getters/setters...
 }
-

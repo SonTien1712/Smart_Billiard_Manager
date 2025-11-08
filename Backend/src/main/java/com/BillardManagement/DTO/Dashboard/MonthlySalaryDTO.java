@@ -10,13 +10,13 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
+
 public class MonthlySalaryDTO {
     private String month;
     private BigDecimal totalSalary;
-
-
-    // getters/setters, constructor
+    public MonthlySalaryDTO() {}
+    public MonthlySalaryDTO(String m, BigDecimal s){this.month=m;this.totalSalary=s;}
+    public String getMonth(){return month;} public void setMonth(String m){this.month=m;}
+    public BigDecimal getTotalSalary(){return totalSalary;} public void setTotalSalary(BigDecimal s){this.totalSalary=s;}
 }
 
