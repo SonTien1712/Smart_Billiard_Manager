@@ -59,16 +59,19 @@ public class CustomerController {
     @GetMapping("/dashboard-stats")
     public ResponseEntity<DashboardStatsDTO> getDashboardStatistics() {
         try {
-            // Lấy thông tin customer từ authentication context
+            // getCurrentUser() should throw AuthenticationException if not authenticated
             Customer currentUser = customerService.getCurrentUser();
 
-            // Lấy thống kê dashboard
             DashboardStatsDTO stats = customerService.getDashboardStats(currentUser.getId());
 
             return ResponseEntity.ok(stats);
+
+
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(null);
+            // Unexpected errors (database, service logic, etc.)
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

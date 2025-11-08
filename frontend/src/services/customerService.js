@@ -14,6 +14,7 @@ export class CustomerService {
         try {
             console.log('[API Dashboard] Fetching dashboard stats...');
 
+            // Use direct path without API_CONFIG
             const endpoint = '/customers/dashboard-stats';
             const data = await apiClient.get(endpoint);
 
@@ -32,8 +33,14 @@ export class CustomerService {
         try {
             console.log('[API Dashboard] Fetching stats for customer:', customerId);
 
-            const endpoint = `/customers/${customerId}/dashboard-stats`;
+            // Fixed: Use correct endpoint path
+            const endpoint = `${API_CONFIG.ENDPOINTS.CUSTOMER.CUSTOMERS}/${customerId}/dashboard-stats`;
             const data = await apiClient.get(endpoint);
+
+            // Handle different response structures
+            if (data && typeof data === 'object') {
+                return data.data || data;
+            }
 
             return data;
         } catch (error) {
