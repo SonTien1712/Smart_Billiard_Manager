@@ -4,7 +4,6 @@ import com.BillardManagement.DTO.Request.LoginRequest;
 
 import com.BillardManagement.DTO.Response.EmployeeUserView;
 import com.BillardManagement.DTO.Response.LoginResponse;
-import com.BillardManagement.DTO.Response.EmployeeUserView;
 import com.BillardManagement.Entity.Admin;
 import com.BillardManagement.Entity.Customer;
 import com.BillardManagement.Entity.Employeeaccount;
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -58,9 +58,9 @@ public class AuthServiceImpl implements AuthService {
                 String accessToken = jwtUtil.generateAccessToken(claims);
                 String refreshToken = jwtUtil.generateRefreshToken(claims);
 
-                return new LoginResponse(true, "Đăng nhập admin thành công", accessToken, admin);
+                return new LoginResponse(true, "Đăng nhập admin thành công", accessToken, refreshToken, admin);
             }
-            return new LoginResponse(false, "Sai mật khẩu admin", null, null);
+            return new LoginResponse(false, "Sai mật khẩu admin", null, null, null);
         }
 
         Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(identifier, password);
@@ -79,10 +79,10 @@ public class AuthServiceImpl implements AuthService {
             String accessToken = jwtUtil.generateAccessToken(claims);
             String refreshToken = jwtUtil.generateRefreshToken(claims);
 
-            return new LoginResponse(true, "Đăng nhập khách hàng thành công", accessToken, customer);
+            return new LoginResponse(true, "Đăng nhập khách hàng thành công", accessToken, refreshToken, customer);
         }
 
-        return new LoginResponse(false, "Không tìm thấy tài khoản phù hợp", null, null);
+        return new LoginResponse(false, "Không tìm thấy tài khoản phù hợp", null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -90,7 +90,20 @@ public class AuthServiceImpl implements AuthService {
         Optional<Employeeaccount> empOpt = employeeAccountRepo
                 .findEmployeeaccountByUsernameAndPasswordHash(username, password);
 
-        Employeeaccount acc = empOpt.get();
+        Employeeaccount acc = empOpt.orElse(null);
+        if (acc == null) {
+            return new LoginResponse(false, "Không tìm thấy tài khoản nhân viên", null, null, null);
+        }
+
+        Customer owner = acc.getCustomerID();
+        if (owner == null) {
+            return new LoginResponse(false, "Không xác định được khách hàng sở hữu câu lạc bộ", null, null, null);
+        }
+
+        LocalDate expiryDate = owner.getExpiryDate();
+        if (expiryDate == null || expiryDate.isBefore(LocalDate.now())) {
+            return new LoginResponse(false, "Tài khoản khách hàng đã hết hạn, vui lòng gia hạn trước khi đăng nhập nhân viên", null, null, null);
+        }
 
         Employee emp = acc.getEmployeeID();
         Billardclub club = acc.getClubID();
@@ -116,7 +129,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtil.generateAccessToken(claims);
         String refreshToken = jwtUtil.generateRefreshToken(claims);
 
-        return new LoginResponse(true, "Đăng nhập nhân viên thành công", accessToken, user);
+        return new LoginResponse(true, "Đăng nhập nhân viên thành công", accessToken, refreshToken, user);
     }
 
 

@@ -19,7 +19,7 @@ export class AuthService {
 
     if (data?.success) {
       apiClient.setToken(data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken || '');
+      sessionStorage.setItem('refreshToken', data.refreshToken || '');
     }
     
     return data;
@@ -42,7 +42,7 @@ export class AuthService {
     
     if (response.success) {
       apiClient.setToken(response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      sessionStorage.setItem('refreshToken', response.data.refreshToken);
     }
     
     return response.data;
@@ -93,25 +93,25 @@ export class AuthService {
   }
 
   isAuthenticated() {
-    return !!localStorage.getItem('accessToken');
+    return !!sessionStorage.getItem('accessToken');
   }
 
   getCurrentUser() {
-    const userStr = localStorage.getItem('currentUser');
+    const userStr = sessionStorage.getItem('currentUser');
     return userStr ? JSON.parse(userStr) : null;
   }
 
   setCurrentUser(user) {
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    sessionStorage.setItem('currentUser', JSON.stringify(user));
   }
 
   removeCurrentUser() {
-    localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUser');
   }
 
   removeToken() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
     apiClient.removeToken();
   }
 }
