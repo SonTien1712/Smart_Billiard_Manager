@@ -13,6 +13,7 @@ import {
   DollarSign, Calendar, Bell, Smartphone, Cloud, Headphones,
   Mail, Phone, Building2, ArrowRight
 } from 'lucide-react';
+
 import { motion } from 'motion/react';
 import AnimatedLogo from './AnimatedLogo';
 

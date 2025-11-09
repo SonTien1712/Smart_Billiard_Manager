@@ -102,6 +102,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(acc.getUsername())
                 .fullName(emp != null ? emp.getEmployeeName() : acc.getUsername())
                 .email(acc.getUsername())
+                .phoneNumber(emp.getPhoneNumber())
                 .role("STAFF")
                 .build();
 

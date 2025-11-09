@@ -11,11 +11,11 @@ export function ShiftManagement({ onPageChange }) {
   const [currentWeek, setCurrentWeek] = useState(0);
 
   const shifts = [
-    { id: '1', employee: 'Alice Johnson', shift: 'morning', time: '6:00 AM - 2:00 PM', date: '2024-01-22', status: 'assigned' },
-    { id: '2', employee: 'Bob Smith', shift: 'afternoon', time: '2:00 PM - 10:00 PM', date: '2024-01-22', status: 'assigned' },
-    { id: '3', employee: 'Carol Brown', shift: 'evening', time: '6:00 PM - 2:00 AM', date: '2024-01-22', status: 'assigned' },
-    { id: '4', employee: 'Alice Johnson', shift: 'morning', time: '6:00 AM - 2:00 PM', date: '2024-01-23', status: 'assigned' },
-    { id: '5', employee: 'Bob Smith', shift: 'afternoon', time: '2:00 PM - 10:00 PM', date: '2024-01-23', status: 'pending' },
+    { id: '1', employee: 'Alice Johnson', shift: 'morning', time: '6:00 AM - 2:00 PM', date: '2025-11-05', status: 'assigned' },
+    { id: '2', employee: 'Bob Smith', shift: 'afternoon', time: '2:00 PM - 10:00 PM', date: '2025-11-06', status: 'assigned' },
+    { id: '3', employee: 'Carol Brown', shift: 'evening', time: '6:00 PM - 2:00 AM', date: '2025-11-07', status: 'assigned' },
+    { id: '4', employee: 'Alice Johnson', shift: 'morning', time: '6:00 AM - 2:00 PM', date: '2025-11-05', status: 'assigned' },
+    { id: '5', employee: 'Bob Smith', shift: 'afternoon', time: '2:00 PM - 10:00 PM', date: '2025-11-06', status: 'pending' },
   ];
 
   const getShiftColor = (shift) => {

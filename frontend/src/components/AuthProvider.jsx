@@ -74,6 +74,8 @@ export function AuthProvider({ children }) {
 
       const normalizedUser = {
         ...(authResponse?.user || {}),
+        name: authResponse?.user?.name ?? authResponse?.user?.username ?? authResponse?.user?.customerName ?? '',
+        phone: authResponse?.user?.phone ?? authResponse?.user?.customerPhone ?? authResponse?.user?.phoneNumber ?? '',
         role: serverRole || derivedRole, // ADMIN | STAFF | CUSTOMER
       };
       setUser(normalizedUser);

@@ -17,21 +17,27 @@ export function Header() {
     navigate('/signin');
   };
 
-  const getInitials = (firstName, lastName, user) => {
-    const base =
-      [firstName, lastName].filter(Boolean).join(' ').trim() ||
-      user?.username ||
-      user?.email ||
-      'U';
+  const getInitials = (user) => {
+    let base = '';
+    if (user?.fullName) base = user.fullName;
+    else if (user?.customerName) base = user.customerName;
+    else if (user?.name) base = user.name;
+    else if (user?.username) base = user.username;
+    else if (user?.email) base = user.email;
+    else base = 'U';
     const parts = base.trim().split(/\s+/);
     const a = parts[0]?.[0] || 'U';
     const b = parts[1]?.[0] || '';
     return `${a}${b}`.toUpperCase();
   };
 
-  const getFullName = (firstName, lastName, user) => {
-    const name = [firstName, lastName].filter(Boolean).join(' ').trim();
-    return name || user?.username || user?.email || 'Guest';
+  const getFullName = (user) => {
+    if (user?.fullName) return user.fullName;
+    if (user?.customerName) return user.customerName;
+    if (user?.name) return user.name;
+    if (user?.username) return user.username;
+    if (user?.email) return user.email;
+    return 'Guest';
   };
 
   const getRoleDisplayName = (role) => {
@@ -57,9 +63,9 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.avatar} alt={user ? getFullName(user?.firstName, user?.lastName, user) : ''} />
+                <AvatarImage src={user?.avatar} alt={user ? getFullName(user) : ''} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {user ? getInitials(user?.firstName, user?.lastName, user) : <User className="h-4 w-4" />}
+                  {user ? getInitials(user) : <User className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -67,7 +73,7 @@ export function Header() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user ? getFullName(user?.firstName, user?.lastName, user) : ''}</p>
+                <p className="text-sm font-medium leading-none">{user ? getFullName(user) : ''}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.role && getRoleDisplayName(user.role)}
