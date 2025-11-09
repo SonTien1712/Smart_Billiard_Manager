@@ -1,6 +1,5 @@
 package com.BillardManagement.Controller;
 
-
 import com.BillardManagement.DTO.Dashboard.*;
 import com.BillardManagement.Service.DashboardService;
 import com.BillardManagement.Util.ExcelExporter;
@@ -12,19 +11,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Controller cung cấp các endpoint export Excel cho Dashboard:
- *  - Export doanh thu (theo tháng)
- *  - Export tổng lương (theo tháng)
- *  - Export top products (theo profit)
- *
- * Lưu ý:
- *  - DashboardService.buildClubDashboard(...) được dùng để lấy dữ liệu.
- *  - ExcelExporter.exportTable(header, rows) trả về byte[] của file xlsx.
- *  - Bạn có thể chỉnh đường dẫn hoặc tên file theo ý muốn.
- */
 @RestController
-@RequestMapping("/api/customers/{customerId}/clubs/{clubId}/export")
+@RequestMapping("/api")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -33,11 +21,32 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
+    // ==================== ✅ ENDPOINT MỚI - LẤY DASHBOARD DATA ====================
+
     /**
-     * Export doanh thu theo tháng cho 1 club dưới dạng Excel.
-     * GET /api/customers/{customerId}/clubs/{clubId}/export/revenue
+     * GET /api/customers/{customerId}/clubs/{clubId}/dashboard
+     * Trả về ClubDashboardDTO cho frontend hiển thị charts & tables
      */
-    @GetMapping("/revenue")
+    @GetMapping("/customers/{customerId}/clubs/{clubId}/dashboard")
+    public ResponseEntity<ClubDashboardDTO> getClubDashboard(
+            @PathVariable Integer customerId,
+            @PathVariable Integer clubId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "5") int topN
+    ) {
+        try {
+            ClubDashboardDTO dto = dashboardService.buildClubDashboard(customerId, clubId, from, to, topN);
+            return ResponseEntity.ok(dto);
+        } catch (Exception ex) {
+            // Log exception
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // ==================== EXPORT ENDPOINTS (GIỮ NGUYÊN) ====================
+
+    @GetMapping("/customers/{customerId}/clubs/{clubId}/export/revenue")
     public ResponseEntity<byte[]> exportRevenue(
             @PathVariable Integer customerId,
             @PathVariable Integer clubId,
@@ -45,10 +54,8 @@ public class DashboardController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         try {
-            // Lấy dashboard data (mặc định from = đầu tháng, to = today nếu null)
             ClubDashboardDTO dto = dashboardService.buildClubDashboard(customerId, clubId, from, to, 5);
 
-            // Build rows
             String[] header = new String[] {"Month (yyyy-MM)", "Revenue"};
             List<Object[]> rows = new ArrayList<>();
             for (MonthlyRevenueDTO r : dto.getRevenueByMonth()) {
@@ -60,19 +67,15 @@ public class DashboardController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentDisposition(ContentDisposition.builder("attachment")
                     .filename("revenue_club_" + clubId + ".xlsx").build());
-            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         } catch (Exception ex) {
-            // Log exception nếu bạn có logger (omitted)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
-    /**
-     * Export tổng lương nhân viên theo tháng cho 1 club.
-     * GET /api/customers/{customerId}/clubs/{clubId}/export/salaries
-     */
-    @GetMapping("/salaries")
+    @GetMapping("/customers/{customerId}/clubs/{clubId}/export/salaries")
     public ResponseEntity<byte[]> exportSalaries(
             @PathVariable Integer customerId,
             @PathVariable Integer clubId,
@@ -93,18 +96,15 @@ public class DashboardController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentDisposition(ContentDisposition.builder("attachment")
                     .filename("salaries_club_" + clubId + ".xlsx").build());
-            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
-    /**
-     * Export top products by profit cho 1 club.
-     * GET /api/customers/{customerId}/clubs/{clubId}/export/top-products?topN=5
-     */
-    @GetMapping("/top-products")
+    @GetMapping("/customers/{customerId}/clubs/{clubId}/export/top-products")
     public ResponseEntity<byte[]> exportTopProducts(
             @PathVariable Integer customerId,
             @PathVariable Integer clubId,
@@ -132,7 +132,8 @@ public class DashboardController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentDisposition(ContentDisposition.builder("attachment")
                     .filename("top_products_club_" + clubId + ".xlsx").build());
-            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

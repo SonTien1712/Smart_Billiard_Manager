@@ -1,280 +1,377 @@
-// Updated CustomerDashboard.jsx
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart';
-import { Building, Table, Users, Calendar, Package, DollarSign, TrendingUp, Loader2, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { customerService } from '../../services/customerService';
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Download, TrendingUp, DollarSign, Users, Calendar, Loader2, AlertCircle } from 'lucide-react';
 
+const API_BASE = 'http://localhost:8080/api';
+
+// Helper: Format currency
 const formatCurrency = (value) => {
-    const numValue = typeof value === 'object' && value !== null ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(numValue || 0);
+    const num = typeof value === 'object' && value !== null ? parseFloat(value) : value;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0);
 };
 
-export function CustomerDashboard({ onPageChange }) {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
+export default function CustomerDashboard() {
+    const [clubs, setClubs] = useState([]);
+    const [selectedClub, setSelectedClub] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Example: get current customerId from auth or environment.
-    // Replace this with actual auth context or prop.
-    const CUSTOMER_ID = window.__APP__?.customerId ?? null; // fallback - set in app bootstrap
+    // TODO: Thay bằng customerId thực từ authentication
+    const CUSTOMER_ID = 1;
 
+    // Fetch danh sách clubs từ backend
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchClubs = async () => {
             try {
-                setLoading(true);
-                setError(null);
+                const response = await fetch(`${API_BASE}/customer/clubs/customer/${CUSTOMER_ID}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                });
 
-                const data = await customerService.getDashboardStats();
-                console.log('Backend returned:', data);
-                setStats(data);
+                if (!response.ok) throw new Error('Failed to fetch clubs');
+
+                const data = await response.json();
+                const clubList = Array.isArray(data) ? data : data.data || data.clubs || [];
+
+                setClubs(clubList);
+                if (clubList.length > 0) {
+                    setSelectedClub(clubList[0].id || clubList[0].clubId);
+                }
             } catch (err) {
-                console.error('Error:', err);
-                setError('Failed to load dashboard data');
+                console.error('Error fetching clubs:', err);
+                setError('Failed to load clubs');
+            }
+        };
+
+        fetchClubs();
+    }, []);
+
+    // Fetch dashboard data khi chọn club (đã SỬA: đảm bảo đóng ngoặc và gọi trong useEffect)
+    useEffect(() => {
+        if (!selectedClub) return;
+
+        // const fetchDashboardData = async () => {
+        //     setLoading(true);
+        //     setError(null);
+        //
+        //     try {
+        //         // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
+        //         // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
+        //
+        //         // MOCK DATA - Xóa khi backend có endpoint thật
+        //         await new Promise(resolve => setTimeout(resolve, 500));
+        //
+        //         setDashboardData({
+        //             clubId: selectedClub,
+        //             clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
+        //             revenueByMonth: [
+        //                 { month: '2024-10', revenue: 15000 },
+        //                 { month: '2024-11', revenue: 18500 },
+        //                 { month: '2024-12', revenue: 22000 }
+        //             ],
+        //             salaryByMonth: [
+        //                 { month: '2024-10', totalSalary: 8000 },
+        //                 { month: '2024-11', totalSalary: 8500 },
+        //                 { month: '2024-12', totalSalary: 9000 }
+        //             ],
+        //             topProducts: [
+        //                 { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
+        //                 { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
+        //                 { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
+        //             ]
+        //         });
+        //
+        //     } catch (err) {
+        //         console.error('Error fetching dashboard:', err);
+        //         setError('Failed to load dashboard data');
+        //     } finally {
+        //         setLoading(false);
+        //     }
+        // };
+
+        const controller = new AbortController();
+
+        const fetchDashboardData = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/dashboard`,
+                    {
+                        signal: controller.signal,
+                        headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                    }
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch dashboard');
+
+                const data = await response.json();
+                setDashboardData(data);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error fetching dashboard:', err);
+                    setError('Failed to load dashboard data');
+                }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchData();
-    }, []);
+        fetchDashboardData();
 
-    // Export handlers (use CUSTOMER_ID or fallback)
-    const handleExportRevenue = async (clubId) => {
-        try {
-            const cid = CUSTOMER_ID ?? (stats && stats.customerId) ?? 0;
-            await customerService.exportRevenueExcel(cid, clubId);
-        } catch (err) {
-            console.error('Export revenue failed', err);
-            alert('Export revenue failed: ' + err.message);
+        return () => controller.abort();
+    }, [selectedClub]);
+
+    // Tính toán số liệu tổng hợp (có guard để tránh undefined)
+    const revenueByMonth = dashboardData?.revenueByMonth ?? [];
+    const salaryByMonth = dashboardData?.salaryByMonth ?? [];
+    const topProducts = dashboardData?.topProducts ?? [];
+
+    const summaryStats = dashboardData
+        ? {
+            totalRevenue: revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0),
+            totalSalary: salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+            netProfit:
+                revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0) -
+                salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+            topProductProfit: topProducts.reduce((sum, p) => sum + (p.totalProfit || 0), 0),
         }
-    };
+        : null;
 
-    const handleExportSalaries = async (clubId) => {
-        try {
-            const cid = CUSTOMER_ID ?? (stats && stats.customerId) ?? 0;
-            await customerService.exportSalariesExcel(cid, clubId);
-        } catch (err) {
-            console.error('Export salaries failed', err);
-            alert('Export salaries failed: ' + err.message);
-        }
-    };
-
-    const handleExportTopProducts = async (clubId) => {
-        try {
-            const cid = CUSTOMER_ID ?? (stats && stats.customerId) ?? 0;
-            await customerService.exportTopProductsExcel(cid, clubId, 5);
-        } catch (err) {
-            console.error('Export top products failed', err);
-            alert('Export top products failed: ' + err.message);
-        }
-    };
-
-    if (loading) {
+    if (error && clubs.length === 0) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center h-screen bg-gray-50">
+                <div className="text-center">
+                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-gray-700">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                        Retry
+                    </button>
+                </div>
             </div>
         );
     }
-
-    if (error) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 text-red-600">
-                <AlertCircle className="h-8 w-8 mb-2" />
-                <p>{error}</p>
-                <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
-                    Try Again
-                </Button>
-            </div>
-        );
-    }
-
-    // Map backend DTO to frontend format (fallback safe)
-    const data = stats ? {
-        totalRevenue: stats.todayRevenue || 0,
-        todayBills: stats.todayBills || 0,
-        totalTables: stats.totalTables || 0,
-        totalEmployees: stats.totalEmployees || 0,
-        activeShifts: stats.activeShifts || 0,
-        totalProducts: stats.totalProducts || 0,
-        monthlyGrowth: stats.monthlyGrowth || 0,
-        revenueData: (stats.revenueData || []).map(item => ({
-            date: item.date,
-            revenue: typeof item.revenue === 'object' ? parseFloat(item.revenue) : item.revenue
-        })),
-        tableUsageData: stats.tableUsageData || [],
-        clubs: stats.clubs || [] // new: clubs array if backend returns dashboard by clubs
-    } : {
-        totalRevenue: 0,
-        todayBills: 0,
-        totalTables: 0,
-        totalEmployees: 0,
-        activeShifts: 0,
-        totalProducts: 0,
-        monthlyGrowth: 0,
-        revenueData: [],
-        tableUsageData: [],
-        clubs: []
-    };
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-semibold">Club Dashboard</h1>
-                <p className="text-muted-foreground">Overview of your billiards club</p>
-            </div>
+        <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Club Dashboard</h1>
+                    <p className="text-gray-600">Analytics & Reports</p>
+                </div>
 
-            {/* Stats Cards (unchanged) */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {/* ... existing cards unchanged (kept for brevity) ... */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Today Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(data.totalRevenue)}</div>
-                        <p className="text-xs text-muted-foreground">{data.todayBills} bills today</p>
-                    </CardContent>
-                </Card>
-                {/* [other cards here - unchanged from previous implementation] */}
-            </div>
+                {/* Club Selector */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Club</label>
+                    <select
+                        value={selectedClub || ''}
+                        onChange={(e) => setSelectedClub(parseInt(e.target.value))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        {clubs.map((club) => (
+                            <option key={club.id || club.clubId} value={club.id || club.clubId}>
+                                {club.clubName || `Club ${club.id || club.clubId}`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-            {/* Charts (unchanged) */}
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Revenue Trend</CardTitle>
-                        <CardDescription>Daily revenue for the past week</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer
-                            config={{
-                                revenue: {
-                                    label: "Revenue",
-                                    color: "hsl(var(--chart-1))",
-                                },
-                            }}
-                            className="h-[200px]"
-                        >
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={data.revenueData}>
-                                    <XAxis dataKey="date" />
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+                        <span className="ml-3 text-gray-600">Loading dashboard...</span>
+                    </div>
+                ) : dashboardData ? (
+                    <>
+                        {/* Summary Cards */}
+                        {summaryStats && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Total Revenue</span>
+                                        <DollarSign className="h-5 w-5 text-green-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.totalRevenue)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Last 3 months</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Total Salary</span>
+                                        <Users className="h-5 w-5 text-blue-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.totalSalary)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Employee costs</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Net Profit</span>
+                                        <TrendingUp className="h-5 w-5 text-purple-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.netProfit)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Revenue - Salary</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Product Profit</span>
+                                        <Calendar className="h-5 w-5 text-orange-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.topProductProfit)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Top 5 products</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Revenue Chart */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Monthly Revenue</h2>
+                                <button
+                                    onClick={() => {
+                                        const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/revenue`;
+                                        fetch(url, {
+                                            headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                                        })
+                                            .then((res) => {
+                                                if (!res.ok) throw new Error('Export failed');
+                                                return res.blob();
+                                            })
+                                            .then((blob) => {
+                                                const link = document.createElement('a');
+                                                link.href = URL.createObjectURL(blob);
+                                                link.download = `revenue_club_${selectedClub}.xlsx`;
+                                                link.click();
+                                                URL.revokeObjectURL(link.href);
+                                            })
+                                            .catch((err) => alert('Export revenue failed: ' + err.message));
+                                    }}
+                                    className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Excel
+                                </button>
+                            </div>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={revenueByMonth}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
                                     <YAxis />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--chart-1))" strokeWidth={2} />
+                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenue" />
                                 </LineChart>
                             </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
+                        </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Table Usage</CardTitle>
-                        <CardDescription>Hours played per table today</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer
-                            config={{
-                                hours: {
-                                    label: "Hours",
-                                    color: "hsl(var(--chart-2))",
-                                },
-                            }}
-                            className="h-[200px]"
-                        >
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data.tableUsageData}>
-                                    <XAxis dataKey="table" />
+                        {/* Salary Chart */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Monthly Salaries</h2>
+                                <button
+                                    onClick={() => {
+                                        const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/salaries`;
+                                        fetch(url, {
+                                            headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                                        })
+                                            .then((res) => {
+                                                if (!res.ok) throw new Error('Export failed');
+                                                return res.blob();
+                                            })
+                                            .then((blob) => {
+                                                const link = document.createElement('a');
+                                                link.href = URL.createObjectURL(blob);
+                                                link.download = `salaries_club_${selectedClub}.xlsx`;
+                                                link.click();
+                                                URL.revokeObjectURL(link.href);
+                                            })
+                                            .catch((err) => alert('Export salaries failed: ' + err.message));
+                                    }}
+                                    className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Excel
+                                </button>
+                            </div>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={salaryByMonth}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
                                     <YAxis />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="hours" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                    <Legend />
+                                    <Bar dataKey="totalSalary" fill="#3b82f6" name="Total Salary" />
                                 </BarChart>
                             </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>Manage your club efficiently</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Button
-                            variant="outline"
-                            className="h-20 flex flex-col space-y-2"
-                            onClick={() => onPageChange('tables')}
-                        >
-                            <Table className="h-6 w-6" />
-                            <span>Manage Tables</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-20 flex flex-col space-y-2"
-                            onClick={() => onPageChange('staff')}
-                        >
-                            <Users className="h-6 w-6" />
-                            <span>Manage Staff</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-20 flex flex-col space-y-2"
-                            onClick={() => onPageChange('shifts')}
-                        >
-                            <Calendar className="h-6 w-6" />
-                            <span>Work Shifts</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-20 flex flex-col space-y-2"
-                            onClick={() => onPageChange('products')}
-                        >
-                            <Package className="h-6 w-6" />
-                            <span>Manage Products</span>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Clubs list with export buttons (NEW) */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Clubs</CardTitle>
-                    <CardDescription>Export reports per club</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {data.clubs.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">No clubs found for your account.</div>
-                    ) : (
-                        <div className="grid gap-4">
-                            {data.clubs.map(club => (
-                                <div key={club.clubId} className="flex items-center justify-between p-4 border rounded">
-                                    <div>
-                                        <div className="font-medium">{club.clubName ?? `Club ${club.clubId}`}</div>
-                                        <div className="text-xs text-muted-foreground">Club ID: {club.clubId}</div>
-                                    </div>
-                                    <div className="flex space-x-2">
-                                        <Button size="sm" onClick={() => handleExportRevenue(club.clubId)}>Export Revenue</Button>
-                                        <Button size="sm" onClick={() => handleExportSalaries(club.clubId)}>Export Salaries</Button>
-                                        <Button size="sm" onClick={() => handleExportTopProducts(club.clubId)}>Export Top Products</Button>
-                                    </div>
-                                </div>
-                            ))}
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+
+                        {/* Top Products Table */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Top Products by Profit</h2>
+                                <button
+                                    onClick={() => {
+                                        const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/top-products?topN=5`;
+                                        fetch(url, {
+                                            headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                                        })
+                                            .then((res) => {
+                                                if (!res.ok) throw new Error('Export failed');
+                                                return res.blob();
+                                            })
+                                            .then((blob) => {
+                                                const link = document.createElement('a');
+                                                link.href = URL.createObjectURL(blob);
+                                                link.download = `top_products_club_${selectedClub}.xlsx`;
+                                                link.click();
+                                                URL.revokeObjectURL(link.href);
+                                            })
+                                            .catch((err) => alert('Export top products failed: ' + err.message));
+                                    }}
+                                    className="flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Excel
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                    <tr className="border-b">
+                                        <th className="pb-3 text-sm font-medium text-gray-600">Product</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600">Category</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600 text-right">Qty Sold</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600 text-right">Profit/Unit</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600 text-right">Total Profit</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {topProducts.map((product) => (
+                                        <tr key={product.productId} className="border-b hover:bg-gray-50">
+                                            <td className="py-3 text-sm text-gray-800">{product.productName}</td>
+                                            <td className="py-3 text-sm text-gray-600">{product.category}</td>
+                                            <td className="py-3 text-sm text-gray-800 text-right">{product.qtySold}</td>
+                                            <td className="py-3 text-sm text-gray-800 text-right">{formatCurrency(product.profitPerUnit)}</td>
+                                            <td className="py-3 text-sm font-semibold text-green-600 text-right">{formatCurrency(product.totalProfit)}</td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="bg-white rounded-lg shadow p-12 text-center">
+                        <p className="text-gray-500">Select a club to view dashboard</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

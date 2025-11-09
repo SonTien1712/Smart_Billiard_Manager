@@ -37,7 +37,7 @@ import { Payroll } from '../components/staff/Payroll.jsx';
 
 // Dashboard Components
 import { AdminDashboard } from '../components/dashboards/AdminDashboard.jsx';
-import { CustomerDashboard } from '../components/dashboards/CustomerDashboard.jsx';
+import CustomerDashboard from '../components/dashboards/CustomerDashboard.jsx';
 import { StaffDashboard } from '../components/dashboards/StaffDashboard.jsx';
 
 // Define routes inline to avoid lazy loading issues

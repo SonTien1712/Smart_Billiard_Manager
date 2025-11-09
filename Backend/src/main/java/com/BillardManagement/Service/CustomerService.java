@@ -34,6 +34,7 @@ public interface CustomerService {
     DashboardStatsDTO getDashboardStats(Integer customerId);
 
 
+    Customer updateProfile(String email, String name, String phone);
 
 
 }
