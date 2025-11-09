@@ -104,6 +104,53 @@ public class DashboardController {
         }
     }
 
+    @GetMapping("/customers/{customerId}/clubs/{clubId}/export/employee-salaries")
+    public ResponseEntity<byte[]> exportEmployeeSalaries(
+            @PathVariable Integer customerId,
+            @PathVariable Integer clubId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        try {
+            List<EmployeeSalaryDetailDTO> salaryDetails =
+                    dashboardService.getEmployeeSalaryDetails(customerId, clubId, from, to);
+
+            String[] header = new String[] {
+                    "Employee ID",
+                    "Employee Name",
+                    "Type",
+                    "Base Salary/Rate",
+                    "Total Hours",
+                    "Total Shifts",
+                    "Calculated Salary"
+            };
+
+            List<Object[]> rows = new ArrayList<>();
+            for (EmployeeSalaryDetailDTO emp : salaryDetails) {
+                rows.add(new Object[] {
+                        emp.getEmployeeId(),
+                        emp.getEmployeeName(),
+                        emp.getEmployeeType(),
+                        emp.getBaseSalary(),
+                        emp.getTotalHoursWorked(),
+                        emp.getTotalShifts(),
+                        emp.getCalculatedSalary()
+                });
+            }
+
+            byte[] bytes = ExcelExporter.exportTable(header, rows);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentDisposition(ContentDisposition.builder("attachment")
+                    .filename("employee_salaries_club_" + clubId + ".xlsx").build());
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @GetMapping("/customers/{customerId}/clubs/{clubId}/export/top-products")
     public ResponseEntity<byte[]> exportTopProducts(
             @PathVariable Integer customerId,

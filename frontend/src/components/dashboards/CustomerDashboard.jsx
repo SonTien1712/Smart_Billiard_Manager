@@ -25,13 +25,13 @@ export default function CustomerDashboard() {
         const fetchClubs = async () => {
             try {
                 const response = await fetch(`${API_BASE}/customer/clubs/customer/${CUSTOMER_ID}`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
                 });
 
                 if (!response.ok) throw new Error('Failed to fetch clubs');
 
                 const data = await response.json();
-                const clubList = Array.isArray(data) ? data : data.data || data.clubs || [];
+                const clubList = Array.isArray(data) ? data : (data.data || data.clubs || []);
 
                 setClubs(clubList);
                 if (clubList.length > 0) {
@@ -46,98 +46,145 @@ export default function CustomerDashboard() {
         fetchClubs();
     }, []);
 
-    // Fetch dashboard data khi chọn club (đã SỬA: đảm bảo đóng ngoặc và gọi trong useEffect)
+    // Fetch dashboard data khi chọn club
     useEffect(() => {
         if (!selectedClub) return;
-
-        // const fetchDashboardData = async () => {
-        //     setLoading(true);
-        //     setError(null);
-        //
-        //     try {
-        //         // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
-        //         // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
-        //
-        //         // MOCK DATA - Xóa khi backend có endpoint thật
-        //         await new Promise(resolve => setTimeout(resolve, 500));
-        //
-        //         setDashboardData({
-        //             clubId: selectedClub,
-        //             clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
-        //             revenueByMonth: [
-        //                 { month: '2024-10', revenue: 15000 },
-        //                 { month: '2024-11', revenue: 18500 },
-        //                 { month: '2024-12', revenue: 22000 }
-        //             ],
-        //             salaryByMonth: [
-        //                 { month: '2024-10', totalSalary: 8000 },
-        //                 { month: '2024-11', totalSalary: 8500 },
-        //                 { month: '2024-12', totalSalary: 9000 }
-        //             ],
-        //             topProducts: [
-        //                 { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
-        //                 { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
-        //                 { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
-        //             ]
-        //         });
-        //
-        //     } catch (err) {
-        //         console.error('Error fetching dashboard:', err);
-        //         setError('Failed to load dashboard data');
-        //     } finally {
-        //         setLoading(false);
-        //     }
-        // };
-
-        const controller = new AbortController();
 
         const fetchDashboardData = async () => {
             setLoading(true);
             setError(null);
 
             try {
-                const response = await fetch(
-                    `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/dashboard`,
-                    {
-                        signal: controller.signal,
-                        headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
-                    }
-                );
+                // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
+                // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
 
-                if (!response.ok) throw new Error('Failed to fetch dashboard');
+                // MOCK DATA - Xóa khi backend có endpoint thật
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                const data = await response.json();
-                setDashboardData(data);
+                setDashboardData({
+                    clubId: selectedClub,
+                    clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
+                    revenueByMonth: [
+                        { month: '2024-10', revenue: 15000 },
+                        { month: '2024-11', revenue: 18500 },
+                        { month: '2024-12', revenue: 22000 }
+                    ],
+                    salaryByMonth: [
+                        { month: '2024-10', totalSalary: 8000 },
+                        { month: '2024-11', totalSalary: 8500 },
+                        { month: '2024-12', totalSalary: 9000 }
+                    ],
+                    topProducts: [
+                        { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
+                        { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
+                        { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
+                    ]
+                });
+
             } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('Error fetching dashboard:', err);
-                    setError('Failed to load dashboard data');
-                }
+                console.error('Error fetching dashboard:', err);
+                setError('Failed to load dashboard data');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchDashboardData();
+    }, [selectedClub, clubs]);
 
-        return () => controller.abort();
-    }, [selectedClub]);
+    // Export handlers
+    const handleExportRevenue = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/revenue`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
 
-    // Tính toán số liệu tổng hợp (có guard để tránh undefined)
-    const revenueByMonth = dashboardData?.revenueByMonth ?? [];
-    const salaryByMonth = dashboardData?.salaryByMonth ?? [];
-    const topProducts = dashboardData?.topProducts ?? [];
+            if (!response.ok) throw new Error('Export failed');
 
-    const summaryStats = dashboardData
-        ? {
-            totalRevenue: revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0),
-            totalSalary: salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
-            netProfit:
-                revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0) -
-                salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
-            topProductProfit: topProducts.reduce((sum, p) => sum + (p.totalProfit || 0), 0),
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `revenue_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Export revenue failed: ' + err.message);
         }
-        : null;
+    };
+
+    const handleExportSalaries = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/salaries`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `salaries_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Export salaries failed: ' + err.message);
+        }
+    };
+
+    const handleExportTopProducts = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/top-products?topN=5`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `top_products_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Export top products failed: ' + err.message);
+        }
+    };
+
+    // ✅ MỚI: Export chi tiết lương nhân viên
+    const handleExportEmployeeSalaries = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/employee-salaries`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `employee_salaries_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+
+            console.log('✅ Employee salaries exported successfully');
+        } catch (err) {
+            console.error('❌ Export employee salaries failed:', err);
+            alert('Export employee salaries failed: ' + err.message);
+        }
+    };
+
+    // Calculate summary stats
+    const summaryStats = dashboardData ? {
+        totalRevenue: dashboardData.revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0),
+        totalSalary: dashboardData.salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+        netProfit: dashboardData.revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0) -
+            dashboardData.salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+        topProductProfit: dashboardData.topProducts.reduce((sum, p) => sum + (p.totalProfit || 0), 0)
+    } : null;
 
     if (error && clubs.length === 0) {
         return (
@@ -159,6 +206,7 @@ export default function CustomerDashboard() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
+
                 {/* Header */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">Club Dashboard</h1>
@@ -173,7 +221,7 @@ export default function CustomerDashboard() {
                         onChange={(e) => setSelectedClub(parseInt(e.target.value))}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                        {clubs.map((club) => (
+                        {clubs.map(club => (
                             <option key={club.id || club.clubId} value={club.id || club.clubId}>
                                 {club.clubName || `Club ${club.id || club.clubId}`}
                             </option>
@@ -234,24 +282,7 @@ export default function CustomerDashboard() {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Revenue</h2>
                                 <button
-                                    onClick={() => {
-                                        const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/revenue`;
-                                        fetch(url, {
-                                            headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
-                                        })
-                                            .then((res) => {
-                                                if (!res.ok) throw new Error('Export failed');
-                                                return res.blob();
-                                            })
-                                            .then((blob) => {
-                                                const link = document.createElement('a');
-                                                link.href = URL.createObjectURL(blob);
-                                                link.download = `revenue_club_${selectedClub}.xlsx`;
-                                                link.click();
-                                                URL.revokeObjectURL(link.href);
-                                            })
-                                            .catch((err) => alert('Export revenue failed: ' + err.message));
-                                    }}
+                                    onClick={handleExportRevenue}
                                     className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
@@ -259,7 +290,7 @@ export default function CustomerDashboard() {
                                 </button>
                             </div>
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={revenueByMonth}>
+                                <LineChart data={dashboardData.revenueByMonth}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="month" />
                                     <YAxis />
@@ -275,24 +306,7 @@ export default function CustomerDashboard() {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Salaries</h2>
                                 <button
-                                    onClick={() => {
-                                        const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/salaries`;
-                                        fetch(url, {
-                                            headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
-                                        })
-                                            .then((res) => {
-                                                if (!res.ok) throw new Error('Export failed');
-                                                return res.blob();
-                                            })
-                                            .then((blob) => {
-                                                const link = document.createElement('a');
-                                                link.href = URL.createObjectURL(blob);
-                                                link.download = `salaries_club_${selectedClub}.xlsx`;
-                                                link.click();
-                                                URL.revokeObjectURL(link.href);
-                                            })
-                                            .catch((err) => alert('Export salaries failed: ' + err.message));
-                                    }}
+                                    onClick={handleExportSalaries}
                                     className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
@@ -300,7 +314,7 @@ export default function CustomerDashboard() {
                                 </button>
                             </div>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={salaryByMonth}>
+                                <BarChart data={dashboardData.salaryByMonth}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="month" />
                                     <YAxis />
@@ -316,24 +330,7 @@ export default function CustomerDashboard() {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Top Products by Profit</h2>
                                 <button
-                                    onClick={() => {
-                                        const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/top-products?topN=5`;
-                                        fetch(url, {
-                                            headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
-                                        })
-                                            .then((res) => {
-                                                if (!res.ok) throw new Error('Export failed');
-                                                return res.blob();
-                                            })
-                                            .then((blob) => {
-                                                const link = document.createElement('a');
-                                                link.href = URL.createObjectURL(blob);
-                                                link.download = `top_products_club_${selectedClub}.xlsx`;
-                                                link.click();
-                                                URL.revokeObjectURL(link.href);
-                                            })
-                                            .catch((err) => alert('Export top products failed: ' + err.message));
-                                    }}
+                                    onClick={handleExportTopProducts}
                                     className="flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
@@ -352,7 +349,7 @@ export default function CustomerDashboard() {
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {topProducts.map((product) => (
+                                    {dashboardData.topProducts.map((product) => (
                                         <tr key={product.productId} className="border-b hover:bg-gray-50">
                                             <td className="py-3 text-sm text-gray-800">{product.productName}</td>
                                             <td className="py-3 text-sm text-gray-600">{product.category}</td>

@@ -111,4 +111,49 @@ public class DashboardService {
         dto.setTopProducts(topProducts);
         return dto;
     }
+
+    public List<EmployeeSalaryDetailDTO> getEmployeeSalaryDetails(
+            Integer customerId,
+            Integer clubId,
+            LocalDate from,
+            LocalDate to
+    ) {
+        if (to == null) to = LocalDate.now();
+        if (from == null) from = to.withDayOfMonth(1);
+
+        String fromStr = toSqlDateStart(from);
+        String toStr = toSqlDateEnd(to);
+
+        List<Object[]> rawData = repo.getEmployeeSalaryDetailsRaw(clubId, customerId, fromStr, toStr);
+        List<EmployeeSalaryDetailDTO> result = new ArrayList<>();
+
+        if (rawData != null) {
+            for (Object[] row : rawData) {
+                try {
+                    Integer employeeId = row[0] != null ? ((Number) row[0]).intValue() : null;
+                    String employeeName = row[1] != null ? row[1].toString() : "";
+                    String employeeType = row[2] != null ? row[2].toString() : "";
+                    BigDecimal baseSalary = row[3] != null ? new BigDecimal(row[3].toString()) : BigDecimal.ZERO;
+                    Double totalHours = row[4] != null ? ((Number) row[4]).doubleValue() : 0.0;
+                    Long totalShifts = row[5] != null ? ((Number) row[5]).longValue() : 0L;
+                    BigDecimal calculatedSalary = row[6] != null ? new BigDecimal(row[6].toString()) : BigDecimal.ZERO;
+
+                    result.add(new EmployeeSalaryDetailDTO(
+                            employeeId,
+                            employeeName,
+                            employeeType,
+                            baseSalary,
+                            totalHours,
+                            totalShifts,
+                            calculatedSalary
+                    ));
+                } catch (Exception e) {
+                    // Log error và bỏ qua row này
+                    System.err.println("Error parsing employee salary row: " + e.getMessage());
+                }
+            }
+        }
+
+        return result;
+    }
 }
