@@ -7,18 +7,18 @@ export class ApiClient {
 
   constructor() {
     this.#baseURL = API_CONFIG.BASE_URL;
-    this.#token = localStorage.getItem('accessToken');
+    this.#token = sessionStorage.getItem('accessToken');
   }
 
   setToken(token) {
     this.#token = token;
-    localStorage.setItem('accessToken', token);
+    sessionStorage.setItem('accessToken', token);
   }
 
   removeToken() {
     this.#token = null;
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
   }
 
   getHeaders() {
@@ -76,7 +76,7 @@ export class ApiClient {
 
   async #refreshToken() {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = sessionStorage.getItem('refreshToken');
       if (!refreshToken) return false;
 
       const response = await fetch(`${this.#baseURL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
@@ -88,7 +88,7 @@ export class ApiClient {
       if (response.ok) {
         const data = await response.json();
         this.setToken(data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
+        sessionStorage.setItem('refreshToken', data.refreshToken);
         return true;
       }
     } catch (error) {

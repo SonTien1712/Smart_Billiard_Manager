@@ -1,9 +1,6 @@
 import { apiClient } from './api';
 import { API_CONFIG } from '../config/api';
 
-/**
- * AdminService - plain JavaScript version (no TypeScript types)
- */
 export class AdminService {
   // Customer Management
   async getCustomers({ page = 0, size = 10, sort = 'dateJoined,desc' } = {}) {

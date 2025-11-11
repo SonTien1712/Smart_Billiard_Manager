@@ -71,6 +71,20 @@ export class StaffService {
     return this.normalize(response);
   }
 
+  // Export bill PDF
+  async downloadBillPdf(id) {
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${id}/pdf`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: apiClient.getHeaders(),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(text || `Failed to download PDF for bill ${id}`);
+    }
+    return await response.blob();
+  }
+
   // Bill Items Management
   async addBillItem(billId, itemData) {
     const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.STAFF.BILLS}/${billId}/items${itemData?.employeeId ? `?employeeId=${itemData.employeeId}` : ''}`, itemData);
@@ -124,6 +138,11 @@ export class StaffService {
 
   async getPayrollSummary(params) {
     const response = await apiClient.get('/staff/payroll/summary', params);
+    return this.normalize(response);
+  }
+
+  async getPayrollHistory(params) {
+    const response = await apiClient.get('/staff/payroll/history', params);
     return this.normalize(response);
   }
 

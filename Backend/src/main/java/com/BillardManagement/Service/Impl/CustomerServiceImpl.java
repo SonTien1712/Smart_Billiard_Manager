@@ -69,6 +69,7 @@ public class CustomerServiceImpl implements CustomerService {
         c.setEmail(email);
         c.setPhoneNumber(phone);
         c.setAddress(address);
+        c.setDateJoined(Instant.now());
         c.setPassword(rawPassword);
         c.setIsActive(true);
 
