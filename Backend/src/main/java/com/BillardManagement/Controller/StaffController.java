@@ -394,6 +394,132 @@ public class StaffController {
         return ResponseEntity.ok(dto);
     }
 
+    // Nghiệp vụ: Lịch sử lương theo tháng từ lúc bắt đầu đến hiện tại
+    // - Nếu truyền accountId: suy ra employeeId từ Employeeaccount và dùng DateHired làm mốc bắt đầu
+    // - Nếu không: fallback lấy tháng sớm nhất có ca làm
+    // - Trả về danh sách PayrollSummaryDTO theo từng tháng (startDate: đầu tháng, endDate: cuối tháng)
+    @GetMapping("/payroll/history")
+    public ResponseEntity<java.util.List<PayrollSummaryDTO>> payrollHistory(
+            @RequestParam(value = "employeeId", required = false) Integer employeeId,
+            @RequestParam(value = "accountId", required = false) Integer accountId,
+            @RequestParam(value = "startDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        Integer resolvedEmployeeId = employeeId;
+        java.math.BigDecimal employeeHourlyRate = null;
+        String employmentType = "";
+        java.time.Instant dateHired = null;
+
+        if (resolvedEmployeeId == null && accountId != null) {
+            Optional<Employeeaccount> acc = employeeAccountRepo.findById(accountId);
+            if (acc.isPresent() && acc.get().getEmployeeID() != null) {
+                resolvedEmployeeId = acc.get().getEmployeeID().getId();
+                if (acc.get().getEmployeeID().getHourlyRate() != null) {
+                    employeeHourlyRate = acc.get().getEmployeeID().getHourlyRate();
+                }
+                employmentType = acc.get().getEmployeeID().getEmployeeType();
+                dateHired = acc.get().getEmployeeID().getDateHired();
+            }
+        }
+
+        if (resolvedEmployeeId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // Determine default range: from hired month (if available) to current month
+        LocalDate today = LocalDate.now();
+        if (endDate == null) {
+            endDate = today.withDayOfMonth(today.lengthOfMonth());
+        }
+        if (startDate == null) {
+            LocalDate hiredStart = null;
+            if (dateHired != null) {
+                hiredStart = LocalDate.ofInstant(dateHired, ZoneId.systemDefault())
+                        .withDayOfMonth(1);
+            }
+
+            // Fallback: earliest shift date
+            if (hiredStart == null) {
+                List<Employeeshift> all = employeeshiftRepo.findByEmployeeID_Id(resolvedEmployeeId);
+                java.util.Optional<LocalDate> earliest = all.stream()
+                        .map(Employeeshift::getShiftDate)
+                        .filter(java.util.Objects::nonNull)
+                        .min(LocalDate::compareTo);
+                if (earliest.isPresent()) {
+                    hiredStart = earliest.get().withDayOfMonth(1);
+                }
+            }
+
+            // Final fallback: current month
+            if (hiredStart == null) {
+                hiredStart = today.withDayOfMonth(1);
+            }
+            startDate = hiredStart;
+        }
+
+        // Normalize to month bounds
+        LocalDate cursor = startDate.withDayOfMonth(1);
+        LocalDate lastMonthStart = endDate.withDayOfMonth(1);
+
+        java.util.List<PayrollSummaryDTO> results = new java.util.ArrayList<>();
+
+        while (!cursor.isAfter(lastMonthStart)) {
+            LocalDate monthStart = cursor;
+            LocalDate monthEnd = cursor.withDayOfMonth(cursor.lengthOfMonth());
+
+            List<Employeeshift> shifts = employeeshiftRepo
+                    .findByEmployeeID_IdAndShiftDateBetween(resolvedEmployeeId, monthStart, monthEnd);
+
+            long scheduledShifts = shifts.size();
+            long totalShifts = shifts.stream()
+                    .filter(s -> s.getStatus() != null && !s.getStatus().equalsIgnoreCase("Absent"))
+                    .count();
+            long nightShifts = shifts.stream()
+                    .filter(s -> s.getStatus() != null && !s.getStatus().equalsIgnoreCase("Absent"))
+                    .filter(this::isNightShift)
+                    .count();
+
+            BigDecimal totalHours = shifts.stream()
+                    .map(s -> s.getHoursWorked() == null ? BigDecimal.ZERO : s.getHoursWorked())
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Determine hourly rate for this month
+            BigDecimal monthHourlyRate = employeeHourlyRate;
+            if (monthHourlyRate == null) {
+                monthHourlyRate = java.util.Optional.ofNullable(shifts)
+                        .flatMap(list -> list.stream().findFirst())
+                        .map(s -> s.getEmployeeID() != null ? s.getEmployeeID().getHourlyRate() : null)
+                        .orElse(BigDecimal.ZERO);
+            }
+
+            BigDecimal nightBonus = BigDecimal.valueOf(nightShifts * 20000L);
+            BigDecimal safeHourly = monthHourlyRate == null ? BigDecimal.ZERO : monthHourlyRate;
+            BigDecimal shiftPay = BigDecimal.valueOf(totalShifts)
+                    .multiply(BigDecimal.valueOf(4))
+                    .multiply(safeHourly);
+            BigDecimal totalPay = shiftPay.add(nightBonus == null ? BigDecimal.ZERO : nightBonus);
+
+            PayrollSummaryDTO dto = new PayrollSummaryDTO();
+            dto.setStartDate(monthStart);
+            dto.setEndDate(monthEnd);
+            dto.setTotalHours(totalHours);
+            dto.setHourlyRate(monthHourlyRate);
+            dto.setTotalPay(totalPay);
+            dto.setTotalShifts((int) totalShifts);
+            dto.setScheduledShifts((int) scheduledShifts);
+            dto.setNightShifts((int) nightShifts);
+            dto.setEmploymentType(employmentType);
+            dto.setNightBonus(nightBonus);
+            results.add(dto);
+
+            cursor = cursor.plusMonths(1);
+        }
+
+        return ResponseEntity.ok(results);
+    }
+
     // Chuyển đổi thực thể Employeeshift sang ShiftDTO cho frontend
     // - Suy ra loại ca (Sáng/Chiều/Đêm) từ slotCode nếu có
     // - Suy ra trạng thái nếu DB chưa set: Scheduled/Present/Completed theo actual times

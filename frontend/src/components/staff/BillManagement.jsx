@@ -166,6 +166,24 @@ export function BillManagement({ onPageChange }) {
     }
   };
 
+  const handleExportPdf = async (billId) => {
+    try {
+      if (!billId) return;
+      const blob = await staffService.downloadBillPdf(billId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bill_${billId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export PDF failed', e);
+      alert(`Xuất PDF thất bại. ${e?.message || ''}`);
+    }
+  };
+
   const handleProcessPayment = async () => {
     try {
       if (!activeBillId) return;
@@ -425,6 +443,9 @@ export function BillManagement({ onPageChange }) {
                 <DialogTitle>Bill #{billDetail?.id}</DialogTitle>
                 <DialogDescription>{billDetail?.tableName || ''} — {(billDetail?.status || '').toLowerCase()}</DialogDescription>
               </DialogHeader>
+              <div className="flex justify-end mb-2">
+                <Button variant="outline" onClick={() => handleExportPdf(billDetail?.id)}>Export PDF</Button>
+              </div>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>Start: {billDetail?.startedAt ? new Date(billDetail.startedAt).toLocaleString() : '—'}</div>
