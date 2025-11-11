@@ -139,12 +139,24 @@
 
   html {
     scroll-behavior: smooth;
+    /* Compatibility: ensure both standard and prefixed text size adjust */
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Scoped theme overrides for the Landing page */
+.landing-theme {
+  --foreground: #F3F4F6; /* ensure all text-foreground is white */
+  --muted-foreground: rgba(243, 244, 246, 0.75);
+  --border: rgba(255, 255, 255, 0.12);
+}
+
+/* Decorative utilities used by Landing - keep single source (linear-grid + variants below) */
 
 /**
  * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
@@ -203,6 +215,15 @@
 
 html {
   font-size: var(--font-size);
+}
+
+/* Progressive enhancement: only apply if the browser supports it */
+@supports (text-wrap: balance) {
+  h1, h2, h3 { text-wrap: balance; }
+}
+
+@supports (field-sizing: content) {
+  input, textarea { field-sizing: content; }
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap&subset=vietnamese');

@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { Toaster } from '../components/ui/sonner.jsx';
-import LoadingScreen from '../components/prelogin/LoadingScreen.jsx';
+ 
 
 
 
@@ -169,7 +169,7 @@ const routes = [
   // Default route - redirect to dashboard if logged in, otherwise signin
   {
     path: '/',
-    redirect: (user) => user ? '/dashboard' : '/signin',
+    redirect: (user) => user ? '/dashboard' : '/landing',
   },
 ];
 
@@ -228,13 +228,7 @@ const isSubscriptionActive = (expiry) => {
 };
 
 
-function LoadingSpinner() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>
-  );
-}
+ 
 
 function ErrorBoundary({ children }) {
   const [hasError, setHasError] = React.useState(false);
@@ -281,7 +275,11 @@ function ProtectedRoute({ route, children }) {
   const location = useLocation();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // If route requires authentication but user is not logged in
@@ -297,7 +295,11 @@ function ProtectedRoute({ route, children }) {
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    }>
       {children}
     </Suspense>
   );
@@ -414,7 +416,11 @@ function AppRouter() {
   return (
     <ErrorBoundary>
       <Router>
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }>
           <RouteRenderer />
         </Suspense>
         <Toaster />

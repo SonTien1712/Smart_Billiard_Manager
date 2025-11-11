@@ -15,6 +15,8 @@ import com.BillardManagement.Repository.PromotionRepository;
 import com.BillardManagement.Entity.Promotion;
 import com.BillardManagement.Entity.PromotionType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +31,13 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/staff")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000")
+/**
+ * Controller xử lý nghiệp vụ thu ngân (Staff Billing).
+ * - Quản lý bàn (mở bàn), bill đang chạy, item, khuyến mãi và checkout.
+ * - Trạng thái bill: Unpaid (đang chạy), Pending (khóa chờ thanh toán), Paid (đã thanh toán), Cancelled (đã hủy).
+ * - Quy tắc làm tròn giờ: mỗi 6 phút (0.1 giờ). Dư ≥ 3 phút làm tròn lên, ngược lại làm tròn xuống.
+ * - Concurrency: sử dụng khóa bi quan ở một số truy vấn để tránh mở bàn trùng/ghi đè khi nhiều yêu cầu đồng thời.
+ */
 public class StaffBillingController {
 
     private final BilliardTableRepo tableRepo;
@@ -36,12 +45,18 @@ public class StaffBillingController {
     private final ProductRepo productRepo;
     private final com.BillardManagement.Repository.BilldetailRepo billdetailRepo;
     private final PromotionRepository promotionRepository;
+    private final com.BillardManagement.Service.InvoicePdfService invoicePdfService;
 
     /**
      * Tính lại giảm giá xem trước cho bill nếu đang có promotion.
      * - Tổng sản phẩm: ưu tiên tính lại từ Billdetail (tránh số liệu cũ)
      * - Giờ bàn: nếu bill ở trạng thái Pending dùng TotalHours đã khóa, ngược lại tính từ StartTime → hiện tại
      * - Lưu DiscountAmount và FinalAmount (trước thuế)
+     * Tham số:
+     * - b: Bill đang xử lý (nếu chưa có PromotionID thì hàm thoát ngay không tính giảm).
+     * Ghi chú:
+     * - Làm tròn thời gian theo bước 6 phút (0.1 giờ) giống logic khi checkout.
+     * - Không thay đổi StartTime/EndTime; chỉ cập nhật các trường preview (DiscountAmount, FinalAmount).
      */
     private void recomputePromotionPreviewIfAny(Bill b) {
         if (b == null || b.getPromotionID() == null) return;
@@ -50,7 +65,7 @@ public class StaffBillingController {
         if (productTotal == null) productTotal = b.getTotalProductCost() == null ? java.math.BigDecimal.ZERO : b.getTotalProductCost();
         java.math.BigDecimal tableCost = java.math.BigDecimal.ZERO;
         if (b.getTableID() != null && b.getTableID().getHourlyRate() != null) {
-            // If bill is Pending, keep locked hours; else compute from start->now
+            // Nếu bill ở trạng thái Pending thì dùng giờ đã khóa; ngược lại tính từ StartTime đến hiện tại
             java.math.BigDecimal hours;
             if (b.getBillStatus() != null && b.getBillStatus().equalsIgnoreCase("Pending") && b.getTotalHours() != null) {
                 hours = b.getTotalHours();
@@ -83,11 +98,20 @@ public class StaffBillingController {
 
     
 
-    // Finalize (freeze totals) without completing payment
+    // Khóa bill (đóng băng tổng) mà không thanh toán
     /**
-     * Khóa bill (Pending): chốt giờ, tổng bàn, tổng sản phẩm và tính giảm giá xem trước.
-     * Không thanh toán, không trừ lượt promotion.
-     * Body có thể truyền taxPercent để tính trước FinalAmount gồm thuế.
+     * Khóa bill (đưa về trạng thái Pending):
+     * - Chốt giờ (TotalHours) theo thời điểm hiện tại và làm tròn 6 phút, tính và khóa TotalTableCost.
+     * - Tính lại và khóa TotalProductCost từ Billdetail.
+     * - Tính giảm giá xem trước (nếu đã áp promotion) và cập nhật FinalAmount bản xem trước.
+     * - Không thanh toán, không trừ lượt promotion.
+     * Tham số:
+     * - billId (path): mã bill đang chạy cần khóa.
+     * - payload (body, tùy chọn): { taxPercent?: number } để xem trước tổng sau thuế.
+     * Trả về: BillDetailDTO chứa các tổng đã khóa để UI hiển thị.
+     * Mã lỗi thường gặp:
+     * - 404 nếu không tìm thấy bill.
+     * - 409 nếu bill đã có EndTime (đã kết thúc) nên không thể khóa.
      */
     @PatchMapping("/bills/{billId}/finalize")
     @org.springframework.transaction.annotation.Transactional
@@ -95,12 +119,12 @@ public class StaffBillingController {
             @PathVariable("billId") Integer billId,
             @RequestBody(required = false) java.util.Map<String, Object> payload
     ) {
-        var opt = billRepo.findById(billId); // locked
+        var opt = billRepo.findById(billId); // đã khóa
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         Bill b = opt.get();
-        if (b.getEndTime() != null) return ResponseEntity.status(409).build(); // already closed
+        if (b.getEndTime() != null) return ResponseEntity.status(409).build(); // đã kết thúc
 
-        // Compute hours using current time and lock them into TotalHours
+        // Tính số giờ theo thời điểm hiện tại và lưu vào TotalHours (khóa)
         java.math.BigDecimal hours = java.math.BigDecimal.ZERO;
         if (b.getStartTime() != null) {
             long minutes = java.time.Duration.between(b.getStartTime(), java.time.Instant.now()).toMinutes();
@@ -174,7 +198,13 @@ public class StaffBillingController {
     }
 
     /**
-     * Mở khóa bill (Unfinalize): chuyển từ Pending về Unpaid để tiếp tục thêm món/tính giờ.
+     * Mở khóa bill (Unfinalize):
+     * - Chuyển trạng thái từ Pending về Unpaid để tiếp tục tính giờ và thêm/sửa/xóa món.
+     * - Không thay đổi các tổng đã khóa trước đó; UI có thể tính live-time khi bill ở Unpaid.
+     * Trả về: BillDetailDTO hiện trạng sau khi mở khóa.
+     * Lỗi:
+     * - 404 nếu không tìm thấy bill.
+     * - 409 nếu bill đã có EndTime (đã kết thúc) nên không thể unfinalize.
      */
     @PatchMapping("/bills/{billId}/unfinalize")
     @org.springframework.transaction.annotation.Transactional
@@ -217,7 +247,12 @@ public class StaffBillingController {
     }
 
     /**
-     * Danh sách bàn theo Club/Customer hoặc tất cả. Kèm trạng thái occupied theo bill đang chạy.
+     * Lấy danh sách bàn cho staff theo club/customer hoặc tất cả.
+     * - Gắn trạng thái occupied nếu bàn đang có bill active (EndTime = NULL).
+     * - Chuẩn hóa status: nếu TableStatus là "Available" và có bill active → trả về "occupied", ngược lại "available".
+     * Tham số:
+     * - clubId | customerId (query, tùy chọn): phạm vi lọc bàn.
+     * - status (query, tùy chọn): lọc theo trạng thái đã chuẩn hóa (available/occupied/... ).
      */
     @GetMapping("/tables")
     public ResponseEntity<List<TableDTO>> listTables(
@@ -271,7 +306,12 @@ public class StaffBillingController {
 
     // Open a table: create an active bill if none exists (race-safe)
     /**
-     * Mở bàn: tạo bill Unpaid mới nếu chưa có bill đang chạy cho bàn này.
+     * Mở bàn: tạo bill Unpaid mới nếu bàn chưa có bill active.
+     * Concurrency:
+     * - Khóa bản ghi bàn và truy vấn bill active theo bàn ở chế độ khóa để tránh mở trùng.
+     * Lỗi:
+     * - 409 nếu bàn đang có bill active.
+     * Trả về: BillSummaryDTO của bill vừa mở.
      */
     @PostMapping("/tables/{tableId}/open")
     @org.springframework.transaction.annotation.Transactional
@@ -318,7 +358,9 @@ public class StaffBillingController {
     }
 
     /**
-     * Danh sách sản phẩm theo Club/Customer (chỉ sản phẩm đang active).
+     * Danh sách sản phẩm cho staff để thêm vào bill.
+     * - Chỉ lấy các sản phẩm đang active.
+     * - Ưu tiên lọc theo clubId, sau đó theo customerId; nếu không truyền thì lấy tất cả.
      */
     @GetMapping("/products")
     public ResponseEntity<List<ProductDTO>> listProducts(
@@ -337,7 +379,10 @@ public class StaffBillingController {
     }
 
     /**
-     * Danh sách bill gần đây với các tiêu chí lọc (club/customer/status/employee).
+     * Danh sách bill gần đây theo các tiêu chí lọc.
+     * - Nếu lọc status = Paid thì sắp xếp theo EndTime desc cho "đã thanh toán"; ngược lại theo CreatedDate desc.
+     * - Có thể lọc theo clubId/customerId/employeeId.
+     * - Cắt danh sách theo limit (mặc định 5) sau khi lọc.
      */
     @GetMapping("/bills")
     public ResponseEntity<List<BillSummaryDTO>> listRecentBills(
@@ -395,7 +440,9 @@ public class StaffBillingController {
 
     // Get a full bill with items
     /**
-     * Chi tiết bill gồm items và các tổng đang lưu trên bill (để hiển thị).
+     * Lấy chi tiết bill: gồm danh sách item và các tổng hiện có trên bill.
+     * - Không fetch-join bàn để tránh issues khác DB.
+     * - Dùng findWithProductByBill để lấy item kèm thông tin sản phẩm hiển thị.
      */
     @GetMapping("/bills/{billId}")
     public ResponseEntity<BillDetailDTO> getBillById(@PathVariable("billId") Integer billId) {
@@ -431,7 +478,12 @@ public class StaffBillingController {
 
     // --- Bill items draft management ---
     /**
-     * Thêm item vào bill đang chạy. Lưu Billdetail, cập nhật tổng sản phẩm và giảm giá xem trước nếu có promotion.
+     * Thêm item vào bill đang chạy.
+     * - Nếu trùng sản phẩm thì cộng dồn số lượng (qty có thể âm để trừ bớt; nếu <=0 sẽ xóa dòng).
+     * - Cập nhật snapshot TotalProductCost và tính lại giảm giá xem trước nếu có promotion.
+     * Ràng buộc:
+     * - Chặn khi bill đang Pending (đã khóa) hoặc đã có EndTime.
+     * - Nếu có employeeId, chỉ cho phép nhân viên chủ bill thao tác.
      */
     @PostMapping("/bills/{billId}/items")
     @org.springframework.transaction.annotation.Transactional
@@ -507,7 +559,10 @@ public class StaffBillingController {
     }
 
     /**
-     * Cập nhật số lượng item trong bill. Nếu qty=0 sẽ xóa item.
+     * Cập nhật số lượng item trong bill (qty).
+     * - Nếu qty <= 0: xóa dòng item.
+     * - Sau khi cập nhật: tính lại TotalProductCost và giảm giá xem trước.
+     * Ràng buộc: tương tự addBillItem (không cho khi Pending/EndTime, kiểm tra quyền employee).
      */
     @PutMapping("/bills/{billId}/items/{itemId}")
     @org.springframework.transaction.annotation.Transactional
@@ -565,7 +620,9 @@ public class StaffBillingController {
     }
 
     /**
-     * Xóa một item khỏi bill. Cập nhật lại tổng sản phẩm và giảm giá xem trước nếu có.
+     * Xóa một item khỏi bill.
+     * - Sau khi xóa: cập nhật TotalProductCost và tính lại giảm giá xem trước nếu có.
+     * Ràng buộc: tương tự addBillItem (không cho khi Pending/EndTime, kiểm tra quyền employee).
      */
     @DeleteMapping("/bills/{billId}/items/{itemId}")
     @org.springframework.transaction.annotation.Transactional
@@ -597,6 +654,7 @@ public class StaffBillingController {
 
     /**
      * Tính lại tổng tiền sản phẩm của bill từ các Billdetail.
+     * - Dùng khi cần snapshot TotalProductCost để tránh sai lệch do dữ liệu cũ.
      */
     private java.math.BigDecimal recalcProductTotal(Integer billId) {
         return billdetailRepo.findByBillID_Id(billId).stream()
@@ -606,8 +664,12 @@ public class StaffBillingController {
 
     // Apply a promotion code to an active bill
     /**
-     * Áp dụng mã khuyến mãi cho bill: gắn PromotionID và tính giảm giá xem trước ngay.
-     * Không trừ lượt dùng cho tới khi thanh toán thành công.
+     * Áp dụng mã khuyến mãi cho bill đang chạy.
+     * - Kiểm tra mã có hiệu lực theo club, và (nếu có) ràng buộc theo customer.
+     * - Gắn PromotionID vào bill, tính giảm giá xem trước (DiscountAmount) và FinalAmount (chưa gồm thuế).
+     * - Chưa trừ lượt dùng; chỉ tăng UsedCount sau khi thanh toán thành công.
+     * Tham số: billId (path), code (query).
+     * Trả về: thông tin promotion + discount + finalPreview để UI hiển thị.
      */
     @PostMapping("/bills/{billId}/apply-promotion")
     @org.springframework.transaction.annotation.Transactional
@@ -677,8 +739,14 @@ public class StaffBillingController {
 
     // Complete/checkout bill: close active session and compute costs
     /**
-     * Hoàn tất/Thanh toán bill: chốt thời gian, tính toán tổng, áp promotion, tính thuế và set trạng thái Paid.
-     * Sau khi lưu thành công sẽ tăng UsedCount của promotion.
+     * Hoàn tất/Thanh toán bill (checkout):
+     * - Chốt EndTime, tính TotalHours (làm tròn 6 phút), TotalTableCost.
+     * - Chấp nhận productTotal/taxPercent từ client (tùy chọn). Nếu gửi danh sách items thì thay thế toàn bộ Billdetail và tính lại productTotal.
+     * - Tính Discount từ Promotion nếu có (nếu không, có thể nhận discount thủ công từ payload), rồi tính FinalAmount (cộng thuế nếu truyền taxPercent).
+     * - Set trạng thái Paid và lưu; sau đó tăng UsedCount của promotion nếu có.
+     * Ràng buộc:
+     * - Chỉ nhân viên mở bill (employeeId trùng) mới được phép complete/cancel.
+     * - Nếu bill đã EndTime trước đó, chỉ trả về tóm tắt mà không tính lại.
      */
     @PatchMapping("/bills/{billId}/complete")
     @org.springframework.transaction.annotation.Transactional
@@ -838,7 +906,9 @@ public class StaffBillingController {
     }
 
     /**
-     * Thống kê trong ngày cho dashboard (bill count, doanh thu, ...).
+     * Thống kê trong ngày cho dashboard.
+     * - Khoảng thời gian: từ 00:00 hôm nay đến 00:00 ngày mai theo múi giờ hệ thống.
+     * - Đếm số bill đã hoàn tất (theo EndTime) và tính doanh thu trong ngày.
      */
     @GetMapping("/stats/today")
     public ResponseEntity<DashboardStatsDTO> todayStats(
@@ -872,9 +942,39 @@ public class StaffBillingController {
         return ResponseEntity.ok(dto);
     }
 
+    /**
+     * Xuất hóa đơn ra PDF (download attachment).
+     * - Trả về PDF theo mã bill.
+     */
+    @GetMapping(value = "/bills/{billId}/pdf")
+    public ResponseEntity<?> exportBillPdf(@PathVariable("billId") Integer billId) {
+        try {
+            byte[] pdf = invoicePdfService.renderBillPdf(billId);
+            String filename = "bill_" + billId + ".pdf";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
+        } catch (IllegalArgumentException notFound) {
+            return ResponseEntity.status(404)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(("Bill not found: " + billId).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            Throwable root = e;
+            while (root.getCause() != null) root = root.getCause();
+            String msg = root.getClass().getSimpleName() + (root.getMessage() != null ? (": " + root.getMessage()) : "");
+            return ResponseEntity.status(500)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(("Failed to render PDF: " + msg)
+                            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
+
     // Cancel an active bill (e.g., opened wrong table).
     /**
-     * Hủy bill đang chạy: xóa items, reset tổng và giải phóng bàn.
+     * Hủy bill đang chạy.
+     * - Chỉ cho phép nhân viên chủ bill hủy; không cho hủy nếu bill đã Paid.
+     * - Set trạng thái Cancelled, đặt EndTime (nếu chưa có) và reset các tổng về 0.
      */
     @PatchMapping("/bills/{billId}/cancel")
     @org.springframework.transaction.annotation.Transactional

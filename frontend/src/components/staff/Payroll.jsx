@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Calendar } from 'lucide-react';
 import { staffService } from '../../services/staffService';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { formatVND } from '../../utils/currency';
 import { useAuth } from '../AuthProvider';
 
@@ -12,6 +13,8 @@ export function Payroll() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const startDate = useMemo(() => {
     const d = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
     return d.toISOString().split('T')[0];
@@ -24,7 +27,11 @@ export function Payroll() {
   const load = async () => {
     setLoading(true);
     try {
-      const result = await staffService.getPayrollSummary({ accountId: user?.accountId, startDate, endDate });
+      if (!user?.accountId && !user?.employeeId) {
+        setSummary(null);
+        return;
+      }
+      const result = await staffService.getPayrollSummary({ accountId: user?.accountId, employeeId: user?.employeeId, startDate, endDate });
       setSummary(result);
     } catch (e) {
       console.error('Failed to load payroll summary', e);
@@ -33,7 +40,25 @@ export function Payroll() {
     }
   };
 
-  useEffect(() => { load(); }, [monthOffset]);
+  useEffect(() => { load(); }, [monthOffset, user?.accountId, user?.employeeId]);
+
+  const loadHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      if (!user?.accountId && !user?.employeeId) {
+        setHistory([]);
+        return;
+      }
+      const result = await staffService.getPayrollHistory({ accountId: user?.accountId, employeeId: user?.employeeId });
+      setHistory(Array.isArray(result) ? result : []);
+    } catch (e) {
+      console.error('Failed to load payroll history', e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => { loadHistory(); }, [user?.accountId, user?.employeeId]);
 
   const monthTitle = useMemo(() => {
     const d = new Date(startDate);
@@ -107,6 +132,55 @@ export function Payroll() {
               </Card>
             </div>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="card-elevated">
+        <CardHeader>
+          <CardTitle>Lịch sử lương</CardTitle>
+          <CardDescription>Thống kê theo tháng từ lúc bắt đầu</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingHistory ? (
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Total Hours</TableHead>
+                  <TableHead>Total Shifts</TableHead>
+                  <TableHead>Night Shifts</TableHead>
+                  <TableHead>Hourly Rate</TableHead>
+                  <TableHead>Night Bonus</TableHead>
+                  <TableHead>Total Pay</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(history || []).map((m, idx) => {
+                  const period = m?.startDate ? new Date(m.startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '-';
+                  return (
+                    <TableRow key={idx}>
+                      <TableCell>{period}</TableCell>
+                      <TableCell>{Number(m?.totalHours ?? 0).toFixed(2)}h</TableCell>
+                      <TableCell>{m?.totalShifts ?? 0}/{m?.scheduledShifts ?? 0}</TableCell>
+                      <TableCell>{m?.nightShifts ?? 0}</TableCell>
+                      <TableCell>{formatVND(m?.hourlyRate ?? 0)}</TableCell>
+                      <TableCell>{formatVND(m?.nightBonus ?? 0)}</TableCell>
+                      <TableCell className="font-medium">{formatVND(m?.totalPay ?? 0)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+                {(!history || history.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                      No data
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -17,19 +18,19 @@ import { motion } from 'motion/react';
 import AnimatedLogo from './AnimatedLogo';
 
 function Landing() {
+  // Hook điều hướng của react-router: dùng để chuyển trang nội bộ
   const navigate = useNavigate();
-  const [navSolid, setNavSolid] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setNavSolid(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+
+  // Hàm trợ giúp điều hướng nhanh theo chuỗi đích hoặc đặc biệt 'login'
   const goTo = (target) => {
     if (target === 'login') return navigate('/signin');
     if (typeof target === 'string') return navigate(target);
   };
+
+  // Trạng thái chọn chu kỳ thanh toán: false = theo tháng, true = theo năm
   const [isAnnual, setIsAnnual] = useState(false);
+
+  // Trạng thái dữ liệu form liên hệ/đăng ký tư vấn ở phần Contact
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -38,6 +39,7 @@ function Landing() {
     message: ''
   });
 
+  // Danh sách tính năng chính hiển thị ở mục "Tính năng"
   const mainFeatures = [
     {
       icon: <TableProperties className="w-12 h-12" />,
@@ -93,6 +95,7 @@ function Landing() {
     }
   ];
 
+  // Các tính năng bổ sung (icon + tiêu đề + mô tả ngắn) hiển thị dạng lưới
   const additionalFeatures = [
     { icon: <Clock />, title: 'Tính giờ tự động', desc: 'Tự động tính thời gian và tiền' },
     { icon: <DollarSign />, title: 'Giá linh hoạt', desc: 'Thiết lập giá theo khung giờ' },
@@ -104,6 +107,7 @@ function Landing() {
     { icon: <Headphones />, title: 'Hỗ trợ 24/7', desc: 'Đội ngũ hỗ trợ luôn sẵn sàng' }
   ];
 
+  // Lợi ích tổng quan (hiển thị ở mục "Tại sao chọn BilliardPro?")
   const benefits = [
     { icon: <Clock />, text: 'Tiết kiệm thời gian quản lý' },
     { icon: <Shield />, text: 'Bảo mật dữ liệu an toàn' },
@@ -111,6 +115,11 @@ function Landing() {
     { icon: <Star />, text: 'Hỗ trợ 24/7' }
   ];
 
+  // Cấu hình các gói giá (Basic/Pro/Enterprise)
+  // - monthlyPrice: giá trả theo tháng
+  // - annualPrice: giá trả theo năm (thường rẻ hơn tổng 12 tháng)
+  // - features: danh sách quyền lợi của gói
+  // - popular: đánh dấu gói nổi bật để nhấn mạnh trong UI
   const plans = [
     {
       name: 'Basic',
@@ -164,6 +173,7 @@ function Landing() {
     }
   ];
 
+  // Định dạng số tiền theo locale Việt Nam (VND)
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -171,6 +181,7 @@ function Landing() {
     }).format(price);
   };
 
+  // Tính khoản tiết kiệm khi chọn gói năm so với trả tháng (áp dụng gói Pro)
   const getSavings = () => {
     const monthlyCost = plans[1].monthlyPrice * 12;
     const annualCost = plans[1].annualPrice;
@@ -179,8 +190,10 @@ function Landing() {
     return { savings, percentage };
   };
 
+  // Giải cấu trúc kết quả tính toán để dùng trong UI bảng giá
   const { savings, percentage } = getSavings();
 
+  // Xử lý submit form liên hệ: demo log + thông báo cảm ơn
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
@@ -188,10 +201,10 @@ function Landing() {
   };
 
   return (
-    <div className="dark min-h-screen billiard-texture relative pt-16">
-      {/* Spotlight effect - đèn chùm bida */}
+    <div className="dark landing-theme min-h-screen billiard-texture relative pt-16">
+      {/* Hiệu ứng ánh sáng/đèn chùm để tạo không khí quán billiard */}
       <div className="fixed inset-0 pointer-events-none z-10">
-        {/* Main spotlight from top center */}
+        {/* Vệt sáng chính từ phía trên trung tâm */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px]"
           style={{
@@ -199,7 +212,7 @@ function Landing() {
             filter: 'blur(40px)'
           }}
         />
-        {/* Vignette effect - darker corners */}
+        {/* Hiệu ứng tối góc (vignette) để tăng độ tập trung nội dung */}
         <div
           className="absolute inset-0"
           style={{
@@ -208,93 +221,59 @@ function Landing() {
         />
       </div>
 
-      {/* Navigation */}
-      <nav className={`fixed top-0 inset-x-0 z-[100] border-b border-border/50 transition-colors ${navSolid ? 'bg-background/80 backdrop-blur-md' : 'bg-background/30 backdrop-blur-sm'}`}>
+      {/* Navigation (theo mẫu: sticky + blur, nền bán trong suốt) */}
+      <nav className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <div className="w-1/3 flex items-center">
-              <motion.div
-                animate={{ y: [0, -3, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <AnimatedLogo size="sm" />
-              </motion.div>
+          <div className="flex justify-between items-center h-16">
+            <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>
+              <AnimatedLogo size="sm" />
+            </motion.div>
+            <div className="hidden md:flex gap-6">
+              <a href="#home" className="text-white hover:text-primary transition-colors">Trang chủ</a>
+              <a href="#features" className="text-white hover:text-primary transition-colors">Tính năng</a>
+              <a href="#pricing" className="text-white hover:text-primary transition-colors">Bảng giá</a>
+              <a href="#pricing" className="text-white hover:text-primary transition-colors">Liên hệ</a>
             </div>
-            <div className="w-1/3 hidden md:flex justify-center gap-8">
-              <a href="#home" className="text-foreground hover:text-primary transition-colors">
-                Trang chủ
-              </a>
-              <a href="#features" className="text-foreground hover:text-primary transition-colors">
-                Tính năng
-              </a>
-              <a href="#pricing" className="text-foreground hover:text-primary transition-colors">
-                Bảng giá
-              </a>
-              <a href="#contact" className="text-foreground hover:text-primary transition-colors">
-                Liên hệ
-              </a>
-            </div>
-            <div className="w-1/3 flex justify-end">
-              <Button
-                onClick={() => goTo('login')}
-                className="rounded-full px-5"
-                style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}
-              >
-                Đăng nhập
-              </Button>
-            </div>
+            <Button onClick={() => goTo('login')} style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }} className="rounded-full px-5">Đăng nhập</Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section id="home" className="relative overflow-hidden scroll-mt-24 min-h-screen flex items-center">
+      {/* Hero Section (theo mẫu: padding dọc, ảnh mờ 20%) */}
+      <section id="home" className="relative overflow-hidden py-32 md:py-44 min-h-[520px] md:min-h-[720px]">
         <div className="absolute inset-0 opacity-20">
           <img
             src="https://images.unsplash.com/photo-1662550402015-82675fdc44aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaWxsaWFyZCUyMHRhYmxlJTIwcG9vbCUyMGhhbGwlMjBtb2Rlcm58ZW58MXx8fHwxNzYxMDM0OTU3fDA&ixlib=rb-4.1.0&q=80&w=1080"
             alt="Pool hall"
-            className="w-full h-full object-cover scale-[1.4]"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 50%' }}
           />
         </div>
-        {/* Dark overlay for better contrast */}
-        <div className="absolute inset-0 bg-black/40" />
-
-        {/* Additional spotlight for hero */}
+        {/* Spotlight nhẹ theo mẫu */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[700px] pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(241, 194, 50, 0.18) 0%, transparent 70%)',
-            filter: 'blur(70px)'
-          }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] w-[900px] h-[900px] rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(241, 194, 50, 0.22) 0%, rgba(241, 194, 50, 0.12) 30%, transparent 60%)',
-            filter: 'blur(80px)'
+            background: 'radial-gradient(ellipse at center, rgba(241, 194, 50, 0.08) 0%, transparent 70%)',
+            filter: 'blur(60px)'
           }}
         />
 
-        <div className="absolute inset-0 z-20 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
+            className="text-center max-w-3xl mx-auto"
           >
-            <div className="text-sm md:text-base tracking-wide mb-3" style={{ color: 'var(--gold-accent)' }}>
-              Quản lý quán Billiard
-              <div className="text-white/90">chuyên nghiệp & hiện đại</div>
-            </div>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl mb-4">
               <span style={{ color: 'var(--gold-accent)' }}>Quản lý quán Billiard</span>
               <br />
-              <span className="text-foreground">chuyên nghiệp & hiện đại</span>
+              <span className="text-white">chuyên nghiệp & hiện đại</span>
             </h1>
-            <p className="text-2xl md:text-3xl italic mb-6" style={{ color: 'var(--gold-accent)' }}>
+            <p className="italic text-lg md:text-2xl mb-4" style={{ color: 'var(--gold-accent)' }}>
               "Quản lý thông minh - Kinh doanh hiệu quả"
             </p>
-            <p className="text-lg md:text-xl text-foreground/85 mb-10">
+            <p className="text-xl text-white mb-8">
               Giải pháp toàn diện cho chủ quán billiard: quản lý bàn chơi, nhân viên, hóa đơn và báo cáo doanh thu
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -307,7 +286,7 @@ function Landing() {
                   size="lg"
                   onClick={() => goTo('login')}
                   style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}
-                  className="gold-glow rounded-full hover:opacity-90"
+                  className="gold-glow"
                 >
                   Dùng thử miễn phí
                 </Button>
@@ -320,7 +299,6 @@ function Landing() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="rounded-full border-white/30 text-white/90 hover:bg-white/10"
                   onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   Xem tính năng
@@ -330,6 +308,7 @@ function Landing() {
           </motion.div>
         </div>
 
+        {/* Đường kẻ gradient vàng mảnh để phân tách các khối nội dung */}
         <motion.div
           className="h-px w-full mt-24"
           style={{ background: 'linear-gradient(90deg, transparent, var(--gold-accent), transparent)' }}
@@ -340,14 +319,14 @@ function Landing() {
         />
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 relative scroll-mt-24" style={{ backgroundColor: 'var(--billiard-green-dark)' }}>
+      {/* Khu vực Lợi ích: tóm tắt nhanh lợi ích nổi bật dành cho chủ quán */}
+      <section className="py-24 md:py-28 relative scroll-mt-32" style={{ backgroundColor: 'var(--billiard-green-dark)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl mb-4 text-foreground">Tại sao chọn BilliardPro?</h2>
+          <div className="text-center mb-20 md:mb-24">
+            <h2 className="text-4xl mb-4 text-white">Tại sao chọn BilliardPro?</h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {benefits.map((benefit, index) => (
               <motion.div
                 key={index}
@@ -359,20 +338,28 @@ function Landing() {
                 
               >
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                  className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
                   style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}
                 >
                   {benefit.icon}
                 </div>
-                <p className="text-foreground">{benefit.text}</p>
+                <p className="text-white text-lg md:text-xl">{benefit.text}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 relative scroll-mt-24">
+      {/* Khu vực Tính năng chính: hiển thị các bloc mô tả chi tiết + ảnh minh họa */}
+      <section id="features" className="py-24 pt-28 relative scroll-mt-32 mt-20 md:mt-28">
+        {/* Ánh sáng vàng nhạt phía sau nội dung để tạo chiều sâu */}
+        <div
+          className="absolute inset-0 pointer-events-none -z-10"
+          style={{
+            background:
+              'radial-gradient(700px at 20% 20%, rgba(241, 194, 50, 0.08), transparent 60%), radial-gradient(700px at 80% 60%, rgba(241, 194, 50, 0.06), transparent 60%)'
+          }}
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <motion.div
@@ -381,16 +368,16 @@ function Landing() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl md:text-5xl mb-4 text-foreground">
+              <h2 className="text-4xl md:text-5xl mb-4 text-white">
                 Tính năng <span style={{ color: 'var(--gold-accent)' }}>toàn diện</span>
               </h2>
-              <p className="text-xl text-foreground/70 max-w-3xl mx-auto">
+              <p className="text-xl text-white max-w-3xl mx-auto">
                 Mọi công cụ bạn cần để quản lý câu lạc bộ billiard chuyên nghiệp và hiệu quả
               </p>
             </motion.div>
           </div>
 
-          <div className="space-y-32 max-w-6xl mx-auto">
+          <div className="space-y-36 md:space-y-44">
             {mainFeatures.map((feature, index) => (
               <motion.div
                 key={index}
@@ -398,74 +385,145 @@ function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className={`grid md:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'md:flex-row-reverse' : ''}`}
+                className="grid md:grid-cols-2 gap-12 md:gap-16 items-center"
               >
-                <div className={index % 2 === 1 ? 'md:order-2' : ''}>
-                  <div
-                    className="w-20 h-20 rounded-xl flex items-center justify-center mb-6"
-                    style={{ backgroundColor: 'var(--billiard-green)', color: 'var(--gold-accent)' }}
-                  >
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-3xl mb-4 text-foreground">{feature.title}</h3>
-                  <p className="text-foreground/70 mb-6 text-lg">{feature.description}</p>
-                  <ul className="space-y-3">
-                    {feature.details.map((detail, i) => (
-                      <motion.li
-                        key={i}
-                        className="flex items-start gap-3"
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: i * 0.1 }}
-                        viewport={{ once: true }}
+                {index % 2 === 0 ? (
+                  <>
+                    {/* Text first on even rows */}
+                    <div>
+                      <div
+                        className="w-20 h-20 rounded-xl flex items-center justify-center mb-6"
+                        style={{ backgroundColor: 'var(--billiard-green)', color: 'var(--gold-accent)' }}
                       >
-                        <motion.div
-                          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                          style={{ backgroundColor: 'var(--gold-accent)' }}
-                          whileHover={{ scale: 1.2, rotate: 360 }}
-                          transition={{ type: 'spring', stiffness: 300 }}
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            style={{ color: '#0A0E14' }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </motion.div>
-                        <span className="text-foreground/80">{detail}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                </div>
-                <div className={index % 2 === 1 ? 'md:order-1' : ''}>
-                  <motion.div whileHover={{ scale: 1.02, y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                    <Card className="smooth-shadow overflow-hidden rounded-2xl">
-                      <div className="aspect-video relative overflow-hidden">
-                        <motion.img
-                          src={feature.image}
-                          alt={feature.title}
-                          className="w-full h-full object-cover"
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ duration: 0.6 }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                        {/* Spotlight overlay on hover */}
-                        <motion.div
-                          className="absolute inset-0"
-                          initial={{ opacity: 0 }}
-                          whileHover={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                          style={{
-                            background: 'radial-gradient(circle at center, rgba(241, 194, 50, 0.15) 0%, transparent 60%)'
-                          }}
-                        />
+                        {feature.icon}
                       </div>
-                    </Card>
-                  </motion.div>
-                </div>
+                      <h3 className="text-4xl md:text-5xl mb-4 text-white leading-tight">{feature.title}</h3>
+                      <p className="text-white mb-6 text-lg">{feature.description}</p>
+                      <ul className="space-y-3">
+                        {feature.details.map((detail, i) => (
+                          <motion.li
+                            key={i}
+                            className="flex items-start gap-3"
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: i * 0.1 }}
+                            viewport={{ once: true }}
+                          >
+                            <motion.div
+                              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                              style={{ backgroundColor: 'var(--gold-accent)' }}
+                              whileHover={{ scale: 1.2, rotate: 360 }}
+                              transition={{ type: 'spring', stiffness: 300 }}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                style={{ color: '#0A0E14' }}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </motion.div>
+                            <span className="text-white">{detail}</span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <motion.div whileHover={{ scale: 1.02, y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="smooth-shadow overflow-hidden rounded-3xl shadow-xl shadow-black/30 ring-1 ring-white/10">
+                          <div className={`relative overflow-hidden ${index === 3 ? 'h-[220px] sm:h-[260px] md:h-[320px] lg:h-[360px]' : 'h-[220px] sm:h-[260px] md:h-[340px] lg:h-[380px]'}`}>
+                            <motion.img
+                              src={feature.image}
+                              alt={feature.title}
+                              className="w-full h-full object-cover"
+                              style={index === 3 ? { objectPosition: 'center 40%' } : {}}
+                              whileHover={{ scale: 1.1 }}
+                              transition={{ duration: 0.6 }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                            <motion.div
+                              className="absolute inset-0"
+                              initial={{ opacity: 0 }}
+                              whileHover={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                              style={{ background: 'radial-gradient(circle at center, rgba(241, 194, 50, 0.15) 0%, transparent 60%)' }}
+                            />
+                          </div>
+                        </Card>
+                      </motion.div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Image first on odd rows */}
+                    <div>
+                      <motion.div whileHover={{ scale: 1.02, y: -8 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="smooth-shadow overflow-hidden rounded-3xl shadow-xl shadow-black/30 ring-1 ring-white/10">
+                          <div className={`relative overflow-hidden ${index === 3 ? 'h-[220px] sm:h-[260px] md:h-[320px] lg:h-[360px]' : 'h-[220px] sm:h-[260px] md:h-[340px] lg:h-[380px]'}`}>
+                            <motion.img
+                              src={feature.image}
+                              alt={feature.title}
+                              className="w-full h-full object-cover"
+                              style={index === 3 ? { objectPosition: 'center 40%' } : {}}
+                              whileHover={{ scale: 1.1 }}
+                              transition={{ duration: 0.6 }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                            <motion.div
+                              className="absolute inset-0"
+                              initial={{ opacity: 0 }}
+                              whileHover={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                              style={{ background: 'radial-gradient(circle at center, rgba(241, 194, 50, 0.15) 0%, transparent 60%)' }}
+                            />
+                          </div>
+                        </Card>
+                      </motion.div>
+                    </div>
+                    <div>
+                      <div
+                        className="w-20 h-20 rounded-xl flex items-center justify-center mb-6"
+                        style={{ backgroundColor: 'var(--billiard-green)', color: 'var(--gold-accent)' }}
+                      >
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-4xl md:text-5xl mb-4 text-white leading-tight">{feature.title}</h3>
+                      <p className="text-white mb-6 text-lg">{feature.description}</p>
+                      <ul className="space-y-3">
+                        {feature.details.map((detail, i) => (
+                          <motion.li
+                            key={i}
+                            className="flex items-start gap-3"
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: i * 0.1 }}
+                            viewport={{ once: true }}
+                          >
+                            <motion.div
+                              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                              style={{ backgroundColor: 'var(--gold-accent)' }}
+                              whileHover={{ scale: 1.2, rotate: 360 }}
+                              transition={{ type: 'spring', stiffness: 300 }}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                style={{ color: '#0A0E14' }}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </motion.div>
+                            <span className="text-white">{detail}</span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
               </motion.div>
             ))}
           </div>
@@ -473,14 +531,14 @@ function Landing() {
       </section>
 
       {/* Additional Features Grid */}
-      <section className="py-20 scroll-mt-24" style={{ backgroundColor: 'var(--billiard-green-dark)' }}>
+      <section className="py-24 scroll-mt-32 mt-28 md:mt-40" style={{ backgroundColor: 'var(--billiard-green-dark)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl mb-4 text-foreground">Và còn nhiều hơn thế nữa...</h2>
-            <p className="text-foreground/70">Những tính năng bổ sung giúp trải nghiệm hoàn hảo hơn</p>
+            <h2 className="text-4xl mb-4 text-white">Và còn nhiều hơn thế nữa...</h2>
+            <p className="text-white">Những tính năng bổ sung giúp trải nghiệm hoàn hảo hơn</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {additionalFeatures.map((feature, index) => (
               <motion.div
                 key={index}
@@ -497,9 +555,9 @@ function Landing() {
                     >
                       {feature.icon}
                     </div>
-                    <CardTitle className="text-lg text-foreground">{feature.title}</CardTitle>
+                    <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                    <CardContent>
                     <CardDescription>{feature.desc}</CardDescription>
                   </CardContent>
                 </Card>
@@ -509,8 +567,8 @@ function Landing() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 scroll-mt-24">
+      {/* Khu vực Bảng giá: chuyển đổi tháng/năm, hiển thị 3 gói và lợi ích */}
+      <section id="pricing" className="py-24 pt-28 scroll-mt-32 mt-28 md:mt-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <motion.div
@@ -519,23 +577,25 @@ function Landing() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl md:text-5xl mb-4 text-foreground">
+              <h2 className="text-4xl md:text-5xl mb-4 text-white">
                 Bảng giá <span style={{ color: 'var(--gold-accent)' }}>minh bạch</span>
               </h2>
-              <p className="text-xl text-foreground/70 max-w-3xl mx-auto mb-8">
+              <p className="text-xl text-white/80 max-w-3xl mx-auto mb-8">
                 Chọn gói phù hợp với quy mô quán của bạn. Dùng thử miễn phí 14 ngày.
               </p>
 
+              {/* Công tắc chuyển đổi hình thức thanh toán: tháng <-> năm */}
               <div className="flex items-center justify-center gap-4 mb-4">
-                <Label htmlFor="billing-toggle" className={!isAnnual ? 'text-foreground' : 'text-muted-foreground'}>
+                <Label htmlFor="billing-toggle" className={!isAnnual ? 'text-white' : 'text-white/60'}>
                   Thanh toán hàng tháng
                 </Label>
                 <Switch id="billing-toggle" checked={isAnnual} onCheckedChange={setIsAnnual} />
-                <Label htmlFor="billing-toggle" className={isAnnual ? 'text-foreground' : 'text-muted-foreground'}>
+                <Label htmlFor="billing-toggle" className={isAnnual ? 'text-white' : 'text-white/60'}>
                   Thanh toán hàng năm
                 </Label>
               </div>
               {isAnnual && (
+                // Khi chọn trả theo năm, hiển thị thông tin phần trăm và số tiền tiết kiệm ước tính
                 <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-sm" style={{ color: 'var(--gold-accent)' }}>
                   Tiết kiệm {percentage}% ({formatPrice(savings)}) khi thanh toán theo năm
                 </motion.p>
@@ -570,17 +630,17 @@ function Landing() {
                   style={plan.popular ? { borderColor: 'var(--gold-accent)' } : {}}
                 >
                   <CardHeader>
-                    <CardTitle className="text-2xl text-foreground">{plan.name}</CardTitle>
+                    <CardTitle className="text-2xl text-white">{plan.name}</CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
                         <span className="text-4xl" style={{ color: 'var(--gold-accent)' }}>
                           {formatPrice(isAnnual ? plan.annualPrice : plan.monthlyPrice)}
                         </span>
-                        <span className="text-muted-foreground">{isAnnual ? '/ năm' : '/ tháng'}</span>
+                        <span className="text-white/60">{isAnnual ? '/ năm' : '/ tháng'}</span>
                       </div>
                       {isAnnual && (
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-white/60 mt-1">
                           {formatPrice(Math.round(plan.annualPrice / 12))}/tháng khi tính trung bình
                         </p>
                       )}
@@ -596,6 +656,7 @@ function Landing() {
                       Dùng thử miễn phí
                     </Button>
 
+                    {/* Danh sách tính năng/đặc quyền của từng gói */}
                     <ul className="space-y-3">
                       {plan.features.map((feature, i) => (
                         <li key={i} className="flex items-start gap-3">
@@ -605,7 +666,7 @@ function Landing() {
                           >
                             <Check className="w-3 h-3" style={{ color: 'var(--gold-accent)' }} />
                           </div>
-                          <span className="text-sm text-foreground/80">{feature}</span>
+                          <span className="text-sm text-white/90">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -617,7 +678,7 @@ function Landing() {
 
           {/* FAQ */}
           <div className="max-w-3xl mx-auto mt-20">
-            <h3 className="text-3xl mb-8 text-center text-foreground">Câu hỏi thường gặp</h3>
+            <h3 className="text-3xl mb-8 text-center text-white">Câu hỏi thường gặp</h3>
             <div className="space-y-4">
               {[
                 {
@@ -639,109 +700,15 @@ function Landing() {
               ].map((faq, index) => (
                 <Card key={index}>
                   <CardHeader>
-                    <CardTitle className="text-lg text-foreground">{faq.q}</CardTitle>
+                    <CardTitle className="text-lg text-white">{faq.q}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">{faq.a}</p>
+                    <p className="text-white/70">{faq.a}</p>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Contact/Registration Form */}
-      <section id="contact" className="py-24 scroll-mt-24" style={{ backgroundColor: 'var(--billiard-green-dark)' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl mb-4 text-foreground">Bắt đầu ngay hôm nay</h2>
-            <p className="text-xl text-foreground/70">Để lại thông tin, chúng tôi sẽ liên hệ tư vấn miễn phí</p>
-          </motion.div>
-
-          <Card className="smooth-shadow">
-            <CardContent className="pt-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Họ và tên *</Label>
-                    <Input
-                      id="name"
-                      required
-                      placeholder="Nguyễn Văn A"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Số điện thoại *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      required
-                      placeholder="0912345678"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      placeholder="email@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="clubName">Tên quán</Label>
-                    <Input
-                      id="clubName"
-                      placeholder="Billiard ABC"
-                      value={formData.clubName}
-                      onChange={(e) => setFormData({ ...formData, clubName: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="message">Tin nhắn</Label>
-                  <Textarea
-                    id="message"
-                    rows={4}
-                    placeholder="Cho chúng tôi biết thêm về nhu cầu của bạn..."
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  style={{ backgroundColor: 'var(--gold-accent)', color: '#0A0E14' }}
-                >
-                  <ArrowRight className="w-5 h-5 mr-2" />
-                  Gửi thông tin đăng ký
-                </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  Bằng cách gửi form, bạn đồng ý với điều khoản sử dụng và chính sách bảo mật của chúng tôi
-                </p>
-              </form>
-            </CardContent>
-          </Card>
         </div>
       </section>
 
@@ -751,11 +718,11 @@ function Landing() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <AnimatedLogo size="sm" />
-              <p className="text-sm text-muted-foreground mt-4">Giải pháp quản lý quán billiard hàng đầu Việt Nam</p>
+              <p className="text-sm text-white mt-4">Giải pháp quản lý quán billiard hàng đầu Việt Nam</p>
             </div>
             <div>
-              <h4 className="mb-4 text-foreground">Sản phẩm</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="mb-4 text-white">Sản phẩm</h4>
+              <ul className="space-y-2 text-sm text-white">
                 <li>
                   <a href="#features" className="hover:text-primary transition-colors">
                     Tính năng
@@ -769,23 +736,21 @@ function Landing() {
               </ul>
             </div>
             <div>
-              <h4 className="mb-4 text-foreground">Hỗ trợ</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="mb-4 text-white">Hỗ trợ</h4>
+              <ul className="space-y-2 text-sm text-white">
                 <li>
                   <a href="#" className="hover:text-primary transition-colors">
                     Tài liệu
                   </a>
                 </li>
                 <li>
-                  <a href="#contact" className="hover:text-primary transition-colors">
-                    Liên hệ
-                  </a>
+                  <a href="#pricing" className="hover:text-primary transition-colors">Liên hệ</a>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="mb-4 text-foreground">Pháp lý</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="mb-4 text-white">Pháp lý</h4>
+              <ul className="space-y-2 text-sm text-white">
                 <li>
                   <a href="#" className="hover:text-primary transition-colors">
                     Điều khoản
@@ -799,7 +764,7 @@ function Landing() {
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
+          <div className="mt-12 pt-8 border-t border-border/50 text-center text-sm text-white">
             © 2025 BilliardPro. All rights reserved.
           </div>
         </div>
