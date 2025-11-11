@@ -50,36 +50,60 @@ export default function CustomerDashboard() {
     useEffect(() => {
         if (!selectedClub) return;
 
+        // const fetchDashboardData = async () => {
+        //     setLoading(true);
+        //     setError(null);
+        //
+        //     try {
+        //         // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
+        //         // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
+        //
+        //         // MOCK DATA - Xóa khi backend có endpoint thật
+        //         await new Promise(resolve => setTimeout(resolve, 500));
+        //
+        //         setDashboardData({
+        //             clubId: selectedClub,
+        //             clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
+        //             revenueByMonth: [
+        //                 { month: '2024-10', revenue: 15000 },
+        //                 { month: '2024-11', revenue: 18500 },
+        //                 { month: '2024-12', revenue: 22000 }
+        //             ],
+        //             salaryByMonth: [
+        //                 { month: '2024-10', totalSalary: 8000 },
+        //                 { month: '2024-11', totalSalary: 8500 },
+        //                 { month: '2024-12', totalSalary: 9000 }
+        //             ],
+        //             topProducts: [
+        //                 { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
+        //                 { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
+        //                 { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
+        //             ]
+        //         });
+        //
+        //     } catch (err) {
+        //         console.error('Error fetching dashboard:', err);
+        //         setError('Failed to load dashboard data');
+        //     } finally {
+        //         setLoading(false);
+        //     }
+        // };
         const fetchDashboardData = async () => {
             setLoading(true);
             setError(null);
 
             try {
-                // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
-                // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
+                const response = await fetch(
+                    `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/dashboard`,
+                    {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+                    }
+                );
 
-                // MOCK DATA - Xóa khi backend có endpoint thật
-                await new Promise(resolve => setTimeout(resolve, 500));
+                if (!response.ok) throw new Error('Failed to fetch dashboard');
 
-                setDashboardData({
-                    clubId: selectedClub,
-                    clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
-                    revenueByMonth: [
-                        { month: '2024-10', revenue: 15000 },
-                        { month: '2024-11', revenue: 18500 },
-                        { month: '2024-12', revenue: 22000 }
-                    ],
-                    salaryByMonth: [
-                        { month: '2024-10', totalSalary: 8000 },
-                        { month: '2024-11', totalSalary: 8500 },
-                        { month: '2024-12', totalSalary: 9000 }
-                    ],
-                    topProducts: [
-                        { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
-                        { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
-                        { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
-                    ]
-                });
+                const data = await response.json();
+                setDashboardData(data);
 
             } catch (err) {
                 console.error('Error fetching dashboard:', err);
@@ -306,7 +330,7 @@ export default function CustomerDashboard() {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Salaries</h2>
                                 <button
-                                    onClick={handleExportSalaries}
+                                    onClick={handleExportEmployeeSalaries}
                                     className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
