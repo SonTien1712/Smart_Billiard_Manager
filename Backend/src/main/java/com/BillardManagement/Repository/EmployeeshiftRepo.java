@@ -12,5 +12,7 @@ public interface EmployeeshiftRepo extends JpaRepository<Employeeshift, Integer>
     List<Employeeshift> findByEmployeeID_Id(Integer employeeId);
 
     List<Employeeshift> findByEmployeeID_IdAndShiftDateBetween(Integer employeeId, LocalDate startDate, LocalDate endDate);
+
+    List<Employeeshift> findByClubID_IdAndShiftDateBetween(Integer clubId, LocalDate startDate, LocalDate endDate);
 }
 
