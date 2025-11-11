@@ -29,4 +29,6 @@ public interface CustomerService {
     void updateExpireDate(Integer id, String planId);
 
     Customer getCurrentUser();
+
+    Customer updateProfile(String email, String name, String phone);
 }

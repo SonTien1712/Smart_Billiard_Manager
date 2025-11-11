@@ -3,14 +3,15 @@ package com.BillardManagement.Controller;
 import com.BillardManagement.DTO.Request.LoginRequest;
 import com.BillardManagement.DTO.Request.RefreshTokenRequest;
 import com.BillardManagement.DTO.Request.RegisterRequest;
+import com.BillardManagement.DTO.Request.UpdateProfileRequest;
 import com.BillardManagement.DTO.Response.LoginResponse;
 import com.BillardManagement.DTO.Response.LogoutResponse;
 import com.BillardManagement.DTO.Response.RefreshTokenResponse;
 import com.BillardManagement.DTO.Response.RegisterResponse;
+import com.BillardManagement.Entity.Admin;
 import com.BillardManagement.Entity.Customer;
-import com.BillardManagement.Service.AuthService;
-import com.BillardManagement.Service.CustomerService;
-import com.BillardManagement.Service.ForgotPasswordService;
+import com.BillardManagement.Entity.Employee;
+import com.BillardManagement.Service.*;
 import com.BillardManagement.Util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,9 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final AdminService adminService;
     private final CustomerService customerService;
+    private final EmployeeService employeeService;
     private final ForgotPasswordService forgotPasswordService;
     private final JwtUtil jwtUtil;
 
@@ -153,5 +156,60 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
+    }
+
+    @PutMapping ("/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest req){
+        String role = req.getRole();
+        Object updateEntity = null;
+        switch(role.toUpperCase()){
+            case "ADMIN":
+                updateEntity = adminService.UpdateProfile(req.getEmail(), req.getName(), req.getPhone());
+                break;
+            case "CUSTOMER":
+                updateEntity = customerService.updateProfile(req.getEmail(), req.getName(), req.getPhone());
+                break;
+            case "STAFF":
+                updateEntity = employeeService.updateProfile(req.getEmail(), req.getName(), req.getPhone());
+                break;
+            default:
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid role"));
+        }
+
+        if (updateEntity == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> user = new HashMap<>();
+        if (updateEntity instanceof Customer c) {
+            user.put("id", c.getId());
+            user.put("customerName", c.getCustomerName());
+            user.put("phoneNumber", c.getPhoneNumber());
+            user.put("email", c.getEmail());
+            user.put("address", c.getAddress());
+            user.put("dateJoined", c.getDateJoined());
+            user.put("expiryDate", c.getExpiryDate());
+            user.put("googleId", c.getGoogleId());
+            user.put("isActive", c.getIsActive());
+            user.put("role", role);
+        } else if (updateEntity instanceof Admin a) {
+            user.put("id", a.getId());
+            user.put("name", a.getUsername());  // Mapping từ username (Admin không có customerName)
+            user.put("email", a.getEmail());
+            user.put("createdDate", a.getCreatedDate());  // Thêm nếu cần (thay dateJoined)
+            user.put("isActive", a.getIsActive());
+            user.put("role", role);
+        } else if (updateEntity instanceof Employee e) {
+            user.put("id", e.getId());
+            user.put("name", e.getEmployeeName());  // Mapping từ employeeName
+            user.put("phone", e.getPhoneNumber());  // Mapping từ phoneNumber
+            user.put("email", e.getEmail());
+            user.put("address", e.getAddress());
+            user.put("dateHired", e.getDateHired());  // Thêm nếu cần (thay dateJoined)
+            user.put("hourlyRate", e.getHourlyRate());  // Thêm nếu cần
+            user.put("employeeType", e.getEmployeeType());  // Thêm nếu cần
+            user.put("isActive", e.getIsActive());
+            user.put("role", role);
+        }
+
+        return ResponseEntity.ok(user);
     }
 }

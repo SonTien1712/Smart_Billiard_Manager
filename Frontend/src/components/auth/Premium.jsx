@@ -8,7 +8,7 @@ export const plans = [
     title: 'Gói 3 Tháng',
     price: '499.000đ',
     description:
-      'Lựa chọn linh hoạt cho trung tâm đang thử nghiệm và muốn khám phá các tính năng nâng cao.',
+      'Lựa chọn linh hoạt cho trung tâm đang thử nghiệm và muốn khám phá các tính quản lí.',
     badge: 'Phổ biến',
     highlight: false,
     features: [
@@ -28,8 +28,6 @@ export const plans = [
     highlight: true,
     features: [
       'Tất cả tính năng của gói 3 tháng',
-      'Báo cáo phân tích chuyên sâu theo tháng/quý',
-      'Đồng bộ dữ liệu đa thiết bị theo thời gian thực',
       'Hỗ trợ kỹ thuật 24/7 và tư vấn tối ưu vận hành',
     ],
   },

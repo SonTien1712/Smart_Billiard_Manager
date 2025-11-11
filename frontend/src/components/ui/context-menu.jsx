@@ -108,7 +108,7 @@ function ContextMenuContent({
         {...props}
       />
     </ContextMenuPrimitive.Portal>
-  );
+  )
 }
 
 function ContextMenuItem({
@@ -157,7 +157,7 @@ function ContextMenuCheckboxItem({
       </span>
       {children}
     </ContextMenuPrimitive.CheckboxItem>
-  );
+  )
 }
 
 function ContextMenuRadioItem({
@@ -181,7 +181,7 @@ function ContextMenuRadioItem({
       </span>
       {children}
     </ContextMenuPrimitive.RadioItem>
-  );
+  )
 }
 
 function ContextMenuLabel({

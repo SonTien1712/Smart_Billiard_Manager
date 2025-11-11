@@ -50,7 +50,6 @@ export function CustomerList() {
         joinDate: c.dateJoined
           ? new Date(c.dateJoined).toISOString().slice(0, 10)
           : (c.joinDate ?? ''),
-        clubs: c.clubsCount ?? c.clubCount ?? 0,
       }))
       // Lọc client-side theo name/email (an toàn nếu backend chưa hỗ trợ q)
       .filter(item => {
@@ -62,22 +61,6 @@ export function CustomerList() {
 
   const totalElements = customerPage?.totalElements ?? rows.length;
   const totalPages = customerPage?.totalPages ?? 1;
-
-
-  // Mock customer data
-  // const customers = [
-  //   { id: '1', name: 'John Smith', email: 'john@example.com', phone: '+1234567890', status: 'active', joinDate: '2024-01-15', clubs: 2 },
-  //   { id: '2', name: 'Jane Doe', email: 'jane@example.com', phone: '+1234567891', status: 'active', joinDate: '2024-01-10', clubs: 1 },
-  //   { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '+1234567892', status: 'inactive', joinDate: '2024-01-05', clubs: 3 },
-  //   { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', phone: '+1234567893', status: 'active', joinDate: '2023-12-28', clubs: 1 },
-  //   { id: '5', name: 'David Brown', email: 'david@example.com', phone: '+1234567894', status: 'active', joinDate: '2023-12-20', clubs: 2 },
-  //   { id: '6', name: 'Lisa Garcia', email: 'lisa@example.com', phone: '+1234567895', status: 'inactive', joinDate: '2023-12-15', clubs: 1 },
-  // ];
-
-  // const filteredCustomers = customers.filter(customer =>
-  //   customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //   customer.email.toLowerCase().includes(searchQuery.toLowerCase())
-  // );
 
   const handleStatusToggle = async (customerId, currentStatus) => {
     const nextActive = currentStatus !== 'active';
@@ -122,7 +105,6 @@ export function CustomerList() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Join Date</TableHead>
-                  <TableHead>Clubs</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -141,9 +123,6 @@ export function CustomerList() {
                     </TableCell>
                     <TableCell>
                       <p className="text-sm">{customer.joinDate}</p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{customer.clubs} clubs</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">

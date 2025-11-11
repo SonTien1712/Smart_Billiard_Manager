@@ -15,5 +15,6 @@ public class LoginResponse {
     private boolean success;
     private String message;
     private String accessToken; // JWT token nếu có
+    private String refreshToken; // JWT refresh token nếu có
     Object user;
 }

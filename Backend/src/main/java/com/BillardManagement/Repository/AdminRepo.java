@@ -20,12 +20,4 @@ public interface AdminRepo extends JpaRepository<Admin, Integer> {
     boolean existsByEmail(String email);
     List<Admin> findAllByIsActiveTrue();
 
-
-
-    // 6. Xóa mềm (update IsActive = false)
-    @Modifying
-    @Transactional
-    @Query("UPDATE Admin a SET a.isActive = false WHERE a.id = :id")
-    void deactivateAdmin(@Param("id") Integer id);
-
 }

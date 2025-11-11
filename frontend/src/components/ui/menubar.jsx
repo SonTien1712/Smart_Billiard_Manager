@@ -85,7 +85,7 @@ function MenubarContent({
         {...props}
       />
     </MenubarPortal>
-  );
+  )
 }
 
 function MenubarItem({
@@ -134,7 +134,7 @@ function MenubarCheckboxItem({
       </span>
       {children}
     </MenubarPrimitive.CheckboxItem>
-  );
+  )
 }
 
 function MenubarRadioItem({
@@ -158,7 +158,7 @@ function MenubarRadioItem({
       </span>
       {children}
     </MenubarPrimitive.RadioItem>
-  );
+  )
 }
 
 function MenubarLabel({

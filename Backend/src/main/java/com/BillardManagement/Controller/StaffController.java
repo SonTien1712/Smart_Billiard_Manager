@@ -1,12 +1,14 @@
 package com.BillardManagement.Controller;
 
+import com.BillardManagement.DTO.Response.EmployeeResponse;
+import com.BillardManagement.DTO.Request.EmployeeRequest;
 import com.BillardManagement.DTO.Response.ShiftDTO;
 import com.BillardManagement.DTO.Response.PayrollSummaryDTO;
-import com.BillardManagement.Entity.Employeeaccount;
-import com.BillardManagement.Entity.Employeeshift;
-import com.BillardManagement.Repository.EmployeeAccountRepo;
-import com.BillardManagement.Repository.EmployeeshiftRepo;
+import com.BillardManagement.Entity.*;
+import com.BillardManagement.Mapper.EmployeeMapper;
+import com.BillardManagement.Repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,143 @@ public class StaffController {
 
     private final EmployeeshiftRepo employeeshiftRepo;
     private final EmployeeAccountRepo employeeAccountRepo;
+
+    private final EmployeeRepo employeeRepository;
+    private final EmployeeMapper employeeMapper;
+
+    // Thêm 2 repo này
+    private final BilliardClubRepo clubRepo;
+    private final CustomerRepo customerRepo;
+
+
+    // ==========================
+    // GET STAFF BY CUSTOMER ID
+    // ==========================
+    @GetMapping("/{customerId}")
+    public ResponseEntity<List<EmployeeResponse>> getStaffByCustomerId(@PathVariable Long customerId) {
+        List<Employee> employees = employeeRepository.findByCustomerId(customerId);
+
+        if (employees.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        List<EmployeeResponse> responses = employees.stream()
+                .map(employeeMapper::toResponse)
+                .toList();
+
+        return ResponseEntity.ok(responses);
+    }
+
+    // ==========================
+    // GET ALL EMPLOYEES
+    // ==========================
+    @GetMapping
+    public ResponseEntity<List<EmployeeResponse>> getAllEmployees() {
+        List<Employee> employees = employeeRepository.findAll();
+        List<EmployeeResponse> responses = employees.stream()
+                .map(employeeMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    // ==========================
+    // CREATE EMPLOYEE
+    // ==========================
+    @PostMapping
+    public ResponseEntity<EmployeeResponse> createEmployee(@RequestBody EmployeeRequest request) {
+
+        Employee employee = new Employee();
+
+        employee.setEmployeeName(request.getEmployeeName());
+        employee.setEmployeeType(request.getEmployeeType());
+        employee.setPhoneNumber(request.getPhoneNumber());
+        employee.setEmail(request.getEmail());
+        employee.setAddress(request.getAddress());
+        employee.setDateHired(request.getDateHired());
+        employee.setBankNumber(request.getBankNumber());
+        employee.setBankName(request.getBankName());
+        employee.setIsActive(request.getIsActive());
+
+        // ✅ Logic lương theo loại nhân viên
+        if ("FullTime".equalsIgnoreCase(request.getEmployeeType())) {
+            employee.setSalary(request.getSalary());
+            employee.setHourlyRate(null);
+        } else {
+            employee.setHourlyRate(request.getHourlyRate());
+            employee.setSalary(null);
+        }
+
+        // Gán Club và Customer
+        Billardclub club = clubRepo.findById(request.getClubId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Club với ID = " + request.getClubId()));
+        Customer customer = customerRepo.findById(request.getCustomerId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Customer với ID = " + request.getCustomerId()));
+
+        employee.setClubID(club);
+        employee.setCustomerID(customer);
+
+        // Lưu vào DB
+        Employee saved = employeeRepository.save(employee);
+
+        return new ResponseEntity<>(employeeMapper.toResponse(saved), HttpStatus.CREATED);
+    }
+
+    // ==========================
+    // UPDATE EMPLOYEE
+    // ==========================
+    @PutMapping("/{id}")
+    public ResponseEntity<EmployeeResponse> updateEmployee(@PathVariable Integer id,
+                                                           @RequestBody EmployeeRequest request) {
+        Employee existingEmployee = employeeRepository.findById(id.longValue())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID = " + id));
+
+        // ✅ Cập nhật các trường cơ bản
+        existingEmployee.setEmployeeName(request.getEmployeeName());
+        existingEmployee.setEmployeeType(request.getEmployeeType());
+        existingEmployee.setPhoneNumber(request.getPhoneNumber());
+        existingEmployee.setEmail(request.getEmail());
+        existingEmployee.setAddress(request.getAddress());
+        existingEmployee.setDateHired(request.getDateHired());
+        existingEmployee.setBankNumber(request.getBankNumber());
+        existingEmployee.setBankName(request.getBankName());
+        existingEmployee.setIsActive(request.getIsActive());
+
+        // ✅ Logic lương theo loại nhân viên
+        if ("FullTime".equalsIgnoreCase(request.getEmployeeType())) {
+            existingEmployee.setSalary(request.getSalary());
+            existingEmployee.setHourlyRate(null);
+        } else {
+            existingEmployee.setHourlyRate(request.getHourlyRate());
+            existingEmployee.setSalary(null);
+        }
+
+        // ✅ Gán lại Club và Customer (bắt buộc nếu nullable=false)
+        if (request.getClubId() != null) {
+            Billardclub club = clubRepo.findById(request.getClubId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy Club với ID = " + request.getClubId()));
+            existingEmployee.setClubID(club);
+        }
+
+        if (request.getCustomerId() != null) {
+            Customer customer = customerRepo.findById(request.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy Customer với ID = " + request.getCustomerId()));
+            existingEmployee.setCustomerID(customer);
+        }
+
+        // ✅ Lưu lại
+        Employee saved = employeeRepository.save(existingEmployee);
+
+        return ResponseEntity.ok(employeeMapper.toResponse(saved));
+    }
+
+    // ==========================
+    // DELETE EMPLOYEE
+    // ==========================
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Integer id) {
+        employeeRepository.deleteById(id.longValue());
+        return ResponseEntity.noContent().build();
+    }
 
     // Nghiệp vụ: Lấy lịch làm việc theo tuần cho nhân viên
     // - Tự suy ra employeeId từ accountId nếu cung cấp accountId (đăng nhập)
