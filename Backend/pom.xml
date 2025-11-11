@@ -26,10 +26,18 @@
         <tag/>
         <url/>
     </scm>
+
+
     <properties>
         <java.version>22</java.version>
         <spring-ai.version>1.0.3</spring-ai.version>
     </properties>
+
+
+
+
+
+
     <dependencies>
         <!-- HTML to PDF rendering -->
         <dependency>
@@ -162,6 +170,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version>
         </dependency>
 
     </dependencies>

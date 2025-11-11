@@ -1,6 +1,7 @@
 package com.BillardManagement.Service;
 import com.BillardManagement.DTO.Request.UpdateCustomerRequest;
 import com.BillardManagement.Entity.Customer;
+import com.BillardManagement.DTO.Response.DashboardStatsDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -30,5 +31,10 @@ public interface CustomerService {
 
     Customer getCurrentUser();
 
+    DashboardStatsDTO getDashboardStats(Integer customerId);
+
+
     Customer updateProfile(String email, String name, String phone);
+
+
 }

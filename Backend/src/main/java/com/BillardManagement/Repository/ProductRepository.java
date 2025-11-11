@@ -18,7 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     List<Product> findByCustomerId(Integer customerId);
 
-    List<Product> findByClubIdAndCategory(Integer clubId, String category);
+   
 
     @Query("SELECT p FROM Product p WHERE p.club.id = :clubId AND p.isActive = true AND " +
             "(LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -30,4 +30,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     @Query("SELECT COUNT(p) FROM Product p WHERE p.club.id = :clubId AND p.isActive = true")
     Long countActiveProductsByClubId(@Param("clubId") Integer clubId);
+
+    /**
+     * Đếm số sản phẩm thuộc customer (qua club)
+     */
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.club.customerID = :customerId")
+    Long countByCustomerId(@Param("customerId") Integer customerId);
+
+    Long countByCustomerIdAndIsActive(Integer customerId, Boolean isActive);
 }

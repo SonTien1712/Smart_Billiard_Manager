@@ -1,233 +1,398 @@
-import React, { useEffect, useState  } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Chart, ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart';
-import { PageType } from '../Dashboard';
-import { Building, Table, Users, Calendar, Package, DollarSign, TrendingUp, Activity } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Download, TrendingUp, DollarSign, Users, Calendar, Loader2, AlertCircle } from 'lucide-react';
 
+const API_BASE = 'http://localhost:8080/api';
 
-import { useAuth } from '../AuthProvider';
+// Helper: Format currency
+const formatCurrency = (value) => {
+    const num = typeof value === 'object' && value !== null ? parseFloat(value) : value;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0);
+};
 
+export default function CustomerDashboard() {
+    const [clubs, setClubs] = useState([]);
+    const [selectedClub, setSelectedClub] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-export function CustomerDashboard({ onPageChange }) {
+    // TODO: Thay bằng customerId thực từ authentication
+    const CUSTOMER_ID = 1;
 
-  // Mock data
-  const stats = {
-    totalRevenue: 15420,
-    totalTables: 12,
-    totalEmployees: 8,
-    activeShifts: 3,
-    totalProducts: 25,
-    monthlyGrowth: 8.2
-  };
+    // Fetch danh sách clubs từ backend
+    useEffect(() => {
+        const fetchClubs = async () => {
+            try {
+                const response = await fetch(`${API_BASE}/customer/clubs/customer/${CUSTOMER_ID}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+                });
 
-  const revenueData = [
-    { date: '2024-01-01', revenue: 1200 },
-    { date: '2024-01-02', revenue: 1400 },
-    { date: '2024-01-03', revenue: 1100 },
-    { date: '2024-01-04', revenue: 1600 },
-    { date: '2024-01-05', revenue: 1300 },
-    { date: '2024-01-06', revenue: 1800 },
-    { date: '2024-01-07', revenue: 1500 },
-  ];
+                if (!response.ok) throw new Error('Failed to fetch clubs');
 
-  const tableUsageData = [
-    { table: 'Table 1', hours: 8 },
-    { table: 'Table 2', hours: 6 },
-    { table: 'Table 3', hours: 9 },
-    { table: 'Table 4', hours: 7 },
-    { table: 'Table 5', hours: 5 },
-  ];
+                const data = await response.json();
+                const clubList = Array.isArray(data) ? data : (data.data || data.clubs || []);
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Club Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your billiards club operations</p>
-      </div>
+                setClubs(clubList);
+                if (clubList.length > 0) {
+                    setSelectedClub(clubList[0].id || clubList[0].clubId);
+                }
+            } catch (err) {
+                console.error('Error fetching clubs:', err);
+                setError('Failed to load clubs');
+            }
+        };
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              +{stats.monthlyGrowth}% from last month
-            </p>
-          </CardContent>
-        </Card>
+        fetchClubs();
+    }, []);
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tables</CardTitle>
-            <Table className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTables}</div>
-            <p className="text-xs text-muted-foreground">
-              Billiard tables
-            </p>
-          </CardContent>
-        </Card>
+    // Fetch dashboard data khi chọn club
+    useEffect(() => {
+        if (!selectedClub) return;
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEmployees}</div>
-            <p className="text-xs text-muted-foreground">
-              Total staff members
-            </p>
-          </CardContent>
-        </Card>
+        // const fetchDashboardData = async () => {
+        //     setLoading(true);
+        //     setError(null);
+        //
+        //     try {
+        //         // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
+        //         // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
+        //
+        //         // MOCK DATA - Xóa khi backend có endpoint thật
+        //         await new Promise(resolve => setTimeout(resolve, 500));
+        //
+        //         setDashboardData({
+        //             clubId: selectedClub,
+        //             clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
+        //             revenueByMonth: [
+        //                 { month: '2024-10', revenue: 15000 },
+        //                 { month: '2024-11', revenue: 18500 },
+        //                 { month: '2024-12', revenue: 22000 }
+        //             ],
+        //             salaryByMonth: [
+        //                 { month: '2024-10', totalSalary: 8000 },
+        //                 { month: '2024-11', totalSalary: 8500 },
+        //                 { month: '2024-12', totalSalary: 9000 }
+        //             ],
+        //             topProducts: [
+        //                 { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
+        //                 { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
+        //                 { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
+        //             ]
+        //         });
+        //
+        //     } catch (err) {
+        //         console.error('Error fetching dashboard:', err);
+        //         setError('Failed to load dashboard data');
+        //     } finally {
+        //         setLoading(false);
+        //     }
+        // };
+        const fetchDashboardData = async () => {
+            setLoading(true);
+            setError(null);
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Shifts</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeShifts}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently working
-            </p>
-          </CardContent>
-        </Card>
+            try {
+                const response = await fetch(
+                    `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/dashboard`,
+                    {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+                    }
+                );
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              Available items
-            </p>
-          </CardContent>
-        </Card>
+                if (!response.ok) throw new Error('Failed to fetch dashboard');
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{stats.monthlyGrowth}%</div>
-            <p className="text-xs text-muted-foreground">
-              Monthly growth
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+                const data = await response.json();
+                setDashboardData(data);
 
-      {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
-            <CardDescription>Daily revenue for the past week</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                revenue: {
-                  label: "Revenue",
-                  color: "var(--chart-1)",
-                },
-              }}
-              className="h-[200px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
-                  <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString()} />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="revenue" stroke="var(--chart-1)" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+            } catch (err) {
+                console.error('Error fetching dashboard:', err);
+                setError('Failed to load dashboard data');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Table Usage</CardTitle>
-            <CardDescription>Hours played per table today</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                hours: {
-                  label: "Hours",
-                  color: "var(--chart-2)",
-                },
-              }}
-              className="h-[200px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={tableUsageData}>
-                  <XAxis dataKey="table" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="hours" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+        fetchDashboardData();
+    }, [selectedClub, clubs]);
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Manage your club efficiently</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col space-y-2"
-              onClick={() => onPageChange('tables')}
-            >
-              <Table className="h-6 w-6" />
-              <span>Manage Tables</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col space-y-2"
-              onClick={() => onPageChange('staff')}
-            >
-              <Users className="h-6 w-6" />
-              <span>Manage Staff</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col space-y-2"
-              onClick={() => onPageChange('shifts')}
-            >
-              <Calendar className="h-6 w-6" />
-              <span>Work Shifts</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col space-y-2"
-              onClick={() => onPageChange('products')}
-            >
-              <Package className="h-6 w-6" />
-              <span>Manage Products</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    // Export handlers
+    const handleExportRevenue = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/revenue`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `revenue_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Export revenue failed: ' + err.message);
+        }
+    };
+
+    const handleExportSalaries = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/salaries`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `salaries_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Export salaries failed: ' + err.message);
+        }
+    };
+
+    const handleExportTopProducts = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/top-products?topN=5`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `top_products_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Export top products failed: ' + err.message);
+        }
+    };
+
+    // ✅ MỚI: Export chi tiết lương nhân viên
+    const handleExportEmployeeSalaries = async () => {
+        try {
+            const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/employee-salaries`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `employee_salaries_club_${selectedClub}.xlsx`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+
+            console.log('✅ Employee salaries exported successfully');
+        } catch (err) {
+            console.error('❌ Export employee salaries failed:', err);
+            alert('Export employee salaries failed: ' + err.message);
+        }
+    };
+
+    // Calculate summary stats
+    const summaryStats = dashboardData ? {
+        totalRevenue: dashboardData.revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0),
+        totalSalary: dashboardData.salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+        netProfit: dashboardData.revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0) -
+            dashboardData.salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+        topProductProfit: dashboardData.topProducts.reduce((sum, p) => sum + (p.totalProfit || 0), 0)
+    } : null;
+
+    if (error && clubs.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-gray-50">
+                <div className="text-center">
+                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-gray-700">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+
+                {/* Header */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Club Dashboard</h1>
+                    <p className="text-gray-600">Analytics & Reports</p>
+                </div>
+
+                {/* Club Selector */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Club</label>
+                    <select
+                        value={selectedClub || ''}
+                        onChange={(e) => setSelectedClub(parseInt(e.target.value))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        {clubs.map(club => (
+                            <option key={club.id || club.clubId} value={club.id || club.clubId}>
+                                {club.clubName || `Club ${club.id || club.clubId}`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+                        <span className="ml-3 text-gray-600">Loading dashboard...</span>
+                    </div>
+                ) : dashboardData ? (
+                    <>
+                        {/* Summary Cards */}
+                        {summaryStats && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Total Revenue</span>
+                                        <DollarSign className="h-5 w-5 text-green-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.totalRevenue)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Last 3 months</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Total Salary</span>
+                                        <Users className="h-5 w-5 text-blue-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.totalSalary)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Employee costs</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Net Profit</span>
+                                        <TrendingUp className="h-5 w-5 text-purple-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.netProfit)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Revenue - Salary</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-600">Product Profit</span>
+                                        <Calendar className="h-5 w-5 text-orange-500" />
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.topProductProfit)}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Top 5 products</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Revenue Chart */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Monthly Revenue</h2>
+                                <button
+                                    onClick={handleExportRevenue}
+                                    className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Excel
+                                </button>
+                            </div>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={dashboardData.revenueByMonth}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenue" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Salary Chart */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Monthly Salaries</h2>
+                                <button
+                                    onClick={handleExportEmployeeSalaries}
+                                    className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Excel
+                                </button>
+                            </div>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={dashboardData.salaryByMonth}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                    <Legend />
+                                    <Bar dataKey="totalSalary" fill="#3b82f6" name="Total Salary" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Top Products Table */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Top Products by Profit</h2>
+                                <button
+                                    onClick={handleExportTopProducts}
+                                    className="flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Excel
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                    <tr className="border-b">
+                                        <th className="pb-3 text-sm font-medium text-gray-600">Product</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600">Category</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600 text-right">Qty Sold</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600 text-right">Profit/Unit</th>
+                                        <th className="pb-3 text-sm font-medium text-gray-600 text-right">Total Profit</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {dashboardData.topProducts.map((product) => (
+                                        <tr key={product.productId} className="border-b hover:bg-gray-50">
+                                            <td className="py-3 text-sm text-gray-800">{product.productName}</td>
+                                            <td className="py-3 text-sm text-gray-600">{product.category}</td>
+                                            <td className="py-3 text-sm text-gray-800 text-right">{product.qtySold}</td>
+                                            <td className="py-3 text-sm text-gray-800 text-right">{formatCurrency(product.profitPerUnit)}</td>
+                                            <td className="py-3 text-sm font-semibold text-green-600 text-right">{formatCurrency(product.totalProfit)}</td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="bg-white rounded-lg shadow p-12 text-center">
+                        <p className="text-gray-500">Select a club to view dashboard</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }

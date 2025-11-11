@@ -59,4 +59,13 @@ public interface BilliardTableRepo extends JpaRepository<Billiardtable, Integer>
 
     // Filter tables by the owning customer via club relation
     List<Billiardtable> findByClubID_CustomerID(Integer customerId);
+
+    /**
+     * Đếm số bàn thuộc customer (qua club)
+     */
+    @Query("SELECT COUNT(t) FROM Billiardtable t WHERE t.clubID.customerID = :customerId")
+    Long countByCustomerId(@Param("customerId") Integer customerId);
+
+    @Query("SELECT COUNT(t) FROM Billiardtable t WHERE t.clubID.customerID = :customerId")
+    Long countByClubCustomerID(@Param("customerId") Integer customerId);
 }

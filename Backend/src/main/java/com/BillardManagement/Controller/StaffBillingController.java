@@ -855,37 +855,37 @@
         /**
          * Thống kê trong ngày cho dashboard (bill count, doanh thu, ...).
          */
-        @GetMapping("/stats/today")
-        public ResponseEntity<DashboardStatsDTO> todayStats(
-                @RequestParam(value = "clubId", required = false) Integer clubId
-        ) {
-            // Start and end of today in system zone
-            Instant start = java.time.LocalDate.now()
-                    .atStartOfDay(java.time.ZoneId.systemDefault())
-                    .toInstant();
-            Instant end = java.time.LocalDate.now()
-                    .plusDays(1)
-                    .atStartOfDay(java.time.ZoneId.systemDefault())
-                    .toInstant();
-    
-            // Count and revenue by completion time (EndTime) for better accuracy
-            long count = billRepo.countByEndTimeBetween(start, end);
-            var paid = billRepo.findByBillStatusIgnoreCaseAndEndTimeBetween("Paid", start, end);
-            java.math.BigDecimal revenue = paid.stream()
-                    .map(b -> {
-                        if (b.getFinalAmount() != null && b.getFinalAmount().signum() > 0) {
-                            return b.getFinalAmount();
-                        }
-                        java.math.BigDecimal table = b.getTotalTableCost() == null ? java.math.BigDecimal.ZERO : b.getTotalTableCost();
-                        java.math.BigDecimal product = b.getTotalProductCost() == null ? java.math.BigDecimal.ZERO : b.getTotalProductCost();
-                        java.math.BigDecimal discount = b.getDiscountAmount() == null ? java.math.BigDecimal.ZERO : b.getDiscountAmount();
-                        return table.add(product).subtract(discount);
-                    })
-                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-    
-            DashboardStatsDTO dto = new DashboardStatsDTO((int) count, revenue);
-            return ResponseEntity.ok(dto);
-        }
+//        @GetMapping("/stats/today")
+//        public ResponseEntity<DashboardStatsDTO> todayStats(
+//                @RequestParam(value = "clubId", required = false) Integer clubId
+//        ) {
+//            // Start and end of today in system zone
+//            Instant start = java.time.LocalDate.now()
+//                    .atStartOfDay(java.time.ZoneId.systemDefault())
+//                    .toInstant();
+//            Instant end = java.time.LocalDate.now()
+//                    .plusDays(1)
+//                    .atStartOfDay(java.time.ZoneId.systemDefault())
+//                    .toInstant();
+//
+//            // Count and revenue by completion time (EndTime) for better accuracy
+//            long count = billRepo.countByEndTimeBetween(start, end);
+//            var paid = billRepo.findByBillStatusIgnoreCaseAndEndTimeBetween("Paid", start, end);
+//            java.math.BigDecimal revenue = paid.stream()
+//                    .map(b -> {
+//                        if (b.getFinalAmount() != null && b.getFinalAmount().signum() > 0) {
+//                            return b.getFinalAmount();
+//                        }
+//                        java.math.BigDecimal table = b.getTotalTableCost() == null ? java.math.BigDecimal.ZERO : b.getTotalTableCost();
+//                        java.math.BigDecimal product = b.getTotalProductCost() == null ? java.math.BigDecimal.ZERO : b.getTotalProductCost();
+//                        java.math.BigDecimal discount = b.getDiscountAmount() == null ? java.math.BigDecimal.ZERO : b.getDiscountAmount();
+//                        return table.add(product).subtract(discount);
+//                    })
+//                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+//
+//            DashboardStatsDTO dto = new DashboardStatsDTO((int) count, revenue);
+//            return ResponseEntity.ok(dto);
+//        }
     
         // Cancel an active bill (e.g., opened wrong table).
         /**

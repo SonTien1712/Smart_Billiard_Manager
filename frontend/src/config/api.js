@@ -36,7 +36,10 @@ export const API_CONFIG = {
           PRODUCT_BY_ID: (id) => `/products/${id}`,
           PRODUCT_TOGGLE_STATUS: (id) => `/products/${id}/toggle-status`,
           PRODUCT_SEARCH: '/products/search',
-          STAFF_ACCOUNTS: '/customer/staff-accounts'
+          STAFF_ACCOUNTS: '/customer/staff-accounts',
+
+          DASHBOARD_STATS: '/customers/dashboard-stats',
+          DASHBOARD_STATS_BY_ID: (customerId) => `/customers/${customerId}/dashboard-stats`,
 
       },
       // Staff endpoints

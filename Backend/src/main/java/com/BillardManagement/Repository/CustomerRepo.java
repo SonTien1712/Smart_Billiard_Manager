@@ -16,4 +16,6 @@ public interface CustomerRepo extends JpaRepository<Customer, Integer> {
 
     long countByIsActiveTrue();
     long countByDateJoinedBetween(Instant start, Instant end);
+
+
 }

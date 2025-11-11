@@ -160,49 +160,6 @@ export class CustomerService {
   async deleteStaff(id) {
     await apiClient.delete(`${API_CONFIG.ENDPOINTS.CUSTOMER.STAFF}/${id}`);
   }
-  async getStaffByCustomerId(customerId, params) {
-    // 1. Tạo endpoint (Lưu ý: tham số query 'params' sẽ được apiClient tự xử lý)
-    const url = API_CONFIG.ENDPOINTS.CUSTOMER.STAFF_BY_CUSTOMER(customerId); 
-    const query = { ...(params || {}) }; // Lấy các params khác nếu có
-
-    console.log('[API Staff] Fetching from:', url);
-
-    try {
-        // Gọi API. Biến 'data' ở đây là kết quả trả về từ apiClient.get
-        const data = await apiClient.get(url, query);
-        
-        console.log('[API Staff] Raw data:', data);
-        let staffData;
-
-        // Xử lý response tương tự như getTablesByCustomerId
-        if (Array.isArray(data)) {
-            // Trường hợp 1: apiClient trả về mảng trực tiếp (vd: [...])
-            staffData = data;
-        } else if (data && Array.isArray(data.data)) {
-            // Trường hợp 2: apiClient trả về object bọc (vd: { data: [...] })
-            staffData = data.data;
-        } else {
-            // Trường hợp 3: Bất kỳ cấu trúc nào khác (undefined, null, object rỗng)
-            console.warn('[API Staff] Unexpected response:', data);
-            staffData = [];
-        }
-
-        console.log('[API Staff] Final staff data:', staffData);
-        return staffData;
-
-    } catch (error) {
-        // Xử lý lỗi chi tiết hơn (như trong getTablesByCustomerId)
-        const status = error.response?.status;
-        const errData = error.response?.data || error.message;
-
-        console.error('[API Staff] FAILED:', error);
-        console.error('[API Staff] Status:', status || 'Network/CORS');
-        console.error('[API Staff] Error data:', errData);
-        
-        // Trả về mảng rỗng nếu có lỗi để frontend không bị crash
-        return []; 
-    }
-}
 
   // Staff Account Management
   async getStaffAccounts(clubId, params) {
