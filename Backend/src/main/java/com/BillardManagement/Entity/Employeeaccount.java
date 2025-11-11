@@ -13,7 +13,7 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "employeeaccounts")
-public class Employeeaccount {
+public class  Employeeaccount {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "UserID", nullable = false)
