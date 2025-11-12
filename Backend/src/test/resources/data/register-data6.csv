@@ -1,0 +1,3 @@
+name,email,phone,address,password,confirm
+"QA Admin","qa+%TIME%@billard.com","0900000001","123 Test St","Password1!","Password1!"
+"QA User","qauser+%TIME%@billard.com","0900000002","456 Sample Ave","Password1!","Password1!"
