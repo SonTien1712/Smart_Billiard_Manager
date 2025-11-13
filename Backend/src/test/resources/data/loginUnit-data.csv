@@ -1,0 +1,14 @@
+CaseId,Identifier,Password,ScenarioType,ExpectedSuccess,ExpectedMessage
+TC-ADM-01,admin@example.com,adminPass,ADMIN_SUCCESS,true,Đăng nhập admin thành công
+TC-ADM-02,admin@example.com,wrongPass,ADMIN_WRONG_PASSWORD,false,Sai mật khẩu admin
+TC-EMP-01,staff_one,staffPass,EMPLOYEE_SUCCESS,true,Đăng nhập nhân viên thành công
+TC-EMP-02,staff_two,staffPass,EMPLOYEE_NO_OWNER,false,Không xác định được khách hàng sở hữu câu lạc bộ
+TC-EMP-03,staff_three,staffPass,EMPLOYEE_CUSTOMER_EXPIRED,false,"Tài khoản khách hàng đã hết hạn, vui lòng gia hạn trước khi đăng nhập nhân viên"
+"TC-EMP-04",staff_four,staffPass,EMPLOYEE_CUSTOMER_EXPIRY_NULL,false,"Tài khoản khách hàng đã hết hạn, vui lòng gia hạn trước khi đăng nhập nhân viên"
+"TC-EMP-05",staff_no_club,staffPass,EMPLOYEE_CLUB_NULL,true,"Đăng nhập nhân viên thành công"
+"TC-EMP-06",staff_no_employee,staffPass,EMPLOYEE_EMP_NULL,true,"Đăng nhập nhân viên thành công"
+"TC-EMP-07",staff_no_emp_id,staffPass,EMPLOYEE_EMP_ID_NULL,true,"Đăng nhập nhân viên thành công"
+"TC-EMP-08",staff_no_club_id,staffPass,EMPLOYEE_CLUB_ID_NULL,true,"Đăng nhập nhân viên thành công"
+"TC-EMP-09",staff_no_account_id,staffPass,EMPLOYEE_ACCOUNT_ID_NULL,true,"Đăng nhập nhân viên thành công"
+TC-CUS-01,customer@example.com,cusPass,CUSTOMER_SUCCESS,true,Đăng nhập khách hàng thành công
+TC-NF-01,ghost@example.com,ghostPass,NOT_FOUND,false,Không tìm thấy tài khoản phù hợp

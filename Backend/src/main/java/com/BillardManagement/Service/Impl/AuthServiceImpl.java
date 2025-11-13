@@ -36,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
 
     // Nghiệp vụ đăng nhập (ưu tiên nhân viên)
-    // - Nhận identifier (email/username) + password
+    // - Nhận identifier (email) + password
     // - Thứ tự kiểm tra: admin → employee → customer
     // - Với nhân viên: cho phép đăng nhập bằng username hoặc email nhân viên
     // - Trả về LoginResponse chứa token mẫu và thông tin người dùng rút gọn
@@ -108,14 +108,20 @@ public class AuthServiceImpl implements AuthService {
         Employee emp = acc.getEmployeeID();
         Billardclub club = acc.getClubID();
 
+        long accountId = acc.getId() != null ? acc.getId() : 0L;
+        long employeeId = (emp != null && emp.getId() != null) ? emp.getId() : 0L;
+        long clubId = (club != null && club.getId() != null) ? club.getId() : 0L;
+        String phone = emp != null ? emp.getPhoneNumber() : null;
+        String fullName = emp != null ? emp.getEmployeeName() : acc.getUsername();
+
         EmployeeUserView user = EmployeeUserView.builder()
-                .accountId(acc.getId() != null ? acc.getId() : null)
-                .employeeId(emp != null ? emp.getId() : null)
-                .clubId(club != null ? club.getId() : null)
+                .accountId(accountId)
+                .employeeId(employeeId)
+                .clubId(clubId)
                 .username(acc.getUsername())
-                .fullName(emp != null ? emp.getEmployeeName() : acc.getUsername())
+                .fullName(fullName)
                 .email(acc.getUsername())
-                .phoneNumber(emp.getPhoneNumber())
+                .phoneNumber(phone)
                 .role("STAFF")
                 .build();
 

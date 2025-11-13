@@ -1,0 +1,5 @@
+email,password,expectedPath
+admin@billard.com,12345678,/dashboard
+customer@billard.com,AnyPassword,/dashboard
+my@galaxy.com,AnyPassword,/dashboard
+
