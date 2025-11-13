@@ -1,0 +1,26 @@
+name,price,costPrice,category,description,active,shouldFail
+"Cơ Bida Loại A",150.00,100.00,"Cơ Bida","Mô tả sản phẩm A",true,false
+"Cơ Bida Loại B",200.00,150.00,"Cơ Bida","Mô tả sản phẩm B",true,false
+"Phấn Bida",50.00,30.00,"Phụ Kiện","Phấn bida chất lượng cao",true,false
+"Găng Tay Bida",80.00,50.00,"Phụ Kiện","Găng tay chống trượt",true,false
+"Cơ Bida Loại C",0.01,0.01,"Cơ Bida","Giá tối thiểu",true,false
+"Cơ Bida Inactive",150.00,100.00,"Cơ Bida","Sản phẩm không hoạt động",false,false
+"",150.00,100.00,"Cơ Bida","Tên rỗng",true,true
+" ",150.00,100.00,"Cơ Bida","Tên chỉ có khoảng trắng",true,true
+" Tên Quá Dài Vượt Quá Giới Hạn Cho Phép Trong Database Schema ",150.00,100.00,"Cơ Bida","Tên quá dài",true,true
+"Cơ Bida Giá 0",0.00,0.00,"Cơ Bida","Giá bằng 0",true,true
+"Cơ Bida Giá Âm",-10.00,100.00,"Cơ Bida","Giá âm",true,true
+"Cơ Bida Cost > Price",100.00,200.00,"Cơ Bida","Cost price cao hơn price",true,false
+"Cơ Bida Max Price",999999.99,500000.00,"Cơ Bida","Giá tối đa",true,false
+"Cơ Bida No Category",150.00,100.00,"","Không có category",true,false
+"Cơ Bida No Description",150.00,100.00,"Cơ Bida","",true,false
+"Cơ Bida Special Chars !@#$%",150.00,100.00,"Cơ Bida","Ký tự đặc biệt",true,false
+"Cơ Bida Tiếng Việt Có Dấu",150.00,100.00,"Phụ Kiện","Mô tả tiếng Việt có dấu đầy đủ",true,false
+"Khăn Lau Bàn",25.00,15.00,"Phụ Kiện","Khăn lau chuyên dụng",true,false
+"Bàn Bi-a Chuẩn",5000.00,3500.00,"Bàn Bi-a","Bàn bi-a size chuẩn quốc tế",true,false
+"Bi Bi-a Set",300.00,200.00,"Phụ Kiện","Bộ bi bi-a đầy đủ",true,false
+"Giá Treo Cơ",120.00,80.00,"Phụ Kiện","Giá treo cơ gỗ cao cấp",true,false
+"Đèn Chiếu Bàn",450.00,300.00,"Thiết Bị","Đèn chiếu sáng bàn bi-a",true,false
+"Phấn Tam Giác",15.00,10.00,"Phụ Kiện","Phấn tam giác xếp bi",true,false
+"Cơ Professional",800.00,600.00,"Cơ Bida","Cơ bi-a chuyên nghiệp",true,false
+"Cơ Beginner",100.00,70.00,"Cơ Bida","Cơ bi-a cho người mới",true,false

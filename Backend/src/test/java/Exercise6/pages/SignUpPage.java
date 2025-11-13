@@ -6,6 +6,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
+
+
 public class SignUpPage extends BasePage {
     private static final String URL = "/signup";
     private final By nameInput = By.id("name");

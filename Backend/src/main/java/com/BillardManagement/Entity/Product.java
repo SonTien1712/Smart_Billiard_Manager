@@ -57,6 +57,20 @@ public class Product {
     @Column(name = "IsActive")
     private Boolean isActive;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "CreatedDate")
     private Instant createdDate;

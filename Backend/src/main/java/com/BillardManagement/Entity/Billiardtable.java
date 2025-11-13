@@ -1,6 +1,7 @@
 package com.BillardManagement.Entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
+
 @Table(name = "billiardtables")
 public class Billiardtable {
     @Id

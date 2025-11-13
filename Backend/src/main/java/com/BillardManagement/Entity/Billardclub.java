@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.deser.impl.CreatorCandidate;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -13,6 +12,9 @@ import org.hibernate.annotations.OnDeleteAction;
 @Getter
 @Setter
 @Entity
+@Builder
+@NoArgsConstructor // required by JPA
+@AllArgsConstructor
 @Table(name = "billardclub")
 public class Billardclub {
     @Id
@@ -37,6 +39,7 @@ public class Billardclub {
     @ColumnDefault("1")
     @Column(name = "isActive")
     private Boolean isActive;
+
 
 
 }

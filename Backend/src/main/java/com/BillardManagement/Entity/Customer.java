@@ -2,8 +2,7 @@ package com.BillardManagement.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -11,6 +10,9 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @Entity
+@Builder
+@NoArgsConstructor // required by JPA
+@AllArgsConstructor
 @Table(name = "customers")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // ⚠️ thêm dòng này
 public class Customer {
