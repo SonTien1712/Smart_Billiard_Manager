@@ -44,6 +44,8 @@ public class CustomerServiceImpl implements CustomerService {
     private EmployeeshiftRepo employeeshiftRepo;
 
     // ... (Tất cả các phương thức từ getAllCustomers đến getCurrentUser không đổi) ...
+    private AdminRepo adminRepo;
+
 
     @Override
     public List<Customer> getAllCustomers() {
@@ -57,6 +59,9 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public boolean registerCustomer(String name, String email, String phone, String address, String rawPassword) {
+        if(adminRepo.existsByEmailAndPasswordHash(email, rawPassword)){
+            throw new IllegalArgumentException("Vui lòng đăng kí tài khoảng khác");
+        }
         if (customerRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email đã tồn tại");
         }
