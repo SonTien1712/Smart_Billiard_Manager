@@ -15,7 +15,8 @@ import { customerService } from '../../services/customerService';
 import { useAuth } from '../AuthProvider';
 
 export function StaffManagement({ onPageChange }) {
-    const { customerId } = useAuth();
+  const customer = JSON.parse(sessionStorage.getItem("currentUser"));
+  const customerId = customer?.id;
   const [staff, setStaff] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
 

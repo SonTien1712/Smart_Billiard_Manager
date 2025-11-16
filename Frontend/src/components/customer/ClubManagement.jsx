@@ -15,7 +15,8 @@ import { handleSuccess, handleApiError } from '../../utils/errorHandler';
 import { useAuth } from '../AuthProvider';
 
 export function ClubManagement({ onPageChange }) {
-    const { customerId } = useAuth();
+const customer = JSON.parse(sessionStorage.getItem("currentUser"));
+    const customerId = customer?.id;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
   const [formData, setFormData] = useState({

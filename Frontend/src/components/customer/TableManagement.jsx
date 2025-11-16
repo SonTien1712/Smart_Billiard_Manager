@@ -55,8 +55,8 @@ export function TableManagement({ onPageChange }) {
     club: "Downtown Billiards Club"
   })
 
-  const customer = JSON.parse(localStorage.getItem("currentUser"));
-    const { customerId } = useAuth();
+  const customer = JSON.parse(sessionStorage.getItem("currentUser"));
+  const customerId = customer?.id;
 
   // ✅ Tạo API function ổn định
   const getTablesFunction = useCallback(() => {
