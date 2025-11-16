@@ -12,6 +12,8 @@ import { customerService } from '../../services/customerService';
 import { useApi } from '../../hooks/useApi';
 import { handleSuccess, handleApiError } from '../../utils/errorHandler';
 
+import { useAuth } from '../AuthProvider';
+
 export function ClubManagement({ onPageChange }) {
 const customer = JSON.parse(sessionStorage.getItem("currentUser"));
     const customerId = customer?.id;

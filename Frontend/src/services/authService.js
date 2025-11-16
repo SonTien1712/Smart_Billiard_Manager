@@ -20,6 +20,17 @@ export class AuthService {
     if (data?.success) {
       apiClient.setToken(data.accessToken);
       sessionStorage.setItem('refreshToken', data.refreshToken || '');
+
+
+        if (data.user || data.data) {
+            const user = data.user || data.data;
+            this.setCurrentUser(user);
+
+
+            if (user.customerId || user.id) {
+                sessionStorage.setItem('customerId', user.customerId || user.id);
+            }
+        }
     }
     
     return data;
@@ -55,6 +66,8 @@ export class AuthService {
       console.error('Logout error:', error);
     } finally {
       apiClient.removeToken();
+        this.removeCurrentUser();
+        sessionStorage.removeItem('customerId');
     }
   }
 
@@ -114,6 +127,7 @@ export class AuthService {
     sessionStorage.removeItem('refreshToken');
     apiClient.removeToken();
   }
+
 }
 
 export const authService = new AuthService();

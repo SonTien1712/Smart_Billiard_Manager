@@ -12,6 +12,8 @@ import { Users, Plus, Edit, Trash2, DollarSign, Phone, Mail } from 'lucide-react
 import { customerService } from '../../services/customerService';
 
 
+import { useAuth } from '../AuthProvider';
+
 export function StaffManagement({ onPageChange }) {
   const customer = JSON.parse(sessionStorage.getItem("currentUser"));
   const customerId = customer?.id;

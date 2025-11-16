@@ -21,6 +21,8 @@ import {
 
 
 
+import { useAuth } from '../AuthProvider';
+
 export function StaffAccountManagement({ onPageChange }) {
   const customer = JSON.parse(sessionStorage.getItem("currentUser"));
   const customerId = customer?.id;
