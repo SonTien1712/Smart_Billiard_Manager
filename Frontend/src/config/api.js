@@ -27,8 +27,8 @@ export const API_CONFIG = {
           CLUBS_BY_CUSTOMER: (customerId) => `/customer/clubs/customer/${customerId}`,
           TABLES_BY_CUSTOMER: (customerId) => `/tables/customer/${customerId}`,
           TABLES: '/tables',
-        //   STAFF: '/staff',
-          STAFF: '/customer/staff',
+          STAFF: '/staff',
+          STAFFSHIFT: '/customer/staff',
           STAFF_BY_CUSTOMER: (customerId) => `/staff/${customerId}`,
           SHIFTS: '/customer/shifts',
           // Promotions are exposed globally under /api/promotions
