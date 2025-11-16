@@ -1,7 +1,7 @@
 # =================
 # Java / Spring Boot
 # =================
-/backend/target/
+/Backend/target/
 *.class
 *.log
 *.jar
@@ -13,9 +13,10 @@
 # =================
 # Node / React
 # =================
-/frontend/node_modules/
-/frontend/build/
-/frontend/.env
+/Frontend/node_modules/
+/Frontend/build/
+/Frontend/.env
+/node_modules/
 
 # =================
 # General

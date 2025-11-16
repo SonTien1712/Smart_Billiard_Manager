@@ -134,4 +134,14 @@ public interface BillRepo extends JpaRepository<Bill, Integer> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
 
+    // Deep view for PDF export: fetch main associations to avoid LazyInitialization
+    @Query("select b from Bill b " +
+            "left join fetch b.tableID t " +
+            "left join fetch b.clubID c " +
+            "left join fetch b.employeeID e " +
+            "left join fetch b.customerID cu " +
+            "left join fetch b.promotionID p " +
+            "where b.id = :id")
+    Optional<Bill> findViewDeepById(@Param("id") Integer id);
+
 }
