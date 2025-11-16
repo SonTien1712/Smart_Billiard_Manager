@@ -21,9 +21,10 @@ import {
 
 
 
+import { useAuth } from '../AuthProvider';
+
 export function StaffAccountManagement({ onPageChange }) {
-  const customer = JSON.parse(localStorage.getItem("currentUser"));
-  const customerId = customer?.id;
+    const { customerId } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false); // State loading cho các nút (Save,...)

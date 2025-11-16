@@ -128,10 +128,10 @@ export class AuthService {
     apiClient.removeToken();
   }
 
-    getCustomerId() {
+  getCustomerId() {
         const customerId = sessionStorage.getItem('customerId');
         return customerId ? parseInt(customerId) : null;
-    }
+  }
 }
 
 export const authService = new AuthService();

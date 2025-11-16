@@ -12,9 +12,10 @@ import { Users, Plus, Edit, Trash2, DollarSign, Phone, Mail } from 'lucide-react
 import { customerService } from '../../services/customerService';
 
 
+import { useAuth } from '../AuthProvider';
+
 export function StaffManagement({ onPageChange }) {
-  const customer = JSON.parse(localStorage.getItem("currentUser"));
-  const customerId = customer?.id;
+    const { customerId } = useAuth();
   const [staff, setStaff] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
 

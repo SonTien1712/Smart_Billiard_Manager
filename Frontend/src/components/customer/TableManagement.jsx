@@ -42,6 +42,7 @@ import {
 } from "lucide-react"
 import { customerService } from '../../services/customerService';
 import { useApi } from '../../hooks/useApi';
+import { useAuth } from '../AuthProvider';
 
 export function TableManagement({ onPageChange }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -55,7 +56,7 @@ export function TableManagement({ onPageChange }) {
   })
 
   const customer = JSON.parse(localStorage.getItem("currentUser"));
-  const customerId = customer?.id;
+    const { customerId } = useAuth();
 
   // ✅ Tạo API function ổn định
   const getTablesFunction = useCallback(() => {
