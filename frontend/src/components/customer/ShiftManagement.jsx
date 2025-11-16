@@ -457,38 +457,32 @@ export function ShiftManagement() {
       </Card>
 
       {/* Stats Cards (Giữ nguyên) */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Shifts</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{shifts.length}</div>
-            <p className="text-xs text-muted-foreground">Tuần này</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{shifts.filter(s => (s.status || '').toUpperCase() === 'SCHEDULED').length}</div>
-            <p className="text-xs text-muted-foreground">Ca đã xếp</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{shifts.filter(s => (s.status || '').toUpperCase() === 'COMPLETED').length}</div>
-            <p className="text-xs text-muted-foreground">Chấm công xong</p>
-          </CardContent>
-        </Card>
+<div className="grid gap-4 md:grid-cols-3 items-stretch">
+  <Card className="h-full">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">Total Shifts</CardTitle>
+      <Calendar className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{shifts.length}</div>
+      <p className="text-xs text-muted-foreground">Tuần này</p>
+    </CardContent>
+  </Card>
+
+  <Card className="h-full">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">Assigned</CardTitle>
+      <Users className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">
+        {shifts.filter(s => (s.status || '').toUpperCase() === 'SCHEDULED').length}
       </div>
+      <p className="text-xs text-muted-foreground">Ca đã xếp</p>
+    </CardContent>
+  </Card>
+</div>
+
 
       {/* Modal được render ở đây là chính xác */}
       {
