@@ -138,10 +138,15 @@ export class CustomerService {
   }
 
   // Staff Management
-  async getStaff(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, query);
-    return response.data;
+ async getStaff(clubId, params) {
+    try {
+      const query = { clubId, ...(params || {}) };
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, query);
+      return response.data ?? response;
+    } catch (error) {
+      console.warn('[API Customer Staff] Fallback: returning empty list. Reason:', error?.message || error);
+      return [];
+    }
   }
 
   async createStaff(staffData) {
@@ -237,15 +242,34 @@ export class CustomerService {
   }
 
   // Shift Management
+  // async getShifts(clubId, params) {
+  //   const query = { clubId, ...(params || {}) };
+  //   const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, query);
+  //   return response.data;
+  // }
   async getShifts(clubId, params) {
-    const query = { clubId, ...(params || {}) };
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, query);
-    return response.data;
+    try {
+      const query = { clubId, ...(params || {}) };
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, query);
+      return response.data ?? response;
+    } catch (error) {
+      console.warn('[API Customer Shifts] Fallback: returning empty list. Reason:', error?.message || error);
+      return [];
+    }
   }
 
+  // async createShift(shiftData) {
+  //   const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, shiftData);
+  //   return response.data;
+  // }
   async createShift(shiftData) {
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, shiftData);
-    return response.data;
+    try {
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.CUSTOMER.SHIFTS, shiftData);
+      return response.data ?? response;
+    } catch (error) {
+      // Let caller show a toast; give clearer message
+      throw new Error('API tạo lịch chưa sẵn sàng trên server');
+    }
   }
 
   async updateShift(id, shiftData) {
