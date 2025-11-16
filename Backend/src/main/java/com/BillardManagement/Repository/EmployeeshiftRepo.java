@@ -19,6 +19,8 @@ public interface EmployeeshiftRepo extends JpaRepository<Employeeshift, Integer>
             LocalDate endDate
     );
 
+    List<Employeeshift> findByClubID_IdAndShiftDateBetween(Integer clubId, LocalDate startDate, LocalDate endDate);
+
     /**
      * Đếm số ca đang hoạt động (đã check-in nhưng chưa check-out)
      * Thông qua club để filter theo customer

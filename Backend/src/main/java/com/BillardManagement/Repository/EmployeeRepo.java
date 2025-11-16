@@ -30,4 +30,9 @@ public interface EmployeeRepo extends JpaRepository<Employee, Long> {
 
 
     List<Employee> findByCustomerID_IdAndAccountIsNull(Integer customerID_id);
+
+    // Find employees by club id (Employee.clubID.id)
+    List<Employee> findByClubID_Id(Integer clubId);
+    Optional<Employee> findEmployeeById(Long id);
+
 }

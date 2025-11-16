@@ -13,7 +13,7 @@ import { useApi } from '../../hooks/useApi';
 import { handleSuccess, handleApiError } from '../../utils/errorHandler';
 
 export function ClubManagement({ onPageChange }) {
-const customer = JSON.parse(localStorage.getItem("currentUser"));
+const customer = JSON.parse(sessionStorage.getItem("currentUser"));
     const customerId = customer?.id;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
