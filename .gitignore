@@ -16,6 +16,7 @@
 /frontend/node_modules/
 /frontend/build/
 /frontend/.env
+/node_modules/
 
 # =================
 # General
