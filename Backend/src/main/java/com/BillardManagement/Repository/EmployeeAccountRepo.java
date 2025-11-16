@@ -73,5 +73,5 @@ public interface EmployeeAccountRepo extends JpaRepository<Employeeaccount, Inte
      */
     List<Employeeaccount> findByCustomerIDId(Long customerId);
 
-
+    Optional<Employeeaccount> findByEmployeeID_Id(Integer employeeId);
 }
