@@ -1,24 +1,26 @@
+// javascript
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download, TrendingUp, DollarSign, Users, Calendar, Loader2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../AuthProvider';
 
 const API_BASE = 'http://localhost:8080/api';
 
 // Helper: Format currency
 const formatCurrency = (value) => {
-    const num = typeof value === 'object' && value !== null ? parseFloat(value) : value;
+    const num = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0);
 };
 
 export default function CustomerDashboard() {
+    const { CUSTOMER_ID } = useAuth();
     const [clubs, setClubs] = useState([]);
     const [selectedClub, setSelectedClub] = useState(null);
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // TODO: Thay bằng customerId thực từ authentication
-    const CUSTOMER_ID = 1;
+
 
     // Fetch danh sách clubs từ backend
     useEffect(() => {
@@ -36,6 +38,8 @@ export default function CustomerDashboard() {
                 setClubs(clubList);
                 if (clubList.length > 0) {
                     setSelectedClub(clubList[0].id || clubList[0].clubId);
+                } else {
+                    setSelectedClub(null);
                 }
             } catch (err) {
                 console.error('Error fetching clubs:', err);
@@ -43,51 +47,15 @@ export default function CustomerDashboard() {
             }
         };
 
-        fetchClubs();
-    }, []);
+        if (CUSTOMER_ID) {
+            fetchClubs();
+        }
+    }, [CUSTOMER_ID]);
 
     // Fetch dashboard data khi chọn club
     useEffect(() => {
         if (!selectedClub) return;
 
-        // const fetchDashboardData = async () => {
-        //     setLoading(true);
-        //     setError(null);
-        //
-        //     try {
-        //         // Gọi DashboardService.buildClubDashboard() qua một endpoint mới
-        //         // HOẶC tạm thời dùng mock data vì backend chưa có endpoint GET
-        //
-        //         // MOCK DATA - Xóa khi backend có endpoint thật
-        //         await new Promise(resolve => setTimeout(resolve, 500));
-        //
-        //         setDashboardData({
-        //             clubId: selectedClub,
-        //             clubName: clubs.find(c => (c.id || c.clubId) === selectedClub)?.clubName || `Club ${selectedClub}`,
-        //             revenueByMonth: [
-        //                 { month: '2024-10', revenue: 15000 },
-        //                 { month: '2024-11', revenue: 18500 },
-        //                 { month: '2024-12', revenue: 22000 }
-        //             ],
-        //             salaryByMonth: [
-        //                 { month: '2024-10', totalSalary: 8000 },
-        //                 { month: '2024-11', totalSalary: 8500 },
-        //                 { month: '2024-12', totalSalary: 9000 }
-        //             ],
-        //             topProducts: [
-        //                 { productId: 1, productName: 'Coke', category: 'Beverage', qtySold: 150, profitPerUnit: 1.5, totalProfit: 225 },
-        //                 { productId: 2, productName: 'Chips', category: 'Snack', qtySold: 120, profitPerUnit: 2.0, totalProfit: 240 },
-        //                 { productId: 3, productName: 'Beer', category: 'Beverage', qtySold: 90, profitPerUnit: 3.0, totalProfit: 270 }
-        //             ]
-        //         });
-        //
-        //     } catch (err) {
-        //         console.error('Error fetching dashboard:', err);
-        //         setError('Failed to load dashboard data');
-        //     } finally {
-        //         setLoading(false);
-        //     }
-        // };
         const fetchDashboardData = async () => {
             setLoading(true);
             setError(null);
@@ -114,7 +82,7 @@ export default function CustomerDashboard() {
         };
 
         fetchDashboardData();
-    }, [selectedClub, clubs]);
+    }, [selectedClub, clubs, CUSTOMER_ID]);
 
     // Export handlers
     const handleExportRevenue = async () => {
@@ -177,7 +145,6 @@ export default function CustomerDashboard() {
         }
     };
 
-    // ✅ MỚI: Export chi tiết lương nhân viên
     const handleExportEmployeeSalaries = async () => {
         try {
             const url = `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/export/employee-salaries`;
@@ -203,11 +170,11 @@ export default function CustomerDashboard() {
 
     // Calculate summary stats
     const summaryStats = dashboardData ? {
-        totalRevenue: dashboardData.revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0),
-        totalSalary: dashboardData.salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
-        netProfit: dashboardData.revenueByMonth.reduce((sum, m) => sum + (m.revenue || 0), 0) -
-            dashboardData.salaryByMonth.reduce((sum, m) => sum + (m.totalSalary || 0), 0),
-        topProductProfit: dashboardData.topProducts.reduce((sum, p) => sum + (p.totalProfit || 0), 0)
+        totalRevenue: (dashboardData.revenueByMonth || []).reduce((sum, m) => sum + (m.revenue || 0), 0),
+        totalSalary: (dashboardData.salaryByMonth || []).reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+        netProfit: (dashboardData.revenueByMonth || []).reduce((sum, m) => sum + (m.revenue || 0), 0) -
+            (dashboardData.salaryByMonth || []).reduce((sum, m) => sum + (m.totalSalary || 0), 0),
+        topProductProfit: (dashboardData.topProducts || []).reduce((sum, p) => sum + (p.totalProfit || 0), 0)
     } : null;
 
     if (error && clubs.length === 0) {
@@ -231,13 +198,11 @@ export default function CustomerDashboard() {
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
 
-                {/* Header */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">Club Dashboard</h1>
                     <p className="text-gray-600">Analytics & Reports</p>
                 </div>
 
-                {/* Club Selector */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Select Club</label>
                     <select
@@ -260,7 +225,6 @@ export default function CustomerDashboard() {
                     </div>
                 ) : dashboardData ? (
                     <>
-                        {/* Summary Cards */}
                         {summaryStats && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div className="bg-white rounded-lg shadow p-6">
@@ -301,7 +265,6 @@ export default function CustomerDashboard() {
                             </div>
                         )}
 
-                        {/* Revenue Chart */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Revenue</h2>
@@ -325,7 +288,6 @@ export default function CustomerDashboard() {
                             </ResponsiveContainer>
                         </div>
 
-                        {/* Salary Chart */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Salaries</h2>
@@ -349,7 +311,6 @@ export default function CustomerDashboard() {
                             </ResponsiveContainer>
                         </div>
 
-                        {/* Top Products Table */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Top Products by Profit</h2>
