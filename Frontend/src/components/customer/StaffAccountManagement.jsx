@@ -22,7 +22,7 @@ import {
 
 
 export function StaffAccountManagement({ onPageChange }) {
-  const customer = JSON.parse(localStorage.getItem("currentUser"));
+  const customer = JSON.parse(sessionStorage.getItem("currentUser"));
   const customerId = customer?.id;
   const [accounts, setAccounts] = useState([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
