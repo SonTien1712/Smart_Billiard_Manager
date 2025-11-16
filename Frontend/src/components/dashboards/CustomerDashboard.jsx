@@ -47,9 +47,8 @@ export default function CustomerDashboard() {
             }
         };
 
-        if (CUSTOMER_ID) {
             fetchClubs();
-        }
+
     }, [CUSTOMER_ID]);
 
     // Fetch dashboard data khi chọn club
