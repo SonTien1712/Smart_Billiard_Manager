@@ -5,6 +5,7 @@ const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [CUSTOMER_ID, setCustomerId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export function AuthProvider({ children }) {
 
       console.log('Updated user:', profile);
       setUser(profile);
+      setCustomerId(profile?.customerId || profile?.id || null);
       authService.setCurrentUser(profile);
 
       return profile;
@@ -35,6 +37,7 @@ export function AuthProvider({ children }) {
           // Try to fetch user profile from server
           const profile = await authService.getProfile();
           setUser(profile);
+          setCustomerId(profile?.customerId || profile?.id || null);
           authService.setCurrentUser(profile);
         }
       }
@@ -79,9 +82,11 @@ export function AuthProvider({ children }) {
         role: serverRole || derivedRole, // ADMIN | STAFF | CUSTOMER
       };
       setUser(normalizedUser);
-      authService.setCurrentUser(normalizedUser);
+      setCustomerId(normalizedUser?.customerId || normalizedUser?.id || null); // ✅ Set CUSTOMER_IDauthService.setCurrentUser(normalizedUser);
 
-      return authResponse; // Return the response for SignIn component to use
+        console.log('🔍 Login success - CUSTOMER_ID:', normalizedUser?.customerId || normalizedUser?.id);
+
+        return authResponse; // Return the response for SignIn component to use
 
     } catch (error) {
       console.error('Login failed:', error);
@@ -122,7 +127,9 @@ export function AuthProvider({ children }) {
       setLoading(true);
       await authService.logout();
       setUser(null);
-      authService.removeCurrentUser();
+      setCustomerId(null); // ✅ Clear CUSTOMER_ID
+
+        authService.removeCurrentUser();
       authService.removeToken();
     } catch (error) {
       console.error('Logout failed:', error);
@@ -135,7 +142,10 @@ export function AuthProvider({ children }) {
     try {
       const updatedUser = await authService.updateProfile(userData);
       setUser(updatedUser);
-      authService.setCurrentUser(updatedUser);
+
+      setCustomerId(updatedUser?.customerId || updatedUser?.id || null); // ✅ Update CUSTOMER_ID
+
+        authService.setCurrentUser(updatedUser);
     } catch (error) {
       console.error('Profile update failed:', error);
       throw error;
@@ -182,6 +192,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user,
+        CUSTOMER_ID,
       loading,
       login,
       register,
