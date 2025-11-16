@@ -104,7 +104,7 @@ export function BillManagement({ onPageChange }) {
           const opened = await staffService.openTable({
             tableId: table.id,
             clubId: user?.clubId || user?.club?.id,
-            customerId: user?.customerId || user?.customer?.id || 1,
+            customerId: user?.customerId || user?.customer?.id || user?.accountId || 1,
             employeeId: user?.employeeId
           });
           // Reset order to avoid leaking items into new bills

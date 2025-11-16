@@ -82,6 +82,4 @@ public class Bill {
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "CreatedDate")
     private Instant createdDate;
-
-    private BigDecimal total_amount;
 }
