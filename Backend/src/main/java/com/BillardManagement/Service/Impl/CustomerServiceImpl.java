@@ -44,6 +44,7 @@ public class CustomerServiceImpl implements CustomerService {
     private EmployeeshiftRepo employeeshiftRepo;
 
     // ... (Tất cả các phương thức từ getAllCustomers đến getCurrentUser không đổi) ...
+    @Autowired
     private AdminRepo adminRepo;
 
 
