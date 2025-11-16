@@ -105,7 +105,7 @@ public class StaffController {
         employee.setDateHired(request.getDateHired());
         employee.setBankNumber(request.getBankNumber());
         employee.setBankName(request.getBankName());
-        employee.setIsActive(request.getIsActive());
+        employee.setIsActive(true);
 
         // ✅ Logic lương theo loại nhân viên
         if ("FullTime".equalsIgnoreCase(request.getEmployeeType())) {

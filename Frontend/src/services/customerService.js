@@ -141,7 +141,7 @@ export class CustomerService {
  async getStaff(clubId, params) {
     try {
       const query = { clubId, ...(params || {}) };
-      const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFF, query);
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.CUSTOMER.STAFFSHIFT, query);
       return response.data ?? response;
     } catch (error) {
       console.warn('[API Customer Staff] Fallback: returning empty list. Reason:', error?.message || error);
