@@ -4,6 +4,7 @@ import com.BillardManagement.DTO.Response.EmployeeResponse;
 import com.BillardManagement.DTO.Request.EmployeeRequest;
 import com.BillardManagement.DTO.Response.ShiftDTO;
 import com.BillardManagement.DTO.Response.PayrollSummaryDTO;
+import com.BillardManagement.Service.EmployeeService;
 import com.BillardManagement.Entity.*;
 import com.BillardManagement.Mapper.EmployeeMapper;
 import com.BillardManagement.Repository.*;
@@ -36,6 +37,26 @@ public class StaffController {
     // Thêm 2 repo này
     private final BilliardClubRepo clubRepo;
     private final CustomerRepo customerRepo;
+
+    private final EmployeeService employeeService;
+
+
+
+
+    @GetMapping("/customer/{customerId}/staff/unassigned")
+    public ResponseEntity<List<EmployeeResponse>> getUnassignedStaff(@PathVariable Integer customerId) {
+
+        // Bước 1: Gọi Service để lấy danh sách Entity
+        List<Employee> unassignedList = employeeService.getUnassignedEmployees(customerId);
+
+        // Bước 2: Dùng Mapper để chuyển List<Employee> thành List<EmployeeResponse>
+        List<EmployeeResponse> responses = unassignedList.stream()
+                .map(employeeMapper::toResponse) // Giả sử hàm mapper của bạn tên là toResponse
+                .toList(); // Hoặc .collect(Collectors.toList())
+
+        // Bước 3: Trả về danh sách DTO
+        return ResponseEntity.ok(responses);
+    }
 
 
     // ==========================

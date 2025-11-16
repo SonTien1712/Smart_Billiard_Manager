@@ -74,4 +74,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setPhoneNumber(phone);
         return employeeRepository.save(employee);
     }
+
+    @Override
+    public List<Employee> getUnassignedEmployees(Integer customerId) {
+        // Gọi thẳng hàm repository
+        return employeeRepository.findByCustomerID_IdAndAccountIsNull(customerId);
+    }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 // Nghiệp vụ nhân viên: Truy cập tài khoản nhân viên và ánh xạ sang thông tin người dùng phục vụ đăng nhập/ủy quyền
@@ -62,5 +63,15 @@ public interface EmployeeAccountRepo extends JpaRepository<Employeeaccount, Inte
     """)
     // Lấy view rút gọn của nhân viên thông qua email (phục vụ login bằng email)
     Optional<EmployeeUserView> findViewByEmployeeEmail(@Param("email") String email);
+
+    // Thêm phương thức này vào file EmployeeAccountRepo.java
+
+    /**
+     * Tự động tạo câu query để tìm tất cả Employeeaccount
+     * dựa trên ID của Customer (khóa ngoại customerID_id)
+     * Giả sử ID của Customer là kiểu Long.
+     */
+    List<Employeeaccount> findByCustomerIDId(Long customerId);
+
 
 }

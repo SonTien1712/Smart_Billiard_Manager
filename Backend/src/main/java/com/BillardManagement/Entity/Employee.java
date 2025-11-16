@@ -72,4 +72,7 @@ public class Employee {
     @Column(name = "IsActive")
     private Boolean isActive;
 
+    @OneToOne(mappedBy = "employeeID", fetch = FetchType.LAZY)
+    private Employeeaccount account;
+
 }

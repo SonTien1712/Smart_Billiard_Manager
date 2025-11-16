@@ -40,6 +40,8 @@ export const API_CONFIG = {
 
           DASHBOARD_STATS: '/customers/dashboard-stats',
           DASHBOARD_STATS_BY_ID: (customerId) => `/customers/${customerId}/dashboard-stats`,
+          STAFF_ACCOUNTS_BY_CUSTOMER: (customerId) => `/customer/staff-accounts/by-customer/${customerId}`,
+          STAFF_UNASSIGNED: (customerId) => `/staff/customer/${customerId}/staff/unassigned`,
 
       },
       // Staff endpoints

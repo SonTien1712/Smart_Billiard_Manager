@@ -29,4 +29,5 @@ public interface EmployeeRepo extends JpaRepository<Employee, Long> {
     Long countByClubCustomerID(@Param("customerId") Integer customerId);
 
 
+    List<Employee> findByCustomerID_IdAndAccountIsNull(Integer customerID_id);
 }
