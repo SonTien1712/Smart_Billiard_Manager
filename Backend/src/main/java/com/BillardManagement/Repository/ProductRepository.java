@@ -38,4 +38,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     Long countByCustomerId(@Param("customerId") Integer customerId);
 
     Long countByCustomerIdAndIsActive(Integer customerId, Boolean isActive);
+
+    List<Product> findByIsActiveTrueOrderByProductNameAsc();
+    List<Product> findByClubId_idAndIsActiveTrueOrderByProductNameAsc(Integer clubId);
+    List<Product> findByCustomerId_idAndIsActiveTrueOrderByProductNameAsc(Integer customerId);
 }
