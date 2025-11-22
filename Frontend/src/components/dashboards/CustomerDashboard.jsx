@@ -299,7 +299,7 @@ export default function CustomerDashboard() {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis
                                         dataKey="month"
-                                        label={{ value: 'Tháng (Month)', position: 'insideBottom', offset: -10, style: { fontWeight: 'bold' } }}
+                                        label={{ value: 'Tháng ', position: 'insideBottom', offset: -10, style: { fontWeight: 'bold' } }}
                                         tick={{ fontSize: 12 }}
                                         angle={-45}
                                         textAnchor="end"
@@ -307,7 +307,7 @@ export default function CustomerDashboard() {
                                     />
                                     <YAxis
                                         tickFormatter={formatCurrencyShort}
-                                        label={{ value: 'Doanh thu (VND)', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold' } }}
+                                        label={{ value: 'Doanh thu ', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold' } }}
                                         tick={{ fontSize: 12 }}
                                         width={80}
                                     />
@@ -341,7 +341,7 @@ export default function CustomerDashboard() {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis
                                         dataKey="month"
-                                        label={{ value: 'Tháng (Month)', position: 'insideBottom', offset: -10, style: { fontWeight: 'bold' } }}
+                                        label={{ value: 'Tháng ', position: 'insideBottom', offset: -10, style: { fontWeight: 'bold' } }}
                                         tick={{ fontSize: 12 }}
                                         angle={-45}
                                         textAnchor="end"
@@ -349,7 +349,7 @@ export default function CustomerDashboard() {
                                     />
                                     <YAxis
                                         tickFormatter={formatCurrencyShort}
-                                        label={{ value: 'Lương (VND)', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold' } }}
+                                        label={{ value: 'Lương ', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold' } }}
                                         tick={{ fontSize: 12 }}
                                         width={80}
                                     />
