@@ -119,17 +119,34 @@ export function ShiftManagement() {
     return toLocalYMD(date);
   };
 
-  const isSlotUnavailable = (dateStr, slotStartTimeStr, slotEndTimeStr) => {
-    const now = new Date();
-    const slotStart = new Date(`${dateStr}T${slotStartTimeStr}`);
-    const slotEnd = new Date(`${dateStr}T${slotEndTimeStr}`); 
+ const isSlotUnavailable = (dateStr, slotStartTimeStr, slotEndTimeStr) => {
+  const now = new Date();
+  
+  // 1. Khởi tạo thời gian Start và End cơ bản theo ngày được chọn
+  let slotStart = new Date(`${dateStr}T${slotStartTimeStr}`);
+  let slotEnd = new Date(`${dateStr}T${slotEndTimeStr}`);
 
-    if (slotEnd <= slotStart) {
-      // Logic for overnight shift check if needed
-    }
+  // --- ĐOẠN CODE CẦN THÊM VÀO ---
+  // Mốc bắt đầu ngày làm việc là 06:00 sáng
+  // Nếu giờ bắt đầu ca nhỏ hơn 06:00 (VD: 02:00 của Night 2)
+  // => Ca này thực tế diễn ra vào ngày hôm sau (về mặt lịch)
+  const DAY_START_THRESHOLD = "06:00:00"; 
+  
+  if (slotStartTimeStr < DAY_START_THRESHOLD) {
+    // Cộng thêm 1 ngày (24h) vào thời gian bắt đầu
+    slotStart = new Date(slotStart.getTime() + 24 * 60 * 60 * 1000);
+  }
+  // ------------------------------
 
-    return slotStart <= now;
-  };
+  // 2. Logic xử lý End time (giữ nguyên logic cũ của bạn nhưng nó sẽ chạy đúng nhờ slotStart mới)
+  // Nếu End <= Start (lúc này Start có thể đã sang ngày mới), thì End phải cộng thêm 1 ngày
+  if (slotEnd <= slotStart) {
+    slotEnd = new Date(slotEnd.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  // 3. So sánh với thời gian hiện tại
+  return slotStart <= now;
+};
 
   // --- Data Fetching ---
   const directClubId = useMemo(() => user?.clubId || user?.club?.id || user?.customerClubId, [user]);

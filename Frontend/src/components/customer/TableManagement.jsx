@@ -368,7 +368,6 @@ const clubs = clubsData || [];
                 <SelectContent>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="occupied">Occupied</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
