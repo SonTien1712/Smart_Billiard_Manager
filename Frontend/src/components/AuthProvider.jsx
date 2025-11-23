@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
 
       // lấy & lưu token (để isAuthenticated() hoạt động sau reload)
       const token = authResponse?.accessToken || '';
-      localStorage.setItem('accessToken', token);
+      sessionStorage.setItem('accessToken', token);
 
       // Ưu tiên role từ server (nếu có), sau đó mới suy ra từ token
       const serverRole = authResponse?.user?.role;
