@@ -5,11 +5,26 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface DashboardRepository extends JpaRepository<Bill, Integer> {
 
-    // ==================== ✅ REVENUE QUERY ====================
+    /**
+     * ✅ Lấy Bills đã Paid trong khoảng thời gian cho revenue calculation
+     */
+    List<Bill> findByClubID_IdAndCustomerID_IdAndBillStatusIgnoreCaseAndCreatedDateBetween(
+            Integer clubId,
+            Integer customerId,
+            String billStatus,
+            Instant fromDate,
+            Instant toDate
+    );
+
+    /**
+     * ✅ LEGACY QUERIES - Giữ lại để backward compatible
+     * Các query này vẫn có thể dùng nếu cần fallback
+     */
     @Query(value =
             "SELECT DATE_FORMAT(b.CreatedDate, '%Y-%m') AS month, " +
                     "       COALESCE(SUM(b.FinalAmount), 0) AS revenue " +
@@ -29,12 +44,6 @@ public interface DashboardRepository extends JpaRepository<Bill, Integer> {
             @Param("toDate") String toDate
     );
 
-    // ==================== ✅ SALARY QUERY - COMPLETELY REWRITTEN ====================
-    /**
-     * Subquery approach: Tính lương theo từng nhân viên, sau đó SUM theo tháng
-     * - FullTime: Lấy Salary * 1 (mỗi tháng chỉ tính 1 lần)
-     * - PartTime: SUM(HourlyRate * HoursWorked)
-     */
     @Query(value =
             "SELECT month, SUM(monthlySalary) AS totalSalary " +
                     "FROM ( " +
@@ -68,7 +77,6 @@ public interface DashboardRepository extends JpaRepository<Bill, Integer> {
             @Param("toDate") String toDate
     );
 
-    // ==================== ✅ TOP PRODUCTS QUERY ====================
     @Query(value =
             "SELECT p.ProductID, " +
                     "       p.ProductName, " +
@@ -96,11 +104,6 @@ public interface DashboardRepository extends JpaRepository<Bill, Integer> {
             @Param("limit") Integer limit
     );
 
-    // ==================== ✅ EMPLOYEE SALARY DETAILS ====================
-    /**
-     * Chi tiết lương từng nhân viên
-     * Dùng subquery để tính số tháng distinct cho FullTime
-     */
     @Query(value =
             "SELECT " +
                     "  e.EmployeeID, " +

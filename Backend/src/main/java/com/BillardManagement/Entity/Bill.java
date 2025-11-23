@@ -82,4 +82,6 @@ public class Bill {
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "CreatedDate")
     private Instant createdDate;
+
+
 }

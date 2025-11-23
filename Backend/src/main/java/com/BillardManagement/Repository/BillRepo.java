@@ -144,4 +144,5 @@ public interface BillRepo extends JpaRepository<Bill, Integer> {
             "where b.id = :id")
     Optional<Bill> findViewDeepById(@Param("id") Integer id);
 
+    List<Bill> findByClubID_IdAndCustomerID_IdAndBillStatusIgnoreCaseAndCreatedDateBetween(Integer clubId, Integer customerId, String paid, Instant instant, Instant instant1);
 }

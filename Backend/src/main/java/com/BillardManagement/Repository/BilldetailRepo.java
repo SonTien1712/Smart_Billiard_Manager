@@ -4,6 +4,7 @@ import com.BillardManagement.Entity.Billdetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +18,7 @@ public interface BilldetailRepo extends JpaRepository<Billdetail, Integer> {
     // Eagerly load product for viewing purposes
     @Query("select d from Billdetail d left join fetch d.productID where d.billID.id = :billId")
     List<Billdetail> findWithProductByBill(@Param("billId") Integer billId);
+
+
+    List<Billdetail> findByClubID_IdAndCustomerID_Id(Integer clubId, Integer customerId);
 }

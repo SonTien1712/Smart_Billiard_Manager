@@ -30,4 +30,26 @@ public interface EmployeeshiftRepo extends JpaRepository<Employeeshift, Integer>
             "AND s.actualStartTime IS NOT NULL " +
             "AND s.actualEndTime IS NULL")
     Long countActiveShiftsByCustomerId(@Param("customerId") Integer customerId);
+
+
+
+    /**
+     * ✅ Tìm shifts theo ClubID và CustomerID trong khoảng thời gian
+     */
+    List<Employeeshift> findByClubID_IdAndCustomerID_IdAndShiftDateBetween(
+            Integer clubId,
+            Integer customerId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    /**
+     * ✅ Tìm shifts theo status
+     */
+    List<Employeeshift> findByEmployeeID_IdAndShiftDateBetweenAndStatus(
+            Integer employeeId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String status
+    );
 }
