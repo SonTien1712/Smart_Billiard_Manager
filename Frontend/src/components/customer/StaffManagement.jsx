@@ -348,9 +348,7 @@ export function StaffManagement({ onPageChange }) {
                     <SelectValue placeholder="Select contract type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="FullTime">Full-time</SelectItem>
                     <SelectItem value="PartTime">Part-time</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

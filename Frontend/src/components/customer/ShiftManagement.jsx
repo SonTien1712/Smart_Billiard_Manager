@@ -10,9 +10,10 @@ import { customerService } from '../../services/customerService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 // --- Component Modal Chi Tiết Ca ---
-const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenChange }) => {
+const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenChange,isSlotUnavailable }) => {
   // Changed locale to en-US for English format
   const displayDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'numeric' });
+  const isPast = isSlotUnavailable(date, slot.start, slot.end);
 
   return (
     <Dialog open={assignments !== null} onOpenChange={onOpenChange}>
@@ -20,6 +21,11 @@ const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenCha
         <DialogHeader>
           <DialogTitle>Shift Details: {slot.label}</DialogTitle>
           <div className="text-sm text-muted-foreground">{displayDate} ({slot.start} - {slot.end})</div>
+          {isPast && (
+            <div className="text-xs text-amber-600 font-medium mt-1">
+              ⚠️ This shift is in the past and cannot be modified
+            </div>
+          )}
         </DialogHeader>
         <div className="space-y-3 pt-4 max-h-96 overflow-y-auto">
           {assignments.length === 0 ? (
@@ -37,6 +43,8 @@ const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenCha
                   variant="destructive"
                   size="sm"
                   onClick={() => onUnassign(shift)}
+                  disabled={isPast} // THÊM DÒNG NÀY
+                  className={isPast ? 'opacity-50 cursor-not-allowed' : ''} // THÊM DÒNG NÀY
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Unassign
@@ -49,6 +57,13 @@ const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenCha
     </Dialog>
   );
 };
+
+
+
+
+
+
+
 
 // --- Component Chính: ShiftManagement ---
 export function ShiftManagement() {
@@ -666,6 +681,7 @@ export function ShiftManagement() {
           date={selectedShiftDetails.date}
           onUnassign={handleUnassign}
           onOpenChange={() => setSelectedShiftDetails(null)}
+          isSlotUnavailable={isSlotUnavailable}
         />
       )}
     </div>
