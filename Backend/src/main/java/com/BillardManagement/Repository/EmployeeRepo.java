@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,4 +36,6 @@ public interface EmployeeRepo extends JpaRepository<Employee, Long> {
     List<Employee> findByClubID_Id(Integer clubId);
     Optional<Employee> findEmployeeById(Long id);
 
+    List<Employee> findByClubID_IdAndCustomerID_Id(Integer clubId, Integer customerId);
+    List<Employee> findByClubID_IdAndCustomerID_IdAndIsActiveTrue(Integer clubId, Integer customerId);
 }
