@@ -43,7 +43,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout() {
         // Không lưu gì, không revoke, chỉ trả OK
-        return ResponseEntity.ok(new LogoutResponse(true, "Đăng xuất thành công"));
+        return ResponseEntity.ok(new LogoutResponse(true, "Logout successfully"));
     }
 
     @PostMapping("/register")
@@ -58,14 +58,14 @@ public class AuthController {
             );
 
             if (ok) {
-                return ResponseEntity.ok(new RegisterResponse(true, "Đăng ký thành công"));
+                return ResponseEntity.ok(new RegisterResponse(true, "Register successfully"));
             }
             return ResponseEntity.internalServerError()
-                    .body(new RegisterResponse(false, "Đăng ký thất bại"));
+                    .body(new RegisterResponse(false, "Register fail"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new RegisterResponse(false, e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new RegisterResponse(false, "Lỗi hệ thống"));
+            return ResponseEntity.internalServerError().body(new RegisterResponse(false, "sever error"));
         }
     }
 
@@ -73,7 +73,7 @@ public class AuthController {
     public ResponseEntity<?> forgotPassword(@RequestBody @jakarta.validation.Valid com.BillardManagement.DTO.Request.ForgotPasswordRequest req) {
         try {
             forgotPasswordService.requestReset(req.getEmail());
-            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Đã gửi email đặt lại mật khẩu"));
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Email reset password has already sended"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
         }
@@ -97,7 +97,7 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@RequestBody @jakarta.validation.Valid com.BillardManagement.DTO.Request.ResetPasswordRequest req) {
         try {
             forgotPasswordService.resetPassword(req.getToken(), req.getNewPassword());
-            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Đặt lại mật khẩu thành công"));
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Reset password successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
         }
