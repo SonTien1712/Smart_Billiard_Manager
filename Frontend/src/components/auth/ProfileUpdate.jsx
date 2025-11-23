@@ -89,10 +89,6 @@ export function ProfileUpdate() {
                   {user?.name ? getInitials(user.name) : <User className="h-8 w-8" />}
                 </AvatarFallback>
               </Avatar>
-              <Button type="button" variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Change Avatar
-              </Button>
             </div>
             
             <div className="space-y-2">

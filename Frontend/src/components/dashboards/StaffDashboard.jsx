@@ -196,9 +196,6 @@ export function StaffDashboard({ onPageChange }) {
               <CardTitle>Recent Bills</CardTitle>
               <CardDescription>Latest transactions processed</CardDescription>
             </div>
-            <Button onClick={() => onPageChange('bills')}>
-              View All
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -264,9 +261,6 @@ export function StaffDashboard({ onPageChange }) {
               <CardTitle>Upcoming Shifts</CardTitle>
               <CardDescription>Your scheduled work hours</CardDescription>
             </div>
-            <Button onClick={() => onPageChange('work')}>
-              View All
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

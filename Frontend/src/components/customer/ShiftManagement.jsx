@@ -1,28 +1,35 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react'; // Thêm 'useCallback'
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Calendar, ChevronLeft, ChevronRight, Users, Plus, Trash2, X } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Users, Plus, Trash2, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../AuthProvider';
 import { customerService } from '../../services/customerService';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
-// --- Component Modal Chi Tiết Ca (Giữ nguyên, rất tốt) ---
-const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenChange }) => {
-  const displayDate = new Date(date).toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
+// --- Component Modal Chi Tiết Ca ---
+const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenChange,isSlotUnavailable }) => {
+  // Changed locale to en-US for English format
+  const displayDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'numeric' });
+  const isPast = isSlotUnavailable(date, slot.start, slot.end);
 
   return (
     <Dialog open={assignments !== null} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Chi Tiết Ca Làm: {slot.label}</DialogTitle>
+          <DialogTitle>Shift Details: {slot.label}</DialogTitle>
           <div className="text-sm text-muted-foreground">{displayDate} ({slot.start} - {slot.end})</div>
+          {isPast && (
+            <div className="text-xs text-amber-600 font-medium mt-1">
+              ⚠️ This shift is in the past and cannot be modified
+            </div>
+          )}
         </DialogHeader>
         <div className="space-y-3 pt-4 max-h-96 overflow-y-auto">
           {assignments.length === 0 ? (
-            <p className="text-center text-muted-foreground">Chưa có nhân viên nào được gán ca này.</p>
+            <p className="text-center text-muted-foreground">No staff assigned to this shift.</p>
           ) : (
             assignments.map((shift) => (
               <div key={shift.id} className="flex items-center justify-between p-3 border rounded-lg bg-card shadow-sm">
@@ -36,9 +43,11 @@ const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenCha
                   variant="destructive"
                   size="sm"
                   onClick={() => onUnassign(shift)}
+                  disabled={isPast} // THÊM DÒNG NÀY
+                  className={isPast ? 'opacity-50 cursor-not-allowed' : ''} // THÊM DÒNG NÀY
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Gỡ Ca
+                  Unassign
                 </Button>
               </div>
             ))
@@ -48,6 +57,13 @@ const ShiftAssignmentDetails = ({ assignments, slot, date, onUnassign, onOpenCha
     </Dialog>
   );
 };
+
+
+
+
+
+
+
 
 // --- Component Chính: ShiftManagement ---
 export function ShiftManagement() {
@@ -63,6 +79,7 @@ export function ShiftManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [isAssignmentMode, setIsAssignmentMode] = useState(false);
   const [selectedShiftDetails, setSelectedShiftDetails] = useState(null);
+  const [pendingAssignments, setPendingAssignments] = useState([]);
 
   // --- Constants & Date Utils ---
   const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -75,12 +92,12 @@ export function ShiftManagement() {
   const endOfWeek = useMemo(() => new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000), [startOfWeek]);
 
   const daySlots = [
-    { code: 'SANG_1', label: 'Sáng 1', start: '06:00:00', end: '10:00:00' },
-    { code: 'SANG_2', label: 'Sáng 2', start: '10:00:00', end: '14:00:00' },
-    { code: 'CHIEU_1', label: 'Chiều 1', start: '14:00:00', end: '18:00:00' },
-    { code: 'CHIEU_2', label: 'Chiều 2', start: '18:00:00', end: '22:00:00' },
-    { code: 'DEM_1', label: 'Đêm 1', start: '22:00:00', end: '02:00:00' },
-    { code: 'DEM_2', label: 'Đêm 2', start: '02:00:00', end: '06:00:00' },
+    { code: 'SANG_1', label: 'Morning 1', start: '06:00:00', end: '10:00:00' },
+    { code: 'SANG_2', label: 'Morning 2', start: '10:00:00', end: '14:00:00' },
+    { code: 'CHIEU_1', label: 'Afternoon 1', start: '14:00:00', end: '18:00:00' },
+    { code: 'CHIEU_2', label: 'Afternoon 2', start: '18:00:00', end: '22:00:00' },
+    { code: 'DEM_1', label: 'Night 1', start: '22:00:00', end: '02:00:00' },
+    { code: 'DEM_2', label: 'Night 2', start: '02:00:00', end: '06:00:00' },
   ];
 
   const toLocalYMD = (d) => {
@@ -89,15 +106,29 @@ export function ShiftManagement() {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   };
+
   const toMinutes = (hhmmss) => {
     if (!hhmmss) return null;
     const [h, m] = hhmmss.split(':').map(Number);
     return (h % 24) * 60 + (m || 0);
   };
+
   const getDateForDay = (dayIndex) => {
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate() + dayIndex);
     return toLocalYMD(date);
+  };
+
+  const isSlotUnavailable = (dateStr, slotStartTimeStr, slotEndTimeStr) => {
+    const now = new Date();
+    const slotStart = new Date(`${dateStr}T${slotStartTimeStr}`);
+    const slotEnd = new Date(`${dateStr}T${slotEndTimeStr}`); 
+
+    if (slotEnd <= slotStart) {
+      // Logic for overnight shift check if needed
+    }
+
+    return slotStart <= now;
   };
 
   // --- Data Fetching ---
@@ -151,7 +182,6 @@ export function ShiftManagement() {
           return { id, name };
         }).filter(x => x.id);
         setEmployees(mapped);
-        // [TỐI ƯU GỌN GÀNG] Tự động chọn nhân viên đầu tiên (hoặc xóa lựa chọn cũ)
         if (mapped.length > 0) {
           setSelectedEmployeeId(String(mapped[0].id));
         } else {
@@ -165,7 +195,6 @@ export function ShiftManagement() {
     loadStaff();
   }, [effectiveClubId]);
 
-  // [TỐI ƯU 1 - GỌN GÀNG] Bọc `loadShifts` trong `useCallback`
   const loadShifts = useCallback(async () => {
     if (!effectiveClubId) return;
     setLoading(true);
@@ -188,9 +217,8 @@ export function ShiftManagement() {
     } finally {
       setLoading(false);
     }
-  }, [effectiveClubId, startOfWeek, endOfWeek]); // Dependencies của hàm
+  }, [effectiveClubId, startOfWeek, endOfWeek]);
 
-  // `useEffect` này bây giờ phụ thuộc vào hàm `loadShifts` đã được useCallback
   useEffect(() => {
     loadShifts();
   }, [loadShifts]);
@@ -203,78 +231,142 @@ export function ShiftManagement() {
       if (!s.date || s.date !== date) return false;
       const sMin = toMinutes(s.startTime);
       if (sMin == null) return false;
-      if (slot.code === 'DEM_1') return sMin >= startMin || sMin < endMin; // wrap midnight
+      if (slot.code === 'DEM_1') return sMin >= startMin || sMin < endMin;
       return sMin >= startMin && sMin < endMin;
     });
   };
 
-  const handleAssign = async (date, slot) => {
-    if (!effectiveClubId) {
-      toast.error('Chưa chọn Club');
-      return;
-    }
-    if (!selectedEmployeeId) {
-      toast.error('Vui lòng chọn nhân viên trước');
-      return;
-    }
-    const emp = employees.find(e => String(e.id) === String(selectedEmployeeId));
-    const ok = window.confirm(`Thêm lịch cho ${emp?.name || 'nhân viên'}\nNgày ${date} - ${slot.label} (${slot.start} ~ ${slot.end})?`);
-    if (!ok) return;
-    try {
-      setSubmitting(true);
-      await customerService.createShift({
-        clubId: Number(effectiveClubId),
-        staffId: Number(selectedEmployeeId),
-        date,
-        startTime: slot.start,
-        endTime: slot.end,
-        status: 'SCHEDULED',
-        shiftCode: slot.code,
-      });
-      toast.success('Đã tạo lịch làm');
-      await loadShifts();
-    } catch (e) {
-      console.error('Create shift failed', e);
-      toast.error('Tạo lịch thất bại. Vui lòng thử lại.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleUnassign = async (shift) => {
-    const ok = window.confirm(`Gỡ lịch của ${shift.staffName || `#${shift.staffId}`}?`);
+    const ok = window.confirm(`Unassign shift for ${shift.staffName || `#${shift.staffId}`}?`);
     if (!ok) return;
     try {
       setSubmitting(true);
       await customerService.deleteShift(shift.id);
-      toast.success('Đã gỡ lịch');
+      toast.success('Shift unassigned successfully');
       await loadShifts();
-      setSelectedShiftDetails(null); // Đóng modal
+      setSelectedShiftDetails(null);
     } catch (e) {
       console.error('Delete shift failed', e);
-      toast.error('Gỡ lịch thất bại');
+      toast.error('Failed to unassign shift');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const isPending = (date, slot) => {
+    return pendingAssignments.some(p =>
+      p.date === date &&
+      p.slotCode === slot.code &&
+      String(p.staffId) === String(selectedEmployeeId)
+    );
+  };
+
   const handleSlotClick = (date, slot) => {
-    const assigned = findAssignments(date, slot);
-    if (isAssignmentMode) {
-      handleAssign(date, slot);
-    } else {
+    // 1. Kiểm tra chế độ gán ca
+    if (!isAssignmentMode) {
+      const assigned = findAssignments(date, slot);
       setSelectedShiftDetails({ date, slot, assignments: assigned });
+      return;
+    }
+
+    // 2. Kiểm tra quá khứ
+    if (isSlotUnavailable(date, slot.start, slot.end)) {
+      toast.warning("Cannot assign shifts in the past.");
+      return;
+    }
+
+    // 3. Kiểm tra đã chọn nhân viên chưa
+    if (!selectedEmployeeId) {
+      toast.error('Please select a staff member first');
+      return;
+    }
+
+    const assigned = findAssignments(date, slot);
+
+    // Kiểm tra xem nhân viên này ĐÃ CÓ LỊCH (đã lưu trong DB) chưa
+    const isAssignedToThisUser = assigned.some(
+      a => String(a.staffId) === String(selectedEmployeeId)
+    );
+
+    // Kiểm tra xem nhân viên này ĐANG ĐƯỢC CHỌN (Pending) ở slot này chưa
+    const isPendingForThisUser = pendingAssignments.some(
+      p => p.date === date &&
+        p.slotCode === slot.code &&
+        String(p.staffId) === String(selectedEmployeeId)
+    );
+
+    // === SỬA ĐỔI Ở ĐÂY ===
+    // Chỉ chặn nếu nhân viên ĐÃ ĐƯỢC LƯU (Assigned) trong DB.
+    // KHÔNG chặn nếu đang ở trạng thái Pending để còn cho phép gỡ bỏ (toggle).
+    if (isAssignedToThisUser) {
+      toast.info("This staff member is already assigned to this shift.");
+      return;
+    }
+
+    // Logic Toggle: Nếu đã chọn thì bỏ, chưa chọn thì thêm
+    if (isPendingForThisUser) {
+      // XỬ LÝ BỎ CHỌN (Unselect/Remove from pending)
+      setPendingAssignments(prev => prev.filter(p =>
+        !(p.date === date && p.slotCode === slot.code && String(p.staffId) === String(selectedEmployeeId))
+      ));
+    } else {
+      // XỬ LÝ CHỌN (Select/Add to pending)
+      setPendingAssignments(prev => [...prev, {
+        date,
+        slotCode: slot.code,
+        startTime: slot.start,
+        endTime: slot.end,
+        staffId: selectedEmployeeId,
+        staffName: employees.find(e => String(e.id) === String(selectedEmployeeId))?.name
+      }]);
     }
   };
 
-  // --- Render Helpers ---
-  const getStatusVariant = (status) => {
-    const s = (status || '').toString().toLowerCase();
-    if (s.includes('cancel')) return 'secondary';
-    if (s.includes('complete')) return 'outline';
-    return 'default';
+  const handleBulkSave = async () => {
+    if (pendingAssignments.length === 0) return;
+    if (!effectiveClubId) return;
+
+    const ok = window.confirm(`Save these ${pendingAssignments.length} shifts?`);
+    if (!ok) return;
+
+    setSubmitting(true);
+    try {
+      const promises = pendingAssignments.map(item =>
+        customerService.createShift({
+          clubId: Number(effectiveClubId),
+          staffId: Number(item.staffId),
+          date: item.date,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          status: 'SCHEDULED',
+          shiftCode: item.slotCode,
+        })
+      );
+
+      await Promise.all(promises);
+
+      toast.success("Saved successfully!");
+      setPendingAssignments([]);
+      await loadShifts();
+    } catch (e) {
+      toast.error('An error occurred.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  const handleWeekChange = (offset) => {
+    if (pendingAssignments.length > 0) {
+      const ok = window.confirm(
+        `⚠️ You have ${pendingAssignments.length} unsaved shifts.\n\nChanging weeks will CLEAR them all. Continue?`
+      );
+      if (!ok) return;
+      setPendingAssignments([]);
+    }
+    setCurrentWeek(currentWeek + offset);
+  };
+
+  // --- Render Helpers ---
   const formatWeekRange = () => {
     const fmt = (d) => d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
     return `${fmt(startOfWeek)} - ${fmt(endOfWeek)}`;
@@ -292,28 +384,75 @@ export function ShiftManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold">Work Shifts</h1>
-          <p className="text-muted-foreground">Quản lý lịch làm việc theo ca (6 slot)</p>
+          <p className="text-muted-foreground">Manage work shifts (6 slots)</p>
         </div>
       </div>
 
-      {/* [TỐI ƯU 3 - HỢP LÍ] Sửa lại mô tả Card cho đúng logic */}
+      {/* Banner hiển thị pending và nút Lưu/Hủy */}
+      {pendingAssignments.length > 0 && (
+        <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg border-2 border-blue-300 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-blue-900">
+              📋 Selected: {pendingAssignments.length} shifts
+            </p>
+            <p className="text-xs text-blue-600">
+              For: <span className="font-medium">{employees.find(e => String(e.id) === String(selectedEmployeeId))?.name}</span>
+            </p>
+          </div>
+          {/* NÚT LƯU - Variant Primary */}
+          <Button
+            onClick={handleBulkSave}
+            disabled={submitting}
+            variant="default"
+            size="sm"
+          >
+            {submitting ? (
+              <span className="flex items-center gap-2">
+                Saving...
+              </span>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save ({pendingAssignments.length})
+              </>
+            )}
+          </Button>
+
+          {/* NÚT HỦY - Variant Outline hoặc Destructive */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPendingAssignments([])}
+            disabled={submitting}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Chọn Club</CardTitle>
-            <CardDescription>Chọn Club để xem và quản lý lịch</CardDescription>
+            <CardTitle>Select Club</CardTitle>
+            <CardDescription>Select a Club to view and manage schedule</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* [TỐI ƯU 2 - HỢP LÍ] Reset nhân viên khi đổi club */}
             <Select
               value={effectiveClubId ?? ''}
               onValueChange={(v) => {
+                if (pendingAssignments.length > 0) {
+                  const ok = window.confirm(
+                    `⚠️ There are ${pendingAssignments.length} unsaved shifts. Changing club will CLEAR them all. Continue?`
+                  );
+                  if (!ok) return;
+                  setPendingAssignments([]);
+                }
                 setEffectiveClubId(v);
                 setSelectedEmployeeId(null);
               }}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn Club" />
+                <SelectValue placeholder="Select Club" />
               </SelectTrigger>
               <SelectContent>
                 {clubs.map(c => (
@@ -326,18 +465,27 @@ export function ShiftManagement() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Nhân viên</CardTitle>
-            <CardDescription>Chọn 1 người để gán ca khi ở Chế Độ Gán</CardDescription>
+            <CardTitle>Staff</CardTitle>
+            <CardDescription>Select a person to assign shifts in Assignment Mode</CardDescription>
           </CardHeader>
-
-          {/* THAY THẾ TOÀN BỘ CardContent BẰNG CODE NÀY */}
           <CardContent>
             <Select
               value={selectedEmployeeId ?? ''}
-              onValueChange={(v) => setSelectedEmployeeId(v)}
+              onValueChange={(v) => {
+                if (pendingAssignments.length > 0) {
+                  const currentName = employees.find(e => String(e.id) === String(selectedEmployeeId))?.name;
+                  const newName = employees.find(e => String(e.id) === String(v))?.name;
+                  const ok = window.confirm(
+                    `⚠️ There are ${pendingAssignments.length} shifts pending for "${currentName}".\n\nSwitching to "${newName}" will CLEAR selected shifts. Continue?`
+                  );
+                  if (!ok) return;
+                  setPendingAssignments([]);
+                }
+                setSelectedEmployeeId(v);
+              }}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn một nhân viên" />
+                <SelectValue placeholder="Select a staff member" />
               </SelectTrigger>
               <SelectContent>
                 {employees.map(emp => (
@@ -346,8 +494,7 @@ export function ShiftManagement() {
                   </SelectItem>
                 ))}
                 {employees.length === 0 && (
-                  // Hiển thị text này bên trong dropdown nếu không có nhân viên
-                  <div className="p-2 text-sm text-muted-foreground">Không có nhân viên</div>
+                  <div className="p-2 text-sm text-muted-foreground">No staff available</div>
                 )}
               </SelectContent>
             </Select>
@@ -358,7 +505,7 @@ export function ShiftManagement() {
       {/* Bảng Lịch Tuần */}
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-2"> {/* Thêm flex-wrap và gap */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <CardTitle>Weekly Schedule</CardTitle>
               <CardDescription>Week of {formatWeekRange()}</CardDescription>
@@ -366,22 +513,42 @@ export function ShiftManagement() {
             <div className="flex items-center gap-2">
               <Button
                 variant={isAssignmentMode ? 'destructive' : 'default'}
-                onClick={() => setIsAssignmentMode(!isAssignmentMode)}
+                onClick={() => {
+                  if (isAssignmentMode && pendingAssignments.length > 0) {
+                    const ok = window.confirm(
+                      `⚠️ Exiting mode will CLEAR ${pendingAssignments.length} selected shifts.\n\nDo you want to SAVE first?`
+                    );
+                    if (!ok) return;
+                    setPendingAssignments([]);
+                  }
+                  setIsAssignmentMode(!isAssignmentMode);
+                }}
                 size="sm"
               >
                 {isAssignmentMode ? (
-                  <><X className="h-4 w-4 mr-1" size="sm" /> Thoát Chế Độ</>
+                  <><X className="h-4 w-4 mr-1" size="sm" /> Exit Mode</>
                 ) : (
-                  <><Plus className="h-4 w-4 mr-1" size="sm" /> Gán Ca</>
+                  <><Plus className="h-4 w-4 mr-1" size="sm" /> Assign Shift</>
                 )}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentWeek(currentWeek - 1)}>
+              <Button variant="outline" size="sm" onClick={() => handleWeekChange(-1)}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Previous Week
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentWeek(0)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (pendingAssignments.length > 0) {
+                    const ok = window.confirm(`There are ${pendingAssignments.length} unsaved shifts. Clear and go to current week?`);
+                    if (!ok) return;
+                    setPendingAssignments([]);
+                  }
+                  setCurrentWeek(0);
+                }}
+              >
                 Current Week
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentWeek(currentWeek + 1)}>
+              <Button variant="outline" size="sm" onClick={() => handleWeekChange(1)}>
                 Next Week <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -404,42 +571,65 @@ export function ShiftManagement() {
                       const assigned = findAssignments(date, slot);
                       const names = assigned.map(a => a.staffName || `#${a.staffId}`).join(', ');
                       const isSelectedEmployeeAssigned = assigned.some(a => String(a.staffId) === String(selectedEmployeeId));
-                      const isDisabled = isAssignmentMode && isSelectedEmployeeAssigned;
+
+                      const isPast = isSlotUnavailable(date, slot.start, slot.end);
+                      const pending = isPending(date, slot);
+
+                      const isDisabled = isPast;
 
                       return (
                         <div
                           key={slot.code}
                           className={`group rounded-xl border p-3 transition-all ${isDisabled
-                              ? 'opacity-50 cursor-not-allowed bg-muted/30' // Disabled state
-                              : isAssignmentMode
-                                ? (isSelectedEmployeeAssigned
+                            ? 'opacity-50 cursor-not-allowed bg-muted/30'
+                            : isAssignmentMode
+                              ? (pending
+                                ? 'border-primary border-2 border-dashed bg-blue-50 cursor-pointer'
+                                : isSelectedEmployeeAssigned
                                   ? 'border-primary bg-primary/10 hover:bg-primary/15 cursor-pointer'
                                   : 'hover:bg-green-50 border-dashed border-green-500/40 hover:border-green-500 cursor-pointer')
-                                : 'hover:bg-muted/70 border-border cursor-pointer'
+                              : 'hover:bg-muted/70 border-border cursor-pointer'
                             }`}
-                          onClick={() => !isDisabled && handleSlotClick(date, slot)} // Không cho click nếu disabled
+                          onClick={() => {
+                            if (submitting) return;
+                            if (isDisabled && isAssignmentMode) return;
+                            handleSlotClick(date, slot);
+                          }}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className={`inline-flex items-center rounded px-2 py-1 text-sm font-medium ${slotBadgeClass(slot.code)}`}>
                               {slot.label}
                             </div>
-                            {isAssignmentMode && isSelectedEmployeeAssigned && (
+
+                            {isAssignmentMode && isSelectedEmployeeAssigned && !pending && (
                               <Badge variant="default" className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full">✓</Badge>
+                            )}
+
+                            {pending && (
+                              <Badge variant="secondary" className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full text-blue-600 bg-blue-100">+</Badge>
                             )}
                           </div>
 
                           <div className="text-xs text-muted-foreground mt-2 min-h-[1.5rem]">
-                            {assigned.length === 0 ? (
-                              <span className="italic opacity-60">Chưa có nhân viên</span>
-                            ) : (
-                              names
+                            {assigned.length > 0 && (
+                              <div className="text-gray-700 text-xs">{names}</div>
+                            )}
+
+                            {pending && (
+                              <div className="font-medium text-blue-600 mt-1 text-xs flex items-center gap-1">
+                                <span className="text-lg">+</span>
+                                {employees.find(e => String(e.id) === String(selectedEmployeeId))?.name}
+                              </div>
+                            )}
+
+                            {assigned.length === 0 && !pending && (
+                              <span className="italic opacity-60">No staff assigned</span>
                             )}
                           </div>
 
-                          {/* Chỉ hiển thị hint khi hover VÀ chưa được gán */}
-                          {isAssignmentMode && !isSelectedEmployeeAssigned && (
+                          {isAssignmentMode && !isSelectedEmployeeAssigned && !pending && !isDisabled && (
                             <div className="text-xs text-green-600 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              + Gán {employees.find(e => String(e.id) === String(selectedEmployeeId))?.name}
+                              + Assign {employees.find(e => String(e.id) === String(selectedEmployeeId))?.name}
                             </div>
                           )}
                         </div>
@@ -451,51 +641,49 @@ export function ShiftManagement() {
             })}
           </div>
           {loading && (
-            <div className="text-sm text-muted-foreground mt-2">Đang tải lịch...</div>
+            <div className="text-sm text-muted-foreground mt-2">Loading schedule...</div>
           )}
         </CardContent>
       </Card>
 
-      {/* Stats Cards (Giữ nguyên) */}
-<div className="grid gap-4 md:grid-cols-3 items-stretch">
-  <Card className="h-full">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">Total Shifts</CardTitle>
-      <Calendar className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{shifts.length}</div>
-      <p className="text-xs text-muted-foreground">Tuần này</p>
-    </CardContent>
-  </Card>
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-3 items-stretch">
+        <Card className="h-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Shifts</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{shifts.length}</div>
+            <p className="text-xs text-muted-foreground">This week</p>
+          </CardContent>
+        </Card>
 
-  <Card className="h-full">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-      <Users className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">
-        {shifts.filter(s => (s.status || '').toUpperCase() === 'SCHEDULED').length}
+        <Card className="h-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Assigned</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {shifts.filter(s => (s.status || '').toUpperCase() === 'SCHEDULED').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Scheduled shifts</p>
+          </CardContent>
+        </Card>
       </div>
-      <p className="text-xs text-muted-foreground">Ca đã xếp</p>
-    </CardContent>
-  </Card>
-</div>
 
-
-      {/* Modal được render ở đây là chính xác */}
-      {
-        selectedShiftDetails && (
-          <ShiftAssignmentDetails
-            assignments={selectedShiftDetails.assignments}
-            slot={selectedShiftDetails.slot}
-            date={selectedShiftDetails.date}
-            onUnassign={handleUnassign}
-            onOpenChange={() => setSelectedShiftDetails(null)}
-          />
-        )
-      }
-    </div >
+      {/* Modal Chi Tiết */}
+      {selectedShiftDetails && (
+        <ShiftAssignmentDetails
+          assignments={selectedShiftDetails.assignments}
+          slot={selectedShiftDetails.slot}
+          date={selectedShiftDetails.date}
+          onUnassign={handleUnassign}
+          onOpenChange={() => setSelectedShiftDetails(null)}
+          isSlotUnavailable={isSlotUnavailable}
+        />
+      )}
+    </div>
   );
 }
