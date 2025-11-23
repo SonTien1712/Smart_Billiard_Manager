@@ -31,7 +31,7 @@ public class DashboardService {
 
     public ClubDashboardDTO buildClubDashboard(Integer customerId, Integer clubId, LocalDate from, LocalDate to, int topN) {
         if (to == null) to = LocalDate.now();
-        if (from == null) from = to.minusMonths(3).withDayOfMonth(1);
+        if (from == null) from = to.minusMonths(6).withDayOfMonth(1);
 
         String fromStr = toSqlDateStart(from);
         String toStr = toSqlDateEnd(to);

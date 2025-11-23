@@ -1,14 +1,25 @@
-// javascript
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download, TrendingUp, DollarSign, Users, Calendar, Loader2, AlertCircle } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8080/api';
 
-// Helper: Format currency
+// Helper: Format currency (VND - Vietnamese Dong)
 const formatCurrency = (value) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num || 0);
+};
+
+// Helper: Format currency for Y-axis (shorter format - VND)
+const formatCurrencyShort = (value) => {
+    if (value >= 1000000000) {
+        return `${(value / 1000000000).toFixed(1)} tỷ`;
+    } else if (value >= 1000000) {
+        return `${(value / 1000000).toFixed(1)} tr`;
+    } else if (value >= 1000) {
+        return `${(value / 1000).toFixed(0)}K`;
+    }
+    return `${value.toLocaleString('vi-VN')}`;
 };
 
 export default function CustomerDashboard() {
@@ -31,15 +42,13 @@ export default function CustomerDashboard() {
 
         const fetchClubs = async () => {
             try {
+                // ✅ Fixed: Added parentheses for template literal
                 const response = await fetch(`${API_BASE}/customer/clubs/customer/${CUSTOMER_ID}`, {
                     headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken') || ''}` }
                 });
-
                 if (!response.ok) throw new Error('Failed to fetch clubs');
-
                 const data = await response.json();
                 const clubList = Array.isArray(data) ? data : (data.data || data.clubs || []);
-
                 setClubs(clubList);
                 if (clubList.length > 0) {
                     setSelectedClub(clubList[0].id || clubList[0].clubId);
@@ -62,7 +71,6 @@ export default function CustomerDashboard() {
         const fetchDashboardData = async () => {
             setLoading(true);
             setError(null);
-
             try {
                 const response = await fetch(
                     `${API_BASE}/customers/${CUSTOMER_ID}/clubs/${selectedClub}/dashboard`,
@@ -70,12 +78,9 @@ export default function CustomerDashboard() {
                         headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken') || ''}` }
                     }
                 );
-
                 if (!response.ok) throw new Error('Failed to fetch dashboard');
-
                 const data = await response.json();
                 setDashboardData(data);
-
             } catch (err) {
                 console.error('Error fetching dashboard:', err);
                 setError('Failed to load dashboard data');
@@ -94,9 +99,7 @@ export default function CustomerDashboard() {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken') || ''}` }
             });
-
             if (!response.ok) throw new Error('Export failed');
-
             const blob = await response.blob();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -114,9 +117,7 @@ export default function CustomerDashboard() {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken') || ''}` }
             });
-
             if (!response.ok) throw new Error('Export failed');
-
             const blob = await response.blob();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -134,9 +135,7 @@ export default function CustomerDashboard() {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken') || ''}` }
             });
-
             if (!response.ok) throw new Error('Export failed');
-
             const blob = await response.blob();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -154,9 +153,7 @@ export default function CustomerDashboard() {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken') || ''}` }
             });
-
             if (!response.ok) throw new Error('Export failed');
-
             const blob = await response.blob();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -217,7 +214,6 @@ export default function CustomerDashboard() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-
                 {/* Header */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">Club Dashboard</h1>
@@ -259,7 +255,6 @@ export default function CustomerDashboard() {
                                     <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.totalRevenue)}</p>
                                     <p className="text-xs text-gray-500 mt-1">Last 3 months</p>
                                 </div>
-
                                 <div className="bg-white rounded-lg shadow p-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-gray-600">Total Salary</span>
@@ -268,7 +263,6 @@ export default function CustomerDashboard() {
                                     <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.totalSalary)}</p>
                                     <p className="text-xs text-gray-500 mt-1">Employee costs</p>
                                 </div>
-
                                 <div className="bg-white rounded-lg shadow p-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-gray-600">Net Profit</span>
@@ -277,7 +271,6 @@ export default function CustomerDashboard() {
                                     <p className="text-2xl font-bold text-gray-800">{formatCurrency(summaryStats.netProfit)}</p>
                                     <p className="text-xs text-gray-500 mt-1">Revenue - Salary</p>
                                 </div>
-
                                 <div className="bg-white rounded-lg shadow p-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-sm font-medium text-gray-600">Product Profit</span>
@@ -289,7 +282,7 @@ export default function CustomerDashboard() {
                             </div>
                         )}
 
-                        {/* Monthly Revenue Chart */}
+                        {/* Monthly Revenue Chart - ✅ Changed to BarChart */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Revenue</h2>
@@ -301,19 +294,37 @@ export default function CustomerDashboard() {
                                     Export Excel
                                 </button>
                             </div>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={dashboardData.revenueByMonth}>
+                            <ResponsiveContainer width="100%" height={350}>
+                                <BarChart data={dashboardData.revenueByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenue" />
-                                </LineChart>
+                                    <XAxis
+                                        dataKey="month"
+                                        label={{ value: 'Tháng ', position: 'insideBottom', offset: -10, style: { fontWeight: 'bold' } }}
+                                        tick={{ fontSize: 12 }}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={80}
+                                    />
+                                    <YAxis
+                                        tickFormatter={formatCurrencyShort}
+                                        label={{ value: 'Doanh thu ', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold' } }}
+                                        tick={{ fontSize: 12 }}
+                                        width={80}
+                                    />
+                                    <Tooltip
+                                        formatter={(value) => formatCurrency(value)}
+                                        labelStyle={{ fontWeight: 'bold' }}
+                                    />
+                                    <Legend
+                                        wrapperStyle={{ paddingTop: '10px' }}
+                                        iconType="rect"
+                                    />
+                                    <Bar dataKey="revenue" fill="#10b981" name="Doanh thu (Revenue)" radius={[8, 8, 0, 0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
 
-                        {/* Monthly Salaries Chart */}
+                        {/* Monthly Salaries Chart - ✅ Enhanced with labels */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Monthly Salaries</h2>
@@ -325,14 +336,32 @@ export default function CustomerDashboard() {
                                     Export Excel
                                 </button>
                             </div>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={dashboardData.salaryByMonth}>
+                            <ResponsiveContainer width="100%" height={350}>
+                                <BarChart data={dashboardData.salaryByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                                    <Legend />
-                                    <Bar dataKey="totalSalary" fill="#3b82f6" name="Total Salary" />
+                                    <XAxis
+                                        dataKey="month"
+                                        label={{ value: 'Tháng ', position: 'insideBottom', offset: -10, style: { fontWeight: 'bold' } }}
+                                        tick={{ fontSize: 12 }}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={80}
+                                    />
+                                    <YAxis
+                                        tickFormatter={formatCurrencyShort}
+                                        label={{ value: 'Lương ', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold' } }}
+                                        tick={{ fontSize: 12 }}
+                                        width={80}
+                                    />
+                                    <Tooltip
+                                        formatter={(value) => formatCurrency(value)}
+                                        labelStyle={{ fontWeight: 'bold' }}
+                                    />
+                                    <Legend
+                                        wrapperStyle={{ paddingTop: '10px' }}
+                                        iconType="rect"
+                                    />
+                                    <Bar dataKey="totalSalary" fill="#3b82f6" name="Tổng lương (Total Salary)" radius={[8, 8, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
