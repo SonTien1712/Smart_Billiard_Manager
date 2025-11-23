@@ -58,9 +58,9 @@ public class AuthServiceImpl implements AuthService {
                 String accessToken = jwtUtil.generateAccessToken(claims);
                 String refreshToken = jwtUtil.generateRefreshToken(claims);
 
-                return new LoginResponse(true, "Đăng nhập admin thành công", accessToken, refreshToken, admin);
+                return new LoginResponse(true, "Login successfully", accessToken, refreshToken, admin);
             }
-            return new LoginResponse(false, "Sai mật khẩu admin", null, null, null);
+            return new LoginResponse(false, "Admin password false", null, null, null);
         }
 
         Optional<Employeeaccount> empOpt = employeeAccountRepo.findEmployeeaccountByUsernameAndPasswordHash(identifier, password);
@@ -79,10 +79,10 @@ public class AuthServiceImpl implements AuthService {
             String accessToken = jwtUtil.generateAccessToken(claims);
             String refreshToken = jwtUtil.generateRefreshToken(claims);
 
-            return new LoginResponse(true, "Đăng nhập khách hàng thành công", accessToken, refreshToken, customer);
+            return new LoginResponse(true, "Customer login successfully", accessToken, refreshToken, customer);
         }
 
-        return new LoginResponse(false, "Không tìm thấy tài khoản phù hợp", null, null, null);
+        return new LoginResponse(false, "Have no account", null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -92,17 +92,17 @@ public class AuthServiceImpl implements AuthService {
 
         Employeeaccount acc = empOpt.orElse(null);
         if (acc == null) {
-            return new LoginResponse(false, "Không tìm thấy tài khoản nhân viên", null, null, null);
+            return new LoginResponse(false, "not find employee account", null, null, null);
         }
 
         Customer owner = acc.getCustomerID();
         if (owner == null) {
-            return new LoginResponse(false, "Không xác định được khách hàng sở hữu câu lạc bộ", null, null, null);
+            return new LoginResponse(false, "No customer of club", null, null, null);
         }
 
         LocalDate expiryDate = owner.getExpiryDate();
         if (expiryDate == null || expiryDate.isBefore(LocalDate.now())) {
-            return new LoginResponse(false, "Tài khoản khách hàng đã hết hạn, vui lòng gia hạn trước khi đăng nhập nhân viên", null, null, null);
+            return new LoginResponse(false, "Customer account has already expiried", null, null, null);
         }
 
         Employee emp = acc.getEmployeeID();
@@ -130,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtil.generateAccessToken(claims);
         String refreshToken = jwtUtil.generateRefreshToken(claims);
 
-        return new LoginResponse(true, "Đăng nhập nhân viên thành công", accessToken, refreshToken, user);
+        return new LoginResponse(true, "Emplyee login successfully", accessToken, refreshToken, user);
     }
 
 
