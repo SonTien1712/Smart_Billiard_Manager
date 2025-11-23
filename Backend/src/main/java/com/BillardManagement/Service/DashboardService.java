@@ -140,9 +140,9 @@ public class DashboardService {
     }
 
     /**
-     * ✅ SALARY: Tính lương theo tháng với logic CHÍNH XÁC từ StaffController
-     * - FullTime: Salary cố định mỗi tháng (chỉ tính 1 lần)
-     * - PartTime: totalShifts × 4h × hourlyRate + nightBonus
+     * ✅ SALARY: Tính lương theo tháng với logic CHÍNH XÁC 100% từ StaffController.payrollSummary()
+     * - FullTime: Salary cố định mỗi tháng có shifts (bất kể status)
+     * - PartTime: totalShifts × 4h × hourlyRate + nightBonus (chỉ loại trừ Absent)
      */
     private List<MonthlySalaryDTO> calculateMonthlySalaryWithStaffLogic(
             Integer customerId,
@@ -158,33 +158,91 @@ public class DashboardService {
 
         Map<String, BigDecimal> salaryMap = new LinkedHashMap<>();
 
+//        for (Employee emp : employees) {
+//            String employeeType = emp.getEmployeeType();
+//
+//            // Lấy TẤT CẢ shifts trong khoảng thời gian (giống StaffController)
+//            List<Employeeshift> allShifts = employeeshiftRepo
+//                    .findByEmployeeID_IdAndShiftDateBetween(emp.getId(), from, to);
+//
+//            if ("PartTime".equalsIgnoreCase(employeeType)) {
+//                // ✅ FullTime: Salary cố định mỗi tháng có shifts (BẤT KỂ STATUS)
+//                BigDecimal monthlySalary = emp.getSalary() != null ? emp.getSalary() : BigDecimal.ZERO;
+//
+//                // Lấy các tháng distinct mà employee này có shift (không filter status)
+//                Set<String> workedMonths = allShifts.stream()
+//                        .map(s -> s.getShiftDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")))
+//                        .collect(Collectors.toSet());
+//
+//                // Cộng salary vào mỗi tháng đã làm việc
+//                for (String month : workedMonths) {
+//                    salaryMap.merge(month, monthlySalary, BigDecimal::add);
+//                }
+//
+//            } else {
+//                // ✅ PartTime: Logic CHÍNH XÁC từ StaffController.payrollSummary()
+//
+//                // Group shifts by month
+//                Map<String, List<Employeeshift>> shiftsByMonth = allShifts.stream()
+//                        .collect(Collectors.groupingBy(s ->
+//                                s.getShiftDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"))
+//                        ));
+//
+//                for (Map.Entry<String, List<Employeeshift>> entry : shiftsByMonth.entrySet()) {
+//                    String month = entry.getKey();
+//                    List<Employeeshift> monthShifts = entry.getValue();
+//
+//                    // ✅ totalShifts: CHỈ loại trừ Absent (giống StaffController line ~245)
+//                    long totalShifts = monthShifts.stream()
+//                            .filter(s -> s.getStatus() == null || !s.getStatus().equalsIgnoreCase("Absent"))
+//                            .count();
+//
+//                    // ✅ nightShifts: CHỈ loại trừ Absent (giống StaffController line ~248)
+//                    long nightShifts = monthShifts.stream()
+//                            .filter(s -> s.getStatus() == null || !s.getStatus().equalsIgnoreCase("Absent"))
+//                            .filter(this::isNightShift)
+//                            .count();
+//
+//                    BigDecimal hourlyRate = emp.getHourlyRate() != null ? emp.getHourlyRate() : BigDecimal.ZERO;
+//
+//                    // ✅ nightBonus = nightShifts × 20,000 VND (StaffController line ~258)
+//                    BigDecimal nightBonus = BigDecimal.valueOf(nightShifts * 20000L);
+//
+//                    // ✅ shiftPay = totalShifts × 4h × hourlyRate (StaffController line ~266-268)
+//                    BigDecimal safeHourly = hourlyRate == null ? BigDecimal.ZERO : hourlyRate;
+//                    BigDecimal shiftPay = BigDecimal.valueOf(totalShifts)
+//                            .multiply(BigDecimal.valueOf(4))
+//                            .multiply(safeHourly);
+//
+//                    // ✅ totalPay = shiftPay + nightBonus (StaffController line ~269)
+//                    BigDecimal totalPay = shiftPay.add(nightBonus == null ? BigDecimal.ZERO : nightBonus);
+//
+//                    salaryMap.merge(month, totalPay, BigDecimal::add);
+//                }
+//            }
+//        }
         for (Employee emp : employees) {
-            String employeeType = emp.getEmployeeType();
+            String employeeType = emp.getEmployeeType() != null ? emp.getEmployeeType() : "";
+
+            // Lấy TẤT CẢ shifts trong khoảng thời gian
+            List<Employeeshift> allShifts = employeeshiftRepo
+                    .findByEmployeeID_IdAndShiftDateBetween(emp.getId(), from, to);
 
             if ("FullTime".equalsIgnoreCase(employeeType)) {
-                // FullTime: Tính salary cố định cho mỗi tháng có shifts
+                // FullTime: fixed monthly salary for each month that has any shifts (any status)
                 BigDecimal monthlySalary = emp.getSalary() != null ? emp.getSalary() : BigDecimal.ZERO;
 
-                // Lấy các tháng distinct mà employee này có shift Completed
-                Set<String> workedMonths = employeeshiftRepo
-                        .findByEmployeeID_IdAndShiftDateBetween(emp.getId(), from, to)
-                        .stream()
-                        .filter(s -> "Completed".equalsIgnoreCase(s.getStatus()))
+                Set<String> workedMonths = allShifts.stream()
                         .map(s -> s.getShiftDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")))
                         .collect(Collectors.toSet());
 
-                // Cộng salary vào mỗi tháng đã làm việc
                 for (String month : workedMonths) {
                     salaryMap.merge(month, monthlySalary, BigDecimal::add);
                 }
 
             } else {
-                // PartTime: Tính theo shifts với logic từ StaffController
-                List<Employeeshift> shifts = employeeshiftRepo
-                        .findByEmployeeID_IdAndShiftDateBetween(emp.getId(), from, to);
-
-                // Group shifts by month
-                Map<String, List<Employeeshift>> shiftsByMonth = shifts.stream()
+                // PartTime: unchanged existing logic (hourlyRate × 4h × totalShifts + night bonus)
+                Map<String, List<Employeeshift>> shiftsByMonth = allShifts.stream()
                         .collect(Collectors.groupingBy(s ->
                                 s.getShiftDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"))
                         ));
@@ -193,30 +251,22 @@ public class DashboardService {
                     String month = entry.getKey();
                     List<Employeeshift> monthShifts = entry.getValue();
 
-                    // Đếm totalShifts (không bao gồm Absent)
                     long totalShifts = monthShifts.stream()
-                            .filter(s -> s.getStatus() != null && !s.getStatus().equalsIgnoreCase("Absent"))
+                            .filter(s -> s.getStatus() == null || !s.getStatus().equalsIgnoreCase("Absent"))
                             .count();
 
-                    // Đếm nightShifts
                     long nightShifts = monthShifts.stream()
-                            .filter(s -> s.getStatus() != null && !s.getStatus().equalsIgnoreCase("Absent"))
+                            .filter(s -> s.getStatus() == null || !s.getStatus().equalsIgnoreCase("Absent"))
                             .filter(this::isNightShift)
                             .count();
 
                     BigDecimal hourlyRate = emp.getHourlyRate() != null ? emp.getHourlyRate() : BigDecimal.ZERO;
-
-                    // nightBonus = nightShifts × 20,000 VND
                     BigDecimal nightBonus = BigDecimal.valueOf(nightShifts * 20000L);
-
-                    // shiftPay = totalShifts × 4h × hourlyRate
                     BigDecimal shiftPay = BigDecimal.valueOf(totalShifts)
                             .multiply(BigDecimal.valueOf(4))
                             .multiply(hourlyRate);
 
-                    // totalPay = shiftPay + nightBonus
                     BigDecimal totalPay = shiftPay.add(nightBonus);
-
                     salaryMap.merge(month, totalPay, BigDecimal::add);
                 }
             }
@@ -306,7 +356,7 @@ public class DashboardService {
 
     /**
      * ✅ EMPLOYEE SALARY DETAILS: Chi tiết lương từng nhân viên
-     * Sử dụng logic từ StaffController
+     * Logic CHÍNH XÁC 100% từ StaffController.payrollSummary()
      */
     public List<EmployeeSalaryDetailDTO> getEmployeeSalaryDetails(
             Integer customerId,
@@ -325,27 +375,32 @@ public class DashboardService {
         List<EmployeeSalaryDetailDTO> result = new ArrayList<>();
 
         for (Employee emp : employees) {
-            List<Employeeshift> shifts = employeeshiftRepo
-                    .findByEmployeeID_IdAndShiftDateBetween(emp.getId(), from, to)
-                    .stream()
-                    .filter(s -> "Completed".equalsIgnoreCase(s.getStatus()))
-                    .collect(Collectors.toList());
+            // ✅ Lấy TẤT CẢ shifts (giống StaffController line ~239)
+            List<Employeeshift> allShifts = employeeshiftRepo
+                    .findByEmployeeID_IdAndShiftDateBetween(emp.getId(), from, to);
 
             String employeeType = emp.getEmployeeType();
             BigDecimal baseSalary;
             BigDecimal calculatedSalary;
 
-            double totalHours = shifts.stream()
+            // ✅ totalHours: SUM tất cả HoursWorked (giống StaffController line ~253)
+            double totalHours = allShifts.stream()
                     .mapToDouble(s -> s.getHoursWorked() != null ? s.getHoursWorked().doubleValue() : 0.0)
                     .sum();
 
-            int totalShifts = shifts.size();
+            // ✅ scheduledShifts: Tổng số shifts (giống StaffController line ~241)
+            int scheduledShifts = allShifts.size();
+
+            // ✅ totalShifts: CHỈ loại trừ Absent (giống StaffController line ~242-245)
+            long totalShifts = allShifts.stream()
+                    .filter(s -> s.getStatus() == null || !s.getStatus().equalsIgnoreCase("Absent"))
+                    .count();
 
             if ("FullTime".equalsIgnoreCase(employeeType)) {
-                // FullTime: Salary × số tháng distinct
+                // ✅ FullTime: Salary × số tháng có shifts (BẤT KỂ STATUS)
                 baseSalary = emp.getSalary() != null ? emp.getSalary() : BigDecimal.ZERO;
 
-                long distinctMonths = shifts.stream()
+                long distinctMonths = allShifts.stream()
                         .map(s -> s.getShiftDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")))
                         .distinct()
                         .count();
@@ -353,19 +408,26 @@ public class DashboardService {
                 calculatedSalary = baseSalary.multiply(new BigDecimal(distinctMonths));
 
             } else {
-                // PartTime: totalShifts × 4h × hourlyRate + nightBonus
+                // ✅ PartTime: totalShifts × 4h × hourlyRate + nightBonus
                 baseSalary = emp.getHourlyRate() != null ? emp.getHourlyRate() : BigDecimal.ZERO;
 
-                long nightShifts = shifts.stream()
+                // ✅ nightShifts: CHỈ loại trừ Absent (giống StaffController line ~246-249)
+                long nightShifts = allShifts.stream()
+                        .filter(s -> s.getStatus() == null || !s.getStatus().equalsIgnoreCase("Absent"))
                         .filter(this::isNightShift)
                         .count();
 
+                // ✅ nightBonus = nightShifts × 20,000 (StaffController line ~258)
                 BigDecimal nightBonus = BigDecimal.valueOf(nightShifts * 20000L);
-                BigDecimal shiftPay = new BigDecimal(totalShifts)
-                        .multiply(BigDecimal.valueOf(4))
-                        .multiply(baseSalary);
 
-                calculatedSalary = shiftPay.add(nightBonus);
+                // ✅ shiftPay = totalShifts × 4h × hourlyRate (StaffController line ~266-268)
+                BigDecimal safeHourly = baseSalary == null ? BigDecimal.ZERO : baseSalary;
+                BigDecimal shiftPay = BigDecimal.valueOf(totalShifts)
+                        .multiply(BigDecimal.valueOf(4))
+                        .multiply(safeHourly);
+
+                // ✅ totalPay = shiftPay + nightBonus (StaffController line ~269)
+                calculatedSalary = shiftPay.add(nightBonus == null ? BigDecimal.ZERO : nightBonus);
             }
 
             result.add(new EmployeeSalaryDetailDTO(
@@ -374,7 +436,7 @@ public class DashboardService {
                     employeeType,
                     baseSalary,
                     totalHours,
-                    totalShifts,
+                    (int) totalShifts, // Dùng totalShifts thay vì scheduledShifts
                     calculatedSalary
             ));
         }
