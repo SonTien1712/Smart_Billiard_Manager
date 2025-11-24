@@ -5,30 +5,30 @@ import { useAuth } from '../AuthProvider';
 export const plans = [
   {
     id: '1',
-    title: 'Gói 3 Tháng',
+    title: '3 Month Package',
     price: '499.000đ',
     description:
-      'Lựa chọn linh hoạt cho trung tâm đang thử nghiệm và muốn khám phá các tính quản lí.',
-    badge: 'Phổ biến',
+      'Flexible choice for centers that are experimenting and want to explore management features.',
+    badge: 'Popular',
     highlight: false,
     features: [
-      'Lịch đặt bàn thông minh với gợi ý khung giờ',
-      'Theo dõi doanh thu từng ngày và từng bàn',
-      'Nhắc lịch tự động qua SMS/Email',
-      'Hỗ trợ kỹ thuật ưu tiên trong giờ hành chính',
+      'Smart table booking with time slot suggestions',
+      'Daily and per-table revenue tracking',
+      'Automatic reminders via SMS/Email',
+      'Priority technical support during business hours',
     ],
   },
   {
     id: '2',
-    title: 'Gói 1 Năm',
+    title: '1 Year Package',
     price: '1.699.000đ',
     description:
-      'Tiết kiệm chi phí dài hạn, phù hợp trung tâm muốn vận hành ổn định với đầy đủ tiện ích.',
-    badge: 'Tiết kiệm 15%',
+      'Long-term cost savings, suitable for centers that want stable operation with full features.',
+    badge: 'Save 15%',
     highlight: true,
     features: [
-      'Tất cả tính năng của gói 3 tháng',
-      'Hỗ trợ kỹ thuật 24/7 và tư vấn tối ưu vận hành',
+      'All features of the 3 Month Package',
+      '24/7 technical support and operational optimization consulting',
     ],
   },
 ];
